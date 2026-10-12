@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "symbols": {
+    "BTCUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 49.6,
+      "price": 84022.0,
+      "atr_pct": 0.3639,
+      "near_trigger": true,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "ETHUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 70.6,
+      "price": 2565.3,
+      "atr_pct": 0.5304,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "NEARUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 79.3,
+      "price": 5.893,
+      "atr_pct": 2.1532,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "ZECUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 79.4,
+      "price": 1334.45,
+      "atr_pct": 1.4429,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "SOLUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 57.2,
+      "price": 112.86,
+      "atr_pct": 0.7398,
+      "near_trigger": true,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "STRKUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 68.1,
+      "price": 0.10627,
+      "atr_pct": 6.2629,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "XRPUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 39.2,
+      "price": 1.4136,
+      "atr_pct": 0.6304,
+      "near_trigger": true,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "SUIUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 47.6,
+      "price": 1.1276,
+      "atr_pct": 1.1744,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "BNBUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 29.5,
+      "price": 753.6,
+      "atr_pct": 0.3909,
+      "near_trigger": true,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "ENAUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 67.8,
+      "price": 0.2396,
+      "atr_pct": 2.1237,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "SUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 75.1,
+      "price": 0.06094,
+      "atr_pct": 4.8112,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "UNIUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 46.9,
+      "price": 7.742,
+      "atr_pct": 1.2819,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "WUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 97.2,
+      "price": 0.02803,
+      "atr_pct": 5.393,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "WLDUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 47.8,
+      "price": 0.554,
+      "atr_pct": 1.7375,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "MAGICUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 61.2,
+      "price": 0.1209,
+      "atr_pct": 7.2216,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "AVAXUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 79.3,
+      "price": 11.051,
+      "atr_pct": 1.0162,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "DOGEUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 55.0,
+      "price": 0.08765,
+      "atr_pct": 0.6941,
+      "near_trigger": true,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "CFXUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 64.6,
+      "price": 0.06293,
+      "atr_pct": 3.7939,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "ONDOUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 72.3,
+      "price": 0.5245,
+      "atr_pct": 1.6906,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    },
+    "TAOUSDT@1h": {
+      "trend_label": "LONG",
+      "trend_int": 1,
+      "signal_label": "HOLD",
+      "strength": 80.7,
+      "price": 299.9,
+      "atr_pct": 1.1279,
+      "near_trigger": false,
+      "bar_is_in_progress": true,
+      "seen_at_utc": "2026-10-12T06:43:37.213434"
+    }
+  },
+  "last_run_utc": "2026-10-12T06:43:37.213434",
+  "last_interval": "1h",
+  "list_source": "top20_by_quote_volume",
+  "symbol_count": 20
+}

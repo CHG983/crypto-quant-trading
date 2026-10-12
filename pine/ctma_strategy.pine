@@ -1,0 +1,279 @@
+//@version=6
+// =============================================================================
+//  CTMA Strategy — Crypto Trend Momentum ATR  ·  策略版 (strategy)
+// -----------------------------------------------------------------------------
+//  與 ctma_indicator.pine 共用同一套訊號邏輯，差別在於：
+//    * 指標版自行模擬持倉狀態、僅供看盤；
+//    * 策略版交給 TradingView 的 strategy.* 引擎撮合，可直接看 Strategy Tester
+//      的淨利、MDD、勝率、Profitable Factor，並可疊加 commission / slippage。
+//
+//  設計理由（針對加密貨幣，非照搬股票策略）：
+//    1. 24/7 無跳空保護 → ATR 自適應停損取代固定 %。
+//    2. 波動大趨勢強    → EMA(21/55) 取代 SMA，對近期價格更敏感。
+//    3. 假訊號多        → RSI 中軸同側 + MACD 柱同向，雙重動能確認。
+//    4. 盤整泥沼        → ATR% 波動度門檻，低波動不進場。
+//    5. 永續合約成熟    → 可做多亦可做空（可分別關閉）。
+//
+//  編譯注意（本檔已逐項自我檢查）：
+//    * 所有 var 宣告一律在全域作用域，無任何 var 位於 if 區塊內。
+//    * 完全不使用 request.security → 無 lookahead / repaint 風險。
+//    * strategy.exit 僅在至少一個出場價有效時呼叫（避免「必須指定參數」執行期錯誤）。
+//    * 所有 input 皆實際被使用。
+// =============================================================================
+
+strategy("CTMA Strategy — Crypto Trend Momentum ATR", shorttitle = "CTMA Strategy",
+     overlay = true, initial_capital = 10000,
+     default_qty_type = strategy.percent_of_equity, default_qty_value = 100,
+     commission_type = strategy.commission.percent, commission_value = 0.04,
+     slippage = 5, pyramiding = 0,
+     calc_on_every_tick = false, process_orders_on_close = false)
+
+// -----------------------------------------------------------------------------
+// 1) 輸入參數
+// -----------------------------------------------------------------------------
+grpT = "① 趨勢 Trend"
+trendMode  = input.string("EMA 交叉", "趨勢判斷方式", options = ["EMA 交叉", "Supertrend"], group = grpT)
+emaFastLen = input.int(21, "EMA 快線週期", minval = 2, maxval = 400, group = grpT)
+emaSlowLen = input.int(55, "EMA 慢線週期", minval = 3, maxval = 500, group = grpT)
+stAtrLen   = input.int(10, "Supertrend ATR 週期", minval = 1, maxval = 100, group = grpT)
+stFactor   = input.float(3.0, "Supertrend 倍數", minval = 0.5, maxval = 10.0, step = 0.1, group = grpT)
+
+grpM = "② 動能 Momentum"
+momMode    = input.string("RSI + MACD", "動能確認方式", options = ["RSI + MACD", "僅 RSI", "僅 MACD"], group = grpM)
+rsiLen     = input.int(14, "RSI 週期", minval = 2, maxval = 100, group = grpM)
+rsiBull    = input.float(50.0, "做多 RSI 下限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+rsiBear    = input.float(50.0, "做空 RSI 上限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+macdFast   = input.int(12, "MACD 快線週期", minval = 1, maxval = 200, group = grpM)
+macdSlow   = input.int(26, "MACD 慢線週期", minval = 2, maxval = 300, group = grpM)
+macdSigLen = input.int(9, "MACD 訊號線週期", minval = 1, maxval = 100, group = grpM)
+
+grpV = "③ 波動度與風控 Volatility & Risk"
+atrLen       = input.int(14, "ATR 週期", minval = 1, maxval = 200, group = grpV)
+minAtrPct    = input.float(0.0, "最低 ATR%（波動度門檻，0 = 關閉）", minval = 0.0, maxval = 50.0, step = 0.1, group = grpV)
+stopAtrMult  = input.float(3.0, "ATR 初始停損倍數", minval = 0.5, maxval = 20.0, step = 0.1, group = grpV)
+useTrail     = input.bool(true, "啟用 ATR 移動停損", group = grpV)
+trailAtrMult = input.float(5.0, "ATR 移動停損倍數", minval = 0.5, maxval = 30.0, step = 0.1, group = grpV)
+useTP        = input.bool(false, "啟用 ATR 停利", group = grpV)
+tpAtrMult    = input.float(6.0, "ATR 停利倍數", minval = 0.5, maxval = 50.0, step = 0.1, group = grpV)
+
+grpP = "④ 部位與方向 Position"
+allowLong  = input.bool(true, "允許做多", group = grpP)
+allowShort = input.bool(true, "允許做空", group = grpP)
+sizingMode = input.string("權益比例", "部位大小模式", options = ["權益比例", "ATR 風險比例"], group = grpP)
+qtyPct     = input.float(100.0, "權益比例 %（部位大小模式 = 權益比例時生效）", minval = 1.0, maxval = 100.0, step = 1.0, group = grpP)
+riskPct    = input.float(1.0, "每筆風險 %（部位大小模式 = ATR 風險比例時生效）", minval = 0.05, maxval = 10.0, step = 0.05, group = grpP)
+
+grpD = "⑤ 顯示 Display"
+showEma     = input.bool(true, "顯示 EMA 快慢線", group = grpD)
+showSt      = input.bool(true, "顯示 Supertrend", group = grpD)
+showStop    = input.bool(true, "顯示停損／停利線", group = grpD)
+showMarkers = input.bool(true, "顯示買賣點標記", group = grpD)
+showPanel   = input.bool(true, "顯示資訊面板", group = grpD)
+
+grpA = "⑥ 通知 Alerts"
+alertEntry = input.bool(true, "進場時發出 alert()", group = grpA)
+alertExit  = input.bool(true, "出場時發出 alert()", group = grpA)
+
+// -----------------------------------------------------------------------------
+// 2) 指標計算
+// -----------------------------------------------------------------------------
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+[stLine, stDir] = ta.supertrend(stFactor, stAtrLen)
+
+rsiVal = ta.rsi(close, rsiLen)
+[macdLine, macdSignal, macdHist] = ta.macd(close, macdFast, macdSlow, macdSigLen)
+
+atrVal = ta.atr(atrLen)
+atrPct = close > 0 ? atrVal / close * 100.0 : 0.0
+
+// -----------------------------------------------------------------------------
+// 3) 訊號條件
+// -----------------------------------------------------------------------------
+useSt = trendMode == "Supertrend"
+
+emaBull = emaFast > emaSlow
+emaBear = emaFast < emaSlow
+trendBull = useSt ? (stDir < 0) : emaBull
+trendBear = useSt ? (stDir > 0) : emaBear
+
+prevStDir  = nz(stDir[1], 0)
+stFlipUp   = stDir < 0 and prevStDir >= 0
+stFlipDn   = stDir > 0 and prevStDir <= 0
+emaCrossUp = ta.crossover(emaFast, emaSlow)
+emaCrossDn = ta.crossunder(emaFast, emaSlow)
+
+flipBull = useSt ? stFlipUp : emaCrossUp
+flipBear = useSt ? stFlipDn : emaCrossDn
+
+momUseRsi  = momMode != "僅 MACD"
+momUseMacd = momMode != "僅 RSI"
+rsiBullOk  = momUseRsi ? rsiVal > rsiBull : true
+rsiBearOk  = momUseRsi ? rsiVal < rsiBear : true
+macdBullOk = momUseMacd ? macdHist > 0 : true
+macdBearOk = momUseMacd ? macdHist < 0 : true
+
+volOk  = atrPct >= minAtrPct
+warmOk = bar_index > math.max(math.max(emaSlowLen, atrLen), macdSlow) + 1 and
+     not na(emaSlow) and not na(atrVal) and not na(rsiVal) and not na(macdHist)
+
+longSig  = allowLong and warmOk and volOk and trendBull and flipBull and rsiBullOk and macdBullOk
+shortSig = allowShort and warmOk and volOk and trendBear and flipBear and rsiBearOk and macdBearOk
+
+exitLongSig  = flipBear
+exitShortSig = flipBull
+
+// -----------------------------------------------------------------------------
+// 4) 部位大小
+// -----------------------------------------------------------------------------
+stopDist = stopAtrMult * atrVal
+
+// 權益比例模式：以目前收盤價換算名目單位數
+qtyEquity = close > 0 ? strategy.equity * qtyPct / 100.0 / close : 0.0
+// ATR 風險比例模式：風險金額 ÷ 每單位停損距離
+qtyRisk   = stopDist > 0 ? (strategy.equity * riskPct / 100.0) / stopDist : 0.0
+qtyUse    = sizingMode == "ATR 風險比例" ? nz(qtyRisk) : nz(qtyEquity)
+
+// -----------------------------------------------------------------------------
+// 5) 進出場執行（含 ATR 停損 / 移動停損 / 停利）
+//    var 一律在全域宣告，絕不放入 if 區塊，避免狀態遺失。
+// -----------------------------------------------------------------------------
+var float longStop    = na
+var float longTp      = na
+var float shortStop   = na
+var float shortTp     = na
+var int   entryBarIdx = na
+var string lastExit   = "—"
+
+// ---- 進場 ----
+if longSig and strategy.position_size <= 0 and qtyUse > 0
+    longStop  := close - stopAtrMult * atrVal
+    longTp    := useTP ? close + tpAtrMult * atrVal : na
+    entryBarIdx := bar_index
+    lastExit  := "—"
+    strategy.entry("LONG", strategy.long, qty = qtyUse)
+
+if shortSig and strategy.position_size >= 0 and qtyUse > 0
+    shortStop := close + stopAtrMult * atrVal
+    shortTp   := useTP ? close - tpAtrMult * atrVal : na
+    entryBarIdx := bar_index
+    lastExit  := "—"
+    strategy.entry("SHORT", strategy.short, qty = qtyUse)
+
+// ---- 移動停損：持倉期間逐根上移（多單）／下移（空單），只朝有利方向 ----
+if strategy.position_size > 0 and useTrail and not na(atrVal)
+    candL = close - trailAtrMult * atrVal
+    longStop := math.max(nz(longStop, candL), candL)
+
+if strategy.position_size < 0 and useTrail and not na(atrVal)
+    candS = close + trailAtrMult * atrVal
+    shortStop := math.min(nz(shortStop, candS), candS)
+
+// ---- 掛出停損／停利單（至少一個價位有效才呼叫，避免執行期錯誤）----
+if strategy.position_size > 0 and (not na(longStop) or not na(longTp))
+    strategy.exit("EXIT-L", from_entry = "LONG", stop = longStop, limit = longTp)
+
+if strategy.position_size < 0 and (not na(shortStop) or not na(shortTp))
+    strategy.exit("EXIT-S", from_entry = "SHORT", stop = shortStop, limit = shortTp)
+
+// ---- 趨勢反轉時主動平倉 ----
+if exitLongSig and strategy.position_size > 0
+    lastExit := "趨勢反轉"
+    strategy.close("LONG", comment = "SIGNAL_EXIT")
+
+if exitShortSig and strategy.position_size < 0
+    lastExit := "趨勢反轉"
+    strategy.close("SHORT", comment = "SIGNAL_EXIT")
+
+// -----------------------------------------------------------------------------
+// 6) 繪圖
+// -----------------------------------------------------------------------------
+plot(showEma ? emaFast : na, "EMA 快線", color = color.new(#f7931a, 0), linewidth = 2)
+plot(showEma ? emaSlow : na, "EMA 慢線", color = color.new(#627eea, 0), linewidth = 2)
+plot(showSt ? stLine : na, "Supertrend", color = color.new(color.teal, 10), linewidth = 2)
+
+plot(showStop and strategy.position_size > 0 ? longStop : na, "多單停損",
+     color = color.new(#ef4444, 0), style = plot.style_linebr, linewidth = 2)
+plot(showStop and strategy.position_size < 0 ? shortStop : na, "空單停損",
+     color = color.new(#ef4444, 0), style = plot.style_linebr, linewidth = 2)
+plot(showStop and strategy.position_size > 0 and useTP ? longTp : na, "多單停利",
+     color = color.new(#22c55e, 0), style = plot.style_linebr, linewidth = 1)
+plot(showStop and strategy.position_size < 0 and useTP ? shortTp : na, "空單停利",
+     color = color.new(#22c55e, 0), style = plot.style_linebr, linewidth = 1)
+
+plotshape(showMarkers and longSig, "做多進場", shape.triangleup, location.belowbar,
+     color = color.new(#22c55e, 0), size = size.small)
+plotshape(showMarkers and shortSig, "做空進場", shape.triangledown, location.abovebar,
+     color = color.new(#ef4444, 0), size = size.small)
+
+hline(0, "零軸", color = color.new(color.gray, 70), linestyle = hline.style_dotted)
+
+// -----------------------------------------------------------------------------
+// 7) 警報
+// -----------------------------------------------------------------------------
+alertcondition(longSig, "CTMA 做多進場", "CTMA LONG {{ticker}} @ {{close}}")
+alertcondition(shortSig, "CTMA 做空進場", "CTMA SHORT {{ticker}} @ {{close}}")
+alertcondition(exitLongSig and strategy.position_size > 0, "CTMA 多單出場", "CTMA EXIT LONG {{ticker}} @ {{close}}")
+alertcondition(exitShortSig and strategy.position_size < 0, "CTMA 空單出場", "CTMA EXIT SHORT {{ticker}} @ {{close}}")
+
+if alertEntry and longSig
+    alert("CTMA LONG " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close - stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertEntry and shortSig
+    alert("CTMA SHORT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close + stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertExit and not (strategy.position_size > 0) and not (strategy.position_size < 0)
+    alert("CTMA FLAT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick),
+         alert.freq_once_per_bar_close)
+
+// -----------------------------------------------------------------------------
+// 8) 資訊面板
+// -----------------------------------------------------------------------------
+var table panel = table.new(position.top_right, 2, 10, border_width = 1,
+     frame_color = color.new(color.gray, 70))
+
+if showPanel and barstate.islast
+    trendTxt = trendBull ? "多頭 ▲" : trendBear ? "空頭 ▼" : "中性 ─"
+    posTxt   = strategy.position_size > 0 ? "多單" :
+         strategy.position_size < 0 ? "空單" : "空手"
+    holdBars = strategy.position_size != 0 and not na(entryBarIdx) ? bar_index - entryBarIdx : na
+
+    table.cell(panel, 0, 0, "CTMA 策略", bgcolor = color.new(#f7931a, 60), text_color = color.white)
+    table.cell(panel, 1, 0, syminfo.ticker, bgcolor = color.new(#f7931a, 60), text_color = color.white)
+
+    table.cell(panel, 0, 1, "趨勢來源")
+    table.cell(panel, 1, 1, trendMode + "：" + trendTxt, text_color = trendBull ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 2, "RSI(" + str.tostring(rsiLen) + ")")
+    table.cell(panel, 1, 2, str.tostring(rsiVal, "#.00"), text_color = rsiVal > 50 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 3, "MACD 柱")
+    table.cell(panel, 1, 3, str.tostring(macdHist, "#.####"), text_color = macdHist > 0 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 4, "ATR(" + str.tostring(atrLen) + ") / ATR%")
+    table.cell(panel, 1, 4, str.tostring(atrVal, format.mintick) + " | " + str.tostring(atrPct, "#.00") + "%",
+         text_color = volOk ? #22c55e : color.gray)
+
+    table.cell(panel, 0, 5, "目前持倉")
+    table.cell(panel, 1, 5, posTxt, text_color = strategy.position_size > 0 ? #22c55e :
+         strategy.position_size < 0 ? #ef4444 : color.gray)
+
+    table.cell(panel, 0, 6, "停損價")
+    table.cell(panel, 1, 6, strategy.position_size > 0 and not na(longStop) ? str.tostring(longStop, format.mintick) :
+         strategy.position_size < 0 and not na(shortStop) ? str.tostring(shortStop, format.mintick) : "—",
+         text_color = #ef4444)
+
+    table.cell(panel, 0, 7, "部位大小模式")
+    table.cell(panel, 1, 7, sizingMode + (sizingMode == "權益比例" ? " " + str.tostring(qtyPct, "#") + "%" :
+         " " + str.tostring(riskPct, "#.##") + "%"))
+
+    table.cell(panel, 0, 8, "本根建議數量")
+    table.cell(panel, 1, 8, str.tostring(qtyUse, "#.####"))
+
+    table.cell(panel, 0, 9, "持有根數 / 上筆出場")
+    table.cell(panel, 1, 9, (strategy.position_size != 0 and not na(holdBars) ? str.tostring(holdBars, "#") : "0") +
+         " / " + lastExit)

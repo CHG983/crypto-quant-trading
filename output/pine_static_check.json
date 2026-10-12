@@ -1,0 +1,269 @@
+{
+  "note": "本結果為靜態分析，非 TradingView 實際編譯；建議貼進 Pine Editor 確認一次。",
+  "files": [
+    {
+      "file": "pine/ctma_indicator.pine",
+      "lines": 341,
+      "checks": [
+        {
+          "name": "A1 Pine 版本宣告",
+          "status": "PASS",
+          "detail": "//@version=6"
+        },
+        {
+          "name": "A2 宣告型別",
+          "status": "PASS",
+          "detail": "indicator() 位於第 23 行"
+        },
+        {
+          "name": "B1 括號／引號配對",
+          "status": "PASS",
+          "detail": "小括號OK · 中括號OK · 大括號OK · 引號OK(282)"
+        },
+        {
+          "name": "C1 縮排一致性",
+          "status": "PASS",
+          "detail": "基礎縮排單位=4；不合規行數=0"
+        },
+        {
+          "name": "D1 var/varip 全在全域",
+          "status": "PASS",
+          "detail": "共 9 個 var 宣告；位於 if/for/while 區塊內者 = 0 ✓"
+        },
+        {
+          "name": "E1 tuple 解構語法",
+          "status": "PASS",
+          "detail": "找到 2 個 tuple 解構：行79 ['stLine', 'stDir'] ← ta.supertrend(); 行82 ['macdLine', 'macdSignal', 'macdHist'] ← ta.macd()"
+        },
+        {
+          "name": "E2 內建函式回傳值數量",
+          "status": "PASS",
+          "detail": "ta.supertrend 雙值解構=True；ta.macd 三值解構=True"
+        },
+        {
+          "name": "F1 hline 用法",
+          "status": "PASS",
+          "detail": "hline() 呼叫 1 次，使用 hlines() 者 0 次 ✓（常數水平線正確用 hline）"
+        },
+        {
+          "name": "F2 plot style 命名空間",
+          "status": "PASS",
+          "detail": "所有 style= 皆使用完整命名空間"
+        },
+        {
+          "name": "F3 plotshape 使用 shape.*",
+          "status": "PASS",
+          "detail": "全部 plotshape 皆指定 shape.*"
+        },
+        {
+          "name": "G1 alertcondition 在全域",
+          "status": "PASS",
+          "detail": "alertcondition 共 6 個；在區塊內者 = 0 ✓"
+        },
+        {
+          "name": "G2 alert() 皆位於條件區塊",
+          "status": "PASS",
+          "detail": "alert() 共 4 個，其中在 if 區塊內者 4 個（須全部在條件內才不會逐根觸發）"
+        },
+        {
+          "name": "G3 alert() 指定頻率",
+          "status": "PASS",
+          "detail": "每個 alert() 皆指定 alert.freq_*"
+        },
+        {
+          "name": "H1 所有 input 皆被使用",
+          "status": "PASS",
+          "detail": "宣告 31 個 input；未被使用 = 0 ✓"
+        },
+        {
+          "name": "H2 群組字串變數皆被使用",
+          "status": "PASS",
+          "detail": "字串常數 6 個；未被使用 = 0 ✓"
+        },
+        {
+          "name": "H3 input 皆有 group",
+          "status": "PASS",
+          "detail": "每個 input 都歸類到群組"
+        },
+        {
+          "name": "I1 未使用 request.security",
+          "status": "PASS",
+          "detail": "完全未使用 request.security → 不存在跨週期 lookahead / repaint 風險"
+        },
+        {
+          "name": "I2 無 lookahead 參數",
+          "status": "PASS",
+          "detail": "未出現 lookahead / barmerge.lookahead"
+        },
+        {
+          "name": "I3 未使用 barmerge.*",
+          "status": "PASS",
+          "detail": "未出現 barmerge.*"
+        },
+        {
+          "name": "I4 歷史引用以 nz() 保護",
+          "status": "PASS",
+          "detail": "history [1] 引用 3 處，未以 nz() 保護者 0 ✓"
+        },
+        {
+          "name": "J0 常見錯誤 lint",
+          "status": "PASS",
+          "detail": "未發現常見錯誤模式"
+        },
+        {
+          "name": "K1 指標版不含 strategy.* 呼叫",
+          "status": "PASS",
+          "detail": "未出現 strategy.* (指標版無法使用交易函式)"
+        },
+        {
+          "name": "K2 指標版自行維護持倉狀態機",
+          "status": "PASS",
+          "detail": "以 var pos 自行模擬多空狀態（指標版無 strategy 引擎可用）"
+        }
+      ],
+      "decl_type": "indicator",
+      "is_indicator": true,
+      "is_strategy": false,
+      "input_count": 31,
+      "pass": 23,
+      "warn": 0,
+      "fail": 0,
+      "total": 23
+    },
+    {
+      "file": "pine/ctma_strategy.pine",
+      "lines": 280,
+      "checks": [
+        {
+          "name": "A1 Pine 版本宣告",
+          "status": "PASS",
+          "detail": "//@version=6"
+        },
+        {
+          "name": "A2 宣告型別",
+          "status": "PASS",
+          "detail": "strategy() 位於第 24 行"
+        },
+        {
+          "name": "B1 括號／引號配對",
+          "status": "PASS",
+          "detail": "小括號OK · 中括號OK · 大括號OK · 引號OK(260)"
+        },
+        {
+          "name": "C1 縮排一致性",
+          "status": "PASS",
+          "detail": "基礎縮排單位=4；不合規行數=0"
+        },
+        {
+          "name": "D1 var/varip 全在全域",
+          "status": "PASS",
+          "detail": "共 7 個 var 宣告；位於 if/for/while 區塊內者 = 0 ✓"
+        },
+        {
+          "name": "E1 tuple 解構語法",
+          "status": "PASS",
+          "detail": "找到 2 個 tuple 解構：行82 ['stLine', 'stDir'] ← ta.supertrend(); 行85 ['macdLine', 'macdSignal', 'macdHist'] ← ta.macd()"
+        },
+        {
+          "name": "E2 內建函式回傳值數量",
+          "status": "PASS",
+          "detail": "ta.supertrend 雙值解構=True；ta.macd 三值解構=True"
+        },
+        {
+          "name": "F1 hline 用法",
+          "status": "PASS",
+          "detail": "hline() 呼叫 1 次，使用 hlines() 者 0 次 ✓（常數水平線正確用 hline）"
+        },
+        {
+          "name": "F2 plot style 命名空間",
+          "status": "PASS",
+          "detail": "所有 style= 皆使用完整命名空間"
+        },
+        {
+          "name": "F3 plotshape 使用 shape.*",
+          "status": "PASS",
+          "detail": "全部 plotshape 皆指定 shape.*"
+        },
+        {
+          "name": "G1 alertcondition 在全域",
+          "status": "PASS",
+          "detail": "alertcondition 共 4 個；在區塊內者 = 0 ✓"
+        },
+        {
+          "name": "G2 alert() 皆位於條件區塊",
+          "status": "PASS",
+          "detail": "alert() 共 3 個，其中在 if 區塊內者 3 個（須全部在條件內才不會逐根觸發）"
+        },
+        {
+          "name": "G3 alert() 指定頻率",
+          "status": "PASS",
+          "detail": "每個 alert() 皆指定 alert.freq_*"
+        },
+        {
+          "name": "H1 所有 input 皆被使用",
+          "status": "PASS",
+          "detail": "宣告 31 個 input；未被使用 = 0 ✓"
+        },
+        {
+          "name": "H2 群組字串變數皆被使用",
+          "status": "PASS",
+          "detail": "字串常數 6 個；未被使用 = 0 ✓"
+        },
+        {
+          "name": "H3 input 皆有 group",
+          "status": "PASS",
+          "detail": "每個 input 都歸類到群組"
+        },
+        {
+          "name": "I1 未使用 request.security",
+          "status": "PASS",
+          "detail": "完全未使用 request.security → 不存在跨週期 lookahead / repaint 風險"
+        },
+        {
+          "name": "I2 無 lookahead 參數",
+          "status": "PASS",
+          "detail": "未出現 lookahead / barmerge.lookahead"
+        },
+        {
+          "name": "I3 未使用 barmerge.*",
+          "status": "PASS",
+          "detail": "未出現 barmerge.*"
+        },
+        {
+          "name": "I4 歷史引用以 nz() 保護",
+          "status": "PASS",
+          "detail": "history [1] 引用 1 處，未以 nz() 保護者 0 ✓"
+        },
+        {
+          "name": "J0 常見錯誤 lint",
+          "status": "PASS",
+          "detail": "未發現常見錯誤模式"
+        },
+        {
+          "name": "K3 策略版含 entry / exit",
+          "status": "PASS",
+          "detail": "strategy.entry=有；strategy.exit=有"
+        },
+        {
+          "name": "K4 策略宣告含成本與資金設定",
+          "status": "PASS",
+          "detail": "已設定 initial_capital / commission_value / slippage"
+        }
+      ],
+      "decl_type": "strategy",
+      "is_indicator": false,
+      "is_strategy": true,
+      "input_count": 31,
+      "pass": 23,
+      "warn": 0,
+      "fail": 0,
+      "total": 23
+    }
+  ],
+  "summary": {
+    "pass": 46,
+    "warn": 0,
+    "fail": 0,
+    "total": 46
+  }
+}

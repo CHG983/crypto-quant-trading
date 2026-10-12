@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>加密貨幣量化交易 · 即時儀表板（瀏覽器直連版）</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#131a2e; --panel2:#1a2238; --line:#2a3554;
+  --tx:#e8ecf7; --dim:#93a0c2; --dim2:#6b7899;
+  --long:#2ec27e; --short:#f66151; --warn:#e5a50a; --info:#62a0ea; --pur:#c061cb;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",
+    "PingFang TC","Microsoft JhengHei",sans-serif;
+  font-size:15px;line-height:1.6;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 18px 64px}
+header.top{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:20px}
+h1{margin:0 0 8px;font-size:clamp(1.35rem,4.2vw,2rem);line-height:1.3;letter-spacing:.2px}
+h2{margin:38px 0 14px;font-size:clamp(1.05rem,3vw,1.35rem);
+   border-left:4px solid var(--info);padding-left:11px;line-height:1.35}
+h3{margin:22px 0 10px;font-size:1.02rem;color:var(--tx)}
+p{margin:9px 0;color:var(--dim)}
+a{color:var(--info)}
+code{background:#0a0f1e;border:1px solid var(--line);border-radius:5px;
+     padding:1px 6px;font-size:.88em;word-break:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:12px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+      padding:4px 11px;font-size:.79rem;color:var(--dim);white-space:nowrap}
+.chip b{color:var(--tx);font-weight:600}
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.75rem;
+       font-weight:700;letter-spacing:.3px}
+.b-long{background:rgba(46,194,126,.16);color:var(--long);border:1px solid rgba(46,194,126,.4)}
+.b-short{background:rgba(246,97,81,.16);color:var(--short);border:1px solid rgba(246,97,81,.4)}
+.b-neut{background:rgba(147,160,194,.14);color:var(--dim);border:1px solid var(--line)}
+.b-warn{background:rgba(229,165,10,.16);color:var(--warn);border:1px solid rgba(229,165,10,.4)}
+.b-info{background:rgba(98,160,234,.16);color:var(--info);border:1px solid rgba(98,160,234,.4)}
+.b-pur{background:rgba(192,97,203,.16);color:var(--pur);border:1px solid rgba(192,97,203,.4)}
+
+/* ---- 即時控制列 ---- */
+.livebar{
+  position:sticky;top:0;z-index:20;background:rgba(11,16,32,.96);
+  backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;
+  padding:13px 15px;margin:14px 0 4px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+}
+.pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;
+      padding:5px 13px;font-size:.82rem;font-weight:600;border:1px solid var(--line);
+      background:var(--panel2);white-space:nowrap}
+.pill .dot{width:9px;height:9px;border-radius:50%;background:var(--dim2);flex:0 0 auto}
+.pill.ok{border-color:rgba(46,194,126,.45);color:var(--long)}
+.pill.ok .dot{background:var(--long);box-shadow:0 0 0 0 rgba(46,194,126,.7);
+  animation:pulse 1.9s infinite}
+.pill.load{border-color:rgba(98,160,234,.45);color:var(--info)}
+.pill.load .dot{background:var(--info);animation:pulse 1s infinite}
+.pill.err{border-color:rgba(246,97,81,.5);color:var(--short)}
+.pill.err .dot{background:var(--short)}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(98,160,234,.6)}
+  70%{box-shadow:0 0 0 7px rgba(98,160,234,0)}
+  100%{box-shadow:0 0 0 0 rgba(98,160,234,0)}
+}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(98,160,234,.3);
+      border-top-color:var(--info);border-radius:50%;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+button{font:inherit;cursor:pointer;border-radius:8px;padding:6px 13px;
+       border:1px solid var(--line);background:var(--panel2);color:var(--tx);
+       font-size:.83rem;font-weight:600;white-space:nowrap}
+button:hover{border-color:var(--info);color:var(--info)}
+button:disabled{opacity:.5;cursor:not-allowed}
+select{font:inherit;font-size:.83rem;background:var(--panel2);color:var(--tx);
+       border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.lbl{font-size:.79rem;color:var(--dim2);white-space:nowrap}
+.cd{font-variant-numeric:tabular-nums;font-weight:700;color:var(--tx)}
+.grow{flex:1 1 auto;min-width:0}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+      padding:16px;min-width:0}
+.card .sym{font-size:1.18rem;font-weight:700;letter-spacing:.4px}
+.card .row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;
+           font-size:.86rem;color:var(--dim)}
+.card .row b{color:var(--tx);font-weight:600;text-align:right;word-break:break-word}
+.hr{height:1px;background:var(--line);margin:11px 0}
+.bar{height:7px;border-radius:4px;background:#0a0f1e;overflow:hidden;margin-top:7px}
+.bar > i{display:block;height:100%;border-radius:4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:11px;margin:14px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.kpi .k{font-size:.72rem;color:var(--dim2);text-transform:uppercase;letter-spacing:.7px}
+.kpi .v{font-size:1.3rem;font-weight:700;margin-top:3px;line-height:1.2}
+.kpi .s{font-size:.74rem;color:var(--dim2);margin-top:2px}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+           border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:.85rem}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);
+      white-space:nowrap}
+th{background:var(--panel2);color:var(--dim);font-weight:600;font-size:.76rem;
+   text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(98,160,234,.05)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.sym{font-weight:600}
+.tl{list-style:none;padding:0;margin:12px 0}
+.tl li{position:relative;padding:0 0 16px 22px;border-left:1px solid var(--line);
+       margin-left:6px}
+.tl li:last-child{border-left-color:transparent;padding-bottom:0}
+.tl li::before{content:"";position:absolute;left:-5px;top:6px;width:9px;height:9px;
+               border-radius:50%;background:var(--info);border:2px solid var(--bg)}
+.tl li.flip::before{background:var(--warn)}
+.tl li.cross::before{background:var(--pur)}
+.tl li.base::before{background:var(--dim2)}
+.tl .t{font-size:.8rem;color:var(--dim2);font-variant-numeric:tabular-nums}
+.tl .m{font-size:.9rem}
+.note{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--warn);
+      border-radius:9px;padding:13px 15px;margin:16px 0;font-size:.87rem;color:var(--dim)}
+.note.ok{border-left-color:var(--long)}
+.note.info{border-left-color:var(--info)}
+.note.err{border-left-color:var(--short)}
+.note b{color:var(--tx)}
+details{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+        padding:12px 15px;margin:14px 0}
+summary{cursor:pointer;font-weight:600;font-size:.92rem}
+details p{font-size:.87rem}
+footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
+       color:var(--dim2);font-size:.82rem}
+.disc{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);
+      border-radius:10px;padding:16px 18px;margin-top:22px;font-size:.86rem;color:var(--dim)}
+.disc b{color:var(--tx)}
+.skel{background:linear-gradient(90deg,#1a2238 25%,#222c47 50%,#1a2238 75%);
+      background-size:200% 100%;animation:sh 1.3s infinite;border-radius:6px;
+      height:14px;margin:7px 0}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.muted{color:var(--dim2);font-size:.85rem}
+.mono{font-variant-numeric:tabular-nums}
+@media (max-width:520px){
+  .wrap{padding:20px 13px 52px}
+  body{font-size:14.5px}
+  .cards{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  table{min-width:640px;font-size:.8rem}
+  th,td{padding:7px 8px}
+  .livebar{gap:8px 10px;padding:11px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>加密貨幣量化交易 · 即時儀表板</h1>
+  <p>即時訊號 · 市場掃描 · 自動化監控 — <b>改由瀏覽器直接呼叫幣安公開 API</b>，
+     策略邏輯（EMA 快慢線 + RSI/MACD 動能 + ATR 風控）在<strong>前端即時重算</strong>，
+     不再使用內嵌的靜態快照。</p>
+  <div class="meta">
+    <span class="chip">資料來源 <b>Binance 公開 API</b></span>
+    <span class="chip">端點 <b>data-api.binance.vision</b></span>
+    <span class="chip">抓取方式 <b>瀏覽器直連（CORS 已開放）</b></span>
+    <span class="chip">免金鑰 <b>是</b></span>
+  </div>
+</header>
+
+<!-- ===== 即時控制列 ===== -->
+<div class="livebar">
+  <span class="pill load" id="statusPill"><span class="dot"></span><span id="statusText">初始化中…</span></span>
+  <button id="refreshBtn" type="button">立即刷新</button>
+  <span class="lbl">自動刷新</span>
+  <select id="intervalSel" aria-label="自動刷新間隔">
+    <option value="15">每 15 秒</option>
+    <option value="30" selected>每 30 秒</option>
+    <option value="60">每 60 秒</option>
+    <option value="120">每 2 分鐘</option>
+    <option value="0">關閉自動刷新</option>
+  </select>
+  <span class="lbl">下次更新</span>
+  <span class="cd" id="countdown">—</span>
+  <span class="grow"></span>
+  <span class="lbl" id="lastUpdate">尚未更新</span>
+</div>
+
+<div class="note info" id="fetchNote">
+  <b>資料抓取狀態：</b><span id="fetchNoteText">正在連線幣安公開端點…</span>
+</div>
+
+<h2>1 · 即時訊號面板（瀏覽器直連）</h2>
+<p class="muted" id="liveMeta">載入中…</p>
+<div class="cards" id="liveCards">
+  <div class="card"><div class="skel" style="width:40%;height:20px"></div>
+    <div class="skel"></div><div class="skel" style="width:80%"></div>
+    <div class="skel" style="width:60%"></div></div>
+  <div class="card"><div class="skel" style="width:40%;height:20px"></div>
+    <div class="skel"></div><div class="skel" style="width:80%"></div>
+    <div class="skel" style="width:60%"></div></div>
+  <div class="card"><div class="skel" style="width:40%;height:20px"></div>
+    <div class="skel"></div><div class="skel" style="width:80%"></div>
+    <div class="skel" style="width:60%"></div></div>
+</div>
+
+<h2>2 · 市場掃描排行（瀏覽器直連）</h2>
+<p class="muted" id="scanMeta">載入中…</p>
+<div class="kpis" id="scanKpis"></div>
+<div class="tablewrap"><table>
+  <thead><tr>
+    <th>標的</th><th>趨勢</th><th>強度</th><th>價格</th>
+    <th>EMA 差距</th><th>RSI</th><th>ATR%</th><th>建議停損</th><th>訊號</th>
+  </tr></thead>
+  <tbody id="scanBody"><tr><td colspan="9" class="muted">載入中…</td></tr></tbody>
+</table></div>
+
+<h2>3 · 自動化監控狀態與訊號時間軸</h2>
+<div class="note">
+  <b>本區塊為歷史資料（非即時）。</b>由 <code>run_monitor.py</code> 執行時寫入的
+  <code>signals_history.jsonl</code> 快照內嵌於本頁產生，<b>不會隨自動刷新更新</b>。
+  時間軸中標示 <span class="badge b-pur">回補</span> 者為<b>由歷史 K 線重放產生</b>的事件
+  —— 事件時間為真實 K 棒時間，但<b>並非當時即時偵測</b>。
+</div>
+<div class="kpis" id="monKpis"></div>
+<h3>最近訊號時間軸</h3>
+<ul class="tl" id="monTimeline"><li class="muted">載入中…</li></ul>
+<h3>監控中標的的當前狀態（歷史快照）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的（含週期）</th><th>趨勢</th><th>強度</th><th>價格</th>
+    <th>ATR%</th><th>訊號</th><th>快照時間 (UTC)</th></tr></thead>
+  <tbody id="monBody"><tr><td colspan="7" class="muted">載入中…</td></tr></tbody>
+</table></div>
+
+<h2>4 · 方法、參數與資料揭露</h2>
+<details open>
+<summary>自動更新架構（與前一版的差異）</summary>
+<p><b>前一版：</b><code>build_dashboard.py</code> 先跑 Python 抓資料、算好一切，
+把結果用 <code>const DATA = {...}</code> 內嵌進 HTML。頁面內容是<b>產生當下的快照</b>，
+重新整理也不會變，除非重新產生整份 HTML。</p>
+<p><b>本版：</b>HTML 內嵌一段完整的策略引擎（<code>live_engine.js</code>），
+在<b>瀏覽器端</b>用 <code>fetch()</code> 直接呼叫幣安 <code>/api/v3/klines</code> 與
+<code>/api/v3/ticker/24hr</code>，取得 K 線後<b>即時重算</b> EMA / RSI / MACD / ATR / Supertrend
+與訊號、強度、停損停利。每 30 秒（可調）自動重算一次，並顯示最後更新時間與倒數。</p>
+<p><b>CORS：</b><code>data-api.binance.vision</code> 回應
+<code>access-control-allow-origin: *</code>，因此<b>不需要任何代理</b>即可直連。
+若您的環境（公司網路、代理、地區限制）擋掉跨域請求，頁面會顯示明確錯誤，
+可改用隨附的 <code>serve_proxy.py</code> 本機代理模式（見下方說明）。</p>
+</details>
+<details>
+<summary>策略邏輯（CTMA，與 Python 端逐值一致）</summary>
+<p>趨勢：EMA 21/55 交叉；動能：RSI(14) 站中軸同側 + MACD 柱方向一致；
+波動度：ATR(14) 用於停損距離與 ATR% 過濾；風控：3×ATR 初始停損、5×ATR 移動停損、選用 6×ATR 停利。</p>
+<p>做多進場：EMA 快線上穿慢線 且 RSI&gt;50 且 MACD 柱&gt;0 且 ATR%≥門檻；
+做空進場：EMA 快線下穿慢線 且 RSI&lt;50 且 MACD 柱&lt;0 且 ATR%≥門檻；
+出場：反向交叉 或 ATR 停損／移動停損／停利。</p>
+<p><b>前端引擎與 Python 逐值比對結果：</b><span id="parityText">載入中…</span></p>
+</details>
+<details>
+<summary>訊號強度計分（0–100）</summary>
+<p><code>分數 = 100 × ( 0.35×趨勢 + 0.30×動能 + 0.20×波動健康度 + 0.15×Supertrend 一致性 )</code></p>
+<p>趨勢以 ATR 正規化（<code>(EMA快−EMA慢)/ATR / 1.5</code>），使不同波動度的幣種可互相比較；
+動能取 RSI 距中軸與 MACD 柱的平均，方向須與趨勢一致；波動健康度在 ATR% 落於
+<code>min_atr_pct</code>～8% 時最高分，過低視為盤整、過高視為狂野。</p>
+<p><b>這是啟發式排序分數，不是機率，也未經校準。</b>用途僅在於把「哪些標的訊號較乾淨」
+排出先後，不可當成勝率估計。</p>
+</details>
+<details>
+<summary>假資料防護：如何確認頁面數字是真的</summary>
+<p>1. 頁面上顯示「最後更新」時間與「資料時間戳」，每次刷新都會變。</p>
+<p>2. 開啟瀏覽器 DevTools → Network，可看到對
+<code>data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&amp;interval=1d</code> 的實際請求與回應。</p>
+<p>3. 網頁沒有任何寫死的價格數字；所有數值都由 <code>CTMA.analyzeBars()</code> 依當下抓到的 K 線算出。</p>
+<p>4. 抓取失敗時，區塊會顯示<b>錯誤訊息而非舊數字</b>，不會用前一次的資料冒充即時值。</p>
+<p>5. 點「立即刷新」後，<b>「最後更新」時間戳每次都會變</b>；<b>K 棒收盤 / 資料延遲</b>欄位也會跟著當下時間重算。
+但請注意：<b>已收盤日線的收盤價在同一交易日內不會變</b>（那是已定案的歷史值），
+因此卡片上的「價格」在盤中重複刷新可能相同 —— 這是正確行為，不是快取。
+真正逐次變動的是未收盤 K 棒的即時市價與各項時間欄位。</p>
+</details>
+
+<div class="disc">
+  <b>⚠ 投資免責聲明</b>
+  <p>本頁所有內容（含即時訊號、掃描排行、監控事件與參數）僅供<b>研究與教育用途</b>，
+  <b>不構成任何投資建議、要約或推薦</b>。訊號基於歷史價格計算，<b>無法預測未來走勢</b>；
+  歷史績效不代表未來表現。回測與訊號系統存在過度擬合、存活者偏差、交易成本估計誤差、
+  流動性假設等固有限制，實際交易結果可能與之顯著不同。即時資料可能因網路、端點或交易所
+  因素延遲、中斷或失真，<b>不可作為唯一交易依據</b>。加密貨幣波動極大，可能導致
+  <b>全部本金損失</b>。任何交易決策應由使用者自行判斷並承擔風險。</p>
+  <p style="margin-bottom:0">All content on this page (including real-time signals, ranking scans, monitored events, and parameters) is intended solely for research and educational purposes and does not constitute investment advice, an offer, or a recommendation. Signals are calculated based on historical prices and cannot predict future trends; past performance is not indicative of future results. Backtesting and signal systems are subject to inherent limitations—such as overfitting, survivorship bias, errors in estimating transaction costs, and liquidity assumptions—meaning actual trading results may differ significantly. Real-time data may be subject to delays, interruptions, or inaccuracies due to network, endpoint, or exchange issues and should not serve as the sole basis for trading decisions. Cryptocurrency markets are highly volatile and carry the risk of a total loss of principal. Users are responsible for making their own trading decisions and assuming all associated risks.</p>
+</div>
+
+<!-- built_by=build_dashboard_v6.py  built_at=2026-10-12T16:17:03Z  engine_sha256=95ab5f688257fb7b122ecd54db552667040b8c83a4d1c0f691391164c8747b6f -->
+<footer>
+  資料來源：Binance 公開 API（<code>data-api.binance.vision</code>，免金鑰），由瀏覽器直接抓取。
+  策略引擎 <code>live_engine.js</code> 內嵌於本頁（建置時比對 SHA-256 確保與受測版本逐字元相同）。
+  頁面由 <code>build_dashboard_v6.py</code> 產生框架，<b>資料於瀏覽器端即時取得</b>。
+</footer>
+
+</div>
+
+<script>
+/* ===================== 內嵌策略引擎（與受測版本同一份原文） ===================== */
+/**
+ * CTMA live engine — 瀏覽器端即時訊號引擎（純計算，無 DOM、無網路）
+ * =================================================================
+ * 把 Python 端 crypto_quant/ 的下列模組逐一移植到 JavaScript：
+ *
+ *   indicators.py      → ema / sma / rsi / macd / atr / supertrend
+ *   strategy.py        → generate_signals（三層過濾：趨勢→動能→波動）
+ *   signal_engine.py   → compute_strength / analyze_frame（趨勢、訊號、強度）
+ *
+ * 設計原則
+ * --------
+ * 1. **與 Python 逐值對齊**：EMA/RSI/ATR 的 pandas `ewm(adjust=False)` 語意、
+ *    Supertrend 的棘輪迴圈、訊號的交集條件全部照抄，並由 `engine_test.mjs`
+ *    對真實幣安資料做逐值比對（容差 1e-9）。
+ * 2. **無未來函數**：所有指標與訊號只使用「當根與過去」的 K 棒。
+ * 3. **可測試**：本檔不含任何網路或 DOM 存取，可在 Node 直接 require 後受測。
+ *    儀表板中的版本是由 build_dashboard_v6.py 直接「內嵌」本檔原文，
+ *    因此「受測的程式碼」與「上線的程式碼」逐字元相同（建置時會驗證雜湊）。
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.CTMA = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VOL_WILD_CAP_PCT = 8.0;
+  var WEIGHTS = { trend: 0.35, momentum: 0.30, volatility: 0.20, supertrend: 0.15 };
+  var TREND_LABELS = { 1: 'LONG', '-1': 'SHORT', 0: 'NEUTRAL' };
+  var SIGNAL_LABELS = { 1: 'BULL_CROSS', '-1': 'BEAR_CROSS', 0: 'HOLD' };
+
+  /* ------------------------------------------------------------------ *
+   * 基礎工具
+   * ------------------------------------------------------------------ */
+
+  function isNum(v) { return typeof v === 'number' && Number.isFinite(v); }
+
+  function clamp(x, lo, hi) {
+    lo = lo === undefined ? 0 : lo;
+    hi = hi === undefined ? 1 : hi;
+    if (!isNum(x)) return 0;
+    return Math.max(lo, Math.min(hi, x));
+  }
+
+  function round(x, nd) {
+    if (!isNum(x)) return null;
+    var f = Math.pow(10, nd);
+    return Math.round(x * f) / f;
+  }
+
+  function strengthLabel(score) {
+    if (score >= 75) return '極強';
+    if (score >= 60) return '強';
+    if (score >= 45) return '中';
+    if (score >= 30) return '弱';
+    return '極弱';
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 移動平均
+   * ------------------------------------------------------------------ */
+
+  /** 等同 pandas `s.ewm(span=length, adjust=False).mean()`（TradingView ta.ema）。 */
+  function ema(values, length) {
+    var n = values.length, out = new Array(n).fill(NaN);
+    var a = 2 / (length + 1);
+    var prev = NaN;
+    for (var i = 0; i < n; i++) {
+      var v = values[i];
+      if (!isNum(v)) { out[i] = NaN; continue; }
+      prev = isNum(prev) ? (1 - a) * prev + a * v : v;
+      out[i] = prev;
+    }
+    return out;
+  }
+
+  /** 等同 pandas `s.ewm(alpha=alpha, adjust=False, min_periods=mp).mean()`。 */
+  function ewmAlpha(values, alpha, minPeriods) {
+    var n = values.length, out = new Array(n).fill(NaN);
+    var prev = NaN, seen = 0;
+    for (var i = 0; i < n; i++) {
+      var v = values[i];
+      if (!isNum(v)) { out[i] = NaN; continue; }
+      prev = isNum(prev) ? (1 - alpha) * prev + alpha * v : v;
+      seen += 1;
+      out[i] = seen >= minPeriods ? prev : NaN;
+    }
+    return out;
+  }
+
+  function sma(values, length) {
+    var n = values.length, out = new Array(n).fill(NaN), sum = 0;
+    for (var i = 0; i < n; i++) {
+      sum += isNum(values[i]) ? values[i] : NaN;
+      if (i >= length) sum -= isNum(values[i - length]) ? values[i - length] : NaN;
+      out[i] = i >= length - 1 ? sum / length : NaN;
+    }
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 動能指標
+   * ------------------------------------------------------------------ */
+
+  /** Wilder RSI（等同 TradingView ta.rsi）。 */
+  function rsi(close, length) {
+    var n = close.length;
+    var gain = new Array(n).fill(NaN), loss = new Array(n).fill(NaN);
+    for (var i = 1; i < n; i++) {
+      var d = close[i] - close[i - 1];
+      if (!isNum(d)) continue;
+      gain[i] = d > 0 ? d : 0;
+      loss[i] = d < 0 ? -d : 0;
+    }
+    var ag = ewmAlpha(gain, 1 / length, length);
+    var al = ewmAlpha(loss, 1 / length, length);
+    var out = new Array(n).fill(NaN);
+    for (var j = 0; j < n; j++) {
+      var g = ag[j], l = al[j];
+      if (!isNum(g) || !isNum(l)) { out[j] = NaN; continue; }
+      if (l === 0 && g > 0) out[j] = 100;
+      else if (l === 0 && g === 0) out[j] = 50;
+      else out[j] = 100 - 100 / (1 + g / l);
+    }
+    return out;
+  }
+
+  /** 回傳 { macd, signal, hist }。 */
+  function macd(close, fast, slow, signalLen) {
+    var ef = ema(close, fast), es = ema(close, slow);
+    var n = close.length, line = new Array(n);
+    for (var i = 0; i < n; i++) line[i] = ef[i] - es[i];
+    var sig = ema(line, signalLen);
+    var hist = new Array(n);
+    for (var j = 0; j < n; j++) hist[j] = line[j] - sig[j];
+    return { macd: line, signal: sig, hist: hist };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 波動度與趨勢
+   * ------------------------------------------------------------------ */
+
+  function trueRange(high, low, close) {
+    var n = close.length, tr = new Array(n).fill(NaN);
+    for (var i = 0; i < n; i++) {
+      var hl = high[i] - low[i];
+      var cands = [hl];
+      if (i > 0 && isNum(close[i - 1])) {
+        cands.push(Math.abs(high[i] - close[i - 1]));
+        cands.push(Math.abs(low[i] - close[i - 1]));
+      }
+      tr[i] = Math.max.apply(null, cands.filter(isNum));
+    }
+    return tr;
+  }
+
+  /** Wilder ATR（等同 TradingView ta.atr）。 */
+  function atr(high, low, close, length) {
+    return ewmAlpha(trueRange(high, low, close), 1 / length, length);
+  }
+
+  /** 回傳 { st, dir }；dir 為 +1（多頭）或 -1（空頭）。 */
+  function supertrend(high, low, close, length, multiplier) {
+    var n = close.length;
+    var a = atr(high, low, close, length);
+    var st = new Array(n).fill(NaN);
+    var dir = new Array(n).fill(1);
+    var fu = new Array(n).fill(NaN), fl = new Array(n).fill(NaN);
+
+    for (var i = 0; i < n; i++) {
+      if (!isNum(a[i])) continue;
+      var hl2 = (high[i] + low[i]) / 2;
+      var ub = hl2 + multiplier * a[i];
+      var lb = hl2 - multiplier * a[i];
+
+      if (i === 0 || !isNum(fu[i - 1])) {
+        fu[i] = ub; fl[i] = lb; dir[i] = 1; st[i] = fl[i];
+        continue;
+      }
+      fu[i] = (ub < fu[i - 1] || close[i - 1] > fu[i - 1]) ? ub : fu[i - 1];
+      fl[i] = (lb > fl[i - 1] || close[i - 1] < fl[i - 1]) ? lb : fl[i - 1];
+
+      if (dir[i - 1] === 1) dir[i] = close[i] < fl[i] ? -1 : 1;
+      else dir[i] = close[i] > fu[i] ? 1 : -1;
+      st[i] = dir[i] === 1 ? fl[i] : fu[i];
+    }
+    return { st: st, dir: dir };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 參數預設值（與 StrategyParams / BacktestConfig 一致）
+   * ------------------------------------------------------------------ */
+
+  function defaultParams(over) {
+    var p = {
+      ema_fast: 21, ema_slow: 55,
+      rsi_len: 14, rsi_long_min: 50.0, rsi_short_max: 50.0,
+      macd_fast: 12, macd_slow: 26, macd_signal: 9,
+      atr_len: 14, atr_stop_mult: 3.0, atr_trail_mult: 5.0, atr_tp_mult: 6.0,
+      min_atr_pct: 0.5,
+      allow_short: true,
+      use_supertrend: false, st_len: 10, st_mult: 3.0,
+      near_trigger_pct: 0.5
+    };
+    if (over) for (var k in over) if (Object.prototype.hasOwnProperty.call(over, k)) p[k] = over[k];
+    return p;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 指標與訊號
+   * ------------------------------------------------------------------ */
+
+  function addIndicators(bars, p) {
+    var close = bars.map(function (b) { return b.close; });
+    var high = bars.map(function (b) { return b.high; });
+    var low = bars.map(function (b) { return b.low; });
+    var out = {
+      ema_fast: ema(close, p.ema_fast),
+      ema_slow: ema(close, p.ema_slow),
+      rsi: rsi(close, p.rsi_len),
+      atr: atr(high, low, close, p.atr_len)
+    };
+    var m = macd(close, p.macd_fast, p.macd_slow, p.macd_signal);
+    out.macd = m.macd; out.macd_signal = m.signal; out.macd_hist = m.hist;
+    out.atr_pct = out.atr.map(function (v, i) { return v / close[i] * 100; });
+    var stRes = supertrend(high, low, close, p.st_len, p.st_mult);
+    out.supertrend = stRes.st; out.st_dir = stRes.dir;
+    out.close = close; out.high = high; out.low = low;
+    return out;
+  }
+
+  /**
+   * 產生訊號（三層語意，與 strategy.py 完全一致）：
+   *   bull_cross / bear_cross  狀態翻轉（無條件平倉）
+   *   long_entry_ok / short_entry_ok  動能＋波動度過濾是否通過（決定是否開新倉）
+   *   signal  1=看多翻轉, -1=看空翻轉, 0=無
+   */
+  function generateSignals(bars, p) {
+    var ind = addIndicators(bars, p);
+    var n = bars.length;
+    var bull = new Array(n).fill(false), bear = new Array(n).fill(false);
+    var longOk = new Array(n).fill(false), shortOk = new Array(n).fill(false);
+    var signal = new Array(n).fill(0);
+
+    for (var i = 0; i < n; i++) {
+      var ef = ind.ema_fast[i], es = ind.ema_slow[i];
+      if (i === 0) continue;
+      var efP = ind.ema_fast[i - 1], esP = ind.ema_slow[i - 1];
+      if (!isNum(ef) || !isNum(es) || !isNum(efP) || !isNum(esP)) continue;
+      var cu = (ef > es) && (efP <= esP);
+      var cd = (ef < es) && (efP >= esP);
+      if (p.use_supertrend) {
+        cu = cu && ind.st_dir[i] === 1;
+        cd = cd && ind.st_dir[i] === -1;
+      }
+      bull[i] = cu; bear[i] = cd;
+
+      var ap = ind.atr_pct[i], rv = ind.rsi[i], h = ind.macd_hist[i], a = ind.atr[i];
+      var volOk = isNum(ap) && ap >= p.min_atr_pct;
+      var warm = isNum(es) && isNum(a) && isNum(rv);
+      longOk[i] = cu && isNum(rv) && rv > p.rsi_long_min && isNum(h) && h > 0 && volOk && warm;
+      shortOk[i] = cd && isNum(rv) && rv < p.rsi_short_max && isNum(h) && h < 0 && volOk && warm && !!p.allow_short;
+
+      signal[i] = cu ? 1 : (cd ? -1 : 0);
+    }
+    return {
+      ind: ind, bull: bull, bear: bear,
+      long_entry_ok: longOk, short_entry_ok: shortOk, signal: signal,
+      bars: bars, params: p
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 訊號強度（0–100，複刻 signal_engine.compute_strength）
+   * ------------------------------------------------------------------ */
+
+  function computeStrength(row, trend, p) {
+    var atrV = row.atr, close = row.close;
+    if (!isNum(atrV) || atrV <= 0 || !isNum(close) || close <= 0) {
+      return { trend: 0, momentum: 0, volatility: 0, supertrend: 0, total: 0, label: 'N/A' };
+    }
+
+    var spreadAtr = (row.ema_fast - row.ema_slow) / atrV;
+    var t = trend > 0 ? clamp(spreadAtr / 1.5) : (trend < 0 ? clamp(-spreadAtr / 1.5) : 0);
+
+    var rv = row.rsi, hist = row.macd_hist, r = 0, m = 0;
+    if (isNum(rv) && isNum(hist)) {
+      if (trend > 0) { r = clamp((rv - 50) / 20); m = clamp(hist / (0.5 * atrV)); }
+      else if (trend < 0) { r = clamp((50 - rv) / 20); m = clamp(-hist / (0.5 * atrV)); }
+    }
+    var mom = (r + m) / 2;
+
+    var ap = row.atr_pct, v;
+    if (!isNum(ap)) v = 0;
+    else {
+      var lo = p.min_atr_pct;
+      if (ap < lo) v = 0;
+      else if (ap <= VOL_WILD_CAP_PCT) v = clamp(0.6 + 0.4 * ((ap - lo) / Math.max(VOL_WILD_CAP_PCT - lo, 1e-9)));
+      else v = clamp(1 - ((ap - VOL_WILD_CAP_PCT) / VOL_WILD_CAP_PCT));
+    }
+    if (trend === 0) v *= 0.5;
+
+    var st = 0;
+    if (trend !== 0 && isNum(row.st_dir) && row.st_dir === (trend > 0 ? 1 : -1)) st = 1;
+
+    var total = 100 * (WEIGHTS.trend * t + WEIGHTS.momentum * mom + WEIGHTS.volatility * v + WEIGHTS.supertrend * st);
+    return {
+      trend: round(t, 3), momentum: round(mom, 3), volatility: round(v, 3),
+      supertrend: st, total: round(total, 1), label: strengthLabel(total)
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 單一 K 棒序列的完整分析（複刻 signal_engine._analyze_frame）
+   * ------------------------------------------------------------------ */
+
+  function barsSince(flags, upto) {
+    for (var i = upto; i >= 0; i--) if (flags[i]) return upto - i;
+    return null;
+  }
+
+  function rowAt(sig, i) {
+    var ind = sig.ind;
+    return {
+      close: ind.close[i], high: ind.high[i], low: ind.low[i],
+      ema_fast: ind.ema_fast[i], ema_slow: ind.ema_slow[i],
+      rsi: ind.rsi[i], macd: ind.macd[i], macd_signal: ind.macd_signal[i],
+      macd_hist: ind.macd_hist[i], atr: ind.atr[i], atr_pct: ind.atr_pct[i],
+      st_dir: ind.st_dir[i], supertrend: ind.supertrend[i]
+    };
+  }
+
+  function analyzeFrame(bars, p) {
+    var sig = generateSignals(bars, p);
+    var i = bars.length - 1;
+    var row = rowAt(sig, i);
+
+    var ef = row.ema_fast, es = row.ema_slow, close = row.close;
+    var trend = (isNum(ef) && isNum(es)) ? (ef > es ? 1 : (ef < es ? -1 : 0)) : 0;
+
+    var strength = computeStrength(row, trend, p);
+    var bullAgo = barsSince(sig.bull, i), bearAgo = barsSince(sig.bear, i);
+
+    var lastCross = null;
+    if (bullAgo !== null && (bearAgo === null || bullAgo <= bearAgo)) lastCross = { type: 'BULL_CROSS', bars_ago: bullAgo };
+    else if (bearAgo !== null) lastCross = { type: 'BEAR_CROSS', bars_ago: bearAgo };
+
+    // 該次交叉「當下」是否通過動能＋波動度過濾（回看交叉當根與前一根）
+    function entryPassed(flags, ago) {
+      if (ago === null) return false;
+      var j = i - ago, lo = Math.max(0, j - 1);
+      return !!(flags[j] || flags[lo]);
+    }
+
+    var emaGapPct = (isNum(ef) && isNum(es) && close > 0) ? (ef - es) / close * 100 : NaN;
+    var spreadAtr = (isNum(ef) && isNum(es) && isNum(row.atr) && row.atr > 0) ? (ef - es) / row.atr : NaN;
+
+    return {
+      trend: trend,
+      trend_label: TREND_LABELS[trend],
+      price: round(close, 8),
+      ema_fast: isNum(ef) ? round(ef, 8) : null,
+      ema_slow: isNum(es) ? round(es, 8) : null,
+      ema_gap_pct: isNum(emaGapPct) ? round(emaGapPct, 4) : null,
+      ema_spread_atr: isNum(spreadAtr) ? round(spreadAtr, 4) : null,
+      rsi: isNum(row.rsi) ? round(row.rsi, 2) : null,
+      macd: isNum(row.macd) ? round(row.macd, 6) : null,
+      macd_signal: isNum(row.macd_signal) ? round(row.macd_signal, 6) : null,
+      macd_hist: isNum(row.macd_hist) ? round(row.macd_hist, 6) : null,
+      atr: isNum(row.atr) ? round(row.atr, 8) : null,
+      atr_pct: isNum(row.atr_pct) ? round(row.atr_pct, 4) : null,
+      st_dir: isNum(row.st_dir) ? row.st_dir : null,
+      supertrend: isNum(row.supertrend) ? round(row.supertrend, 8) : null,
+      signal: sig.signal[i],
+      signal_label: SIGNAL_LABELS[sig.signal[i]],
+      long_entry_ok: !!sig.long_entry_ok[i],
+      short_entry_ok: !!sig.short_entry_ok[i],
+      last_cross: lastCross,
+      entry_passes: {
+        long: entryPassed(sig.long_entry_ok, bullAgo),
+        short: entryPassed(sig.short_entry_ok, bearAgo)
+      },
+      strength: strength
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 對單一標的輸出完整即時狀態（複刻 signal_engine.analyze_symbol 的
+   * 訊號／風控部分；帳戶持倉推導不在前端做，已在報告中明確標示）
+   * ------------------------------------------------------------------ */
+
+  function analyzeBars(bars, symbol, opts) {
+    opts = opts || {};
+    var p = opts.params || defaultParams();
+    var interval = opts.interval || '1d';
+    var nowMs = opts.nowMs || Date.now();
+    var serverTimeMs = opts.serverTimeMs;
+    var source = opts.source || 'browser-direct:data-api.binance.vision';
+
+    if (!bars || bars.length < 60) {
+      throw new Error('K 線不足（' + (bars ? bars.length : 0) + ' 根）');
+    }
+
+    var last = bars[bars.length - 1];
+    var barOpenMs = last.openTime;
+    var barCloseMs = last.closeTime;
+    var barIsClosed = !!last.isClosed;
+
+    var provisional = analyzeFrame(bars, p);
+
+    var closed = bars.filter(function (b) { return b.isClosed; });
+    var confirmed = closed.length >= 60 ? analyzeFrame(closed, p) : null;
+
+    var prim = confirmed || provisional;
+
+    // 風控關卡必須以「主口徑」那根 K 棒為基準（prim === confirmed 時即為已收盤的
+    // 最後一根），否則卡片會顯示 confirmed 的價格，卻用 provisional 的 ATR 算停損，
+    // 導致畫面上的停損與價格對不上（真實缺陷，已修正）。
+    var atrV = prim.atr, price = prim.price, trend = prim.trend;
+    var levels = null;
+    if (isNum(atrV) && isNum(price) && trend !== 0) {
+      var stop, tp;
+      if (trend > 0) { stop = price - p.atr_stop_mult * atrV; tp = price + p.atr_tp_mult * atrV; }
+      else { stop = price + p.atr_stop_mult * atrV; tp = price - p.atr_tp_mult * atrV; }
+      var risk = Math.abs(price - stop), reward = Math.abs(tp - price);
+      levels = {
+        entry_ref: round(price, 8), stop: round(stop, 8), take_profit: round(tp, 8),
+        risk_distance: round(risk, 8), risk_pct: price ? round(risk / price * 100, 4) : null,
+        reward_distance: round(reward, 8), reward_pct: price ? round(reward / price * 100, 4) : null,
+        rr_ratio: risk > 0 ? round(reward / risk, 3) : null,
+        stop_mult: p.atr_stop_mult, tp_mult: p.atr_tp_mult
+      };
+    }
+
+    var gap = prim.ema_gap_pct;
+    var near = isNum(gap) && prim.signal === 0 && trend !== 0
+      && Math.abs(gap) < p.near_trigger_pct;
+
+    var delayS = (nowMs - barCloseMs) / 1000;
+
+    return {
+      symbol: symbol, interval: interval, source: source,
+      fetched_at_utc: new Date(nowMs).toISOString(),
+      binance_server_time_utc: serverTimeMs ? new Date(serverTimeMs).toISOString() : null,
+      clock_offset_seconds: serverTimeMs ? round((nowMs - serverTimeMs) / 1000, 3) : null,
+      bar_open_utc: new Date(barOpenMs).toISOString(),
+      bar_close_utc: new Date(barCloseMs).toISOString(),
+      bar_is_in_progress: !barIsClosed,
+      bar_progress_pct: round(clamp((nowMs - barOpenMs) / (barCloseMs - barOpenMs) * 100, 0, 100), 1),
+      data_delay_seconds: round(delayS, 1),
+      data_delay_human: humanDelay(delayS),
+      near_trigger: !!near,
+      near_trigger_threshold_pct: p.near_trigger_pct,
+      provisional: provisional,
+      confirmed: confirmed,
+      trend: prim.trend, trend_label: prim.trend_label,
+      signal: prim.signal, signal_label: prim.signal_label,
+      strength: prim.strength,
+      levels: levels,
+      repaint: !!(confirmed && confirmed.signal !== provisional.signal),
+      bars_used: bars.length,
+      bars_closed: closed.length
+    };
+  }
+
+  function humanDelay(seconds) {
+    var s = Math.abs(seconds);
+    if (s < 1) return s.toFixed(2) + ' 秒';
+    if (s < 90) return s.toFixed(1) + ' 秒';
+    if (s < 5400) return (s / 60).toFixed(1) + ' 分鐘';
+    if (s < 172800) return (s / 3600).toFixed(2) + ' 小時';
+    return (s / 86400).toFixed(2) + ' 天';
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 市場掃描的排行邏輯（複刻 scanner.py）
+   * ------------------------------------------------------------------ */
+
+  var STABLE_BASES = {
+    USDC: 1, USD1: 1, RLUSD: 1, TUSD: 1, FDUSD: 1, BUSD: 1, DAI: 1, USDP: 1,
+    PYUSD: 1, USDE: 1, SUSDE: 1, USDD: 1, USTC: 1, USDX: 1, XUSD: 1, AEUR: 1,
+    EURI: 1, EUR: 1, USDY: 1, USDM: 1, USDR: 1, GUSD: 1, LUSD: 1, FRAX: 1,
+    USDS: 1, USDG: 1, USDQ: 1, USD0: 1, SUSD: 1, CRVUSD: 1, GHO: 1, DOLA: 1,
+    UST: 1, MIM: 1, ALUSD: 1, USDF: 1, USDZ: 1, BUIDL: 1
+  };
+  var MIN_SCAN_ATR_PCT = 0.30;
+
+  function isStablecoin(symbol) {
+    if (!/USDT$/.test(symbol)) return false;
+    return !!STABLE_BASES[symbol.slice(0, -4)];
+  }
+
+  function topSymbolsByVolume(tickers, n, minQuoteVolume, excludeStable) {
+    n = n || 25;
+    minQuoteVolume = minQuoteVolume === undefined ? 5e6 : minQuoteVolume;
+    excludeStable = excludeStable === undefined ? true : excludeStable;
+    var rows = [];
+    for (var sym in tickers) {
+      if (!/USDT$/.test(sym)) continue;
+      if (excludeStable && isStablecoin(sym)) continue;
+      var base = sym.slice(0, -4);
+      if (/UP|DOWN|BULL|BEAR/.test(base)) continue;
+      var t = tickers[sym];
+      var qv = parseFloat(t.quoteVolume), lastPx = parseFloat(t.lastPrice);
+      if (!Number.isFinite(qv) || !Number.isFinite(lastPx)) continue;
+      if (qv < minQuoteVolume || lastPx <= 0) continue;
+      rows.push({ symbol: sym, quoteVolume: qv, lastPrice: lastPx, changePct: parseFloat(t.priceChangePercent) || 0 });
+    }
+    rows.sort(function (a, b) { return b.quoteVolume - a.quoteVolume; });
+    return rows.slice(0, n);
+  }
+
+  function rowOf(r) {
+    var c = r.confirmed || r.provisional;
+    var lv = r.levels || {};
+    return {
+      symbol: r.symbol, trend: c.trend_label, signal: c.signal_label,
+      strength: c.strength.total, strength_label: c.strength.label,
+      price: c.price, ema_gap_pct: c.ema_gap_pct, ema_spread_atr: c.ema_spread_atr,
+      rsi: c.rsi, macd_hist: c.macd_hist, atr_pct: c.atr_pct,
+      near_trigger: r.near_trigger, repaint: r.repaint,
+      stop: lv.stop === undefined ? null : lv.stop,
+      take_profit: lv.take_profit === undefined ? null : lv.take_profit,
+      rr_ratio: lv.rr_ratio === undefined ? null : lv.rr_ratio,
+      trend_int: c.trend,
+      data_delay_seconds: r.data_delay_seconds,
+      bar_is_in_progress: r.bar_is_in_progress
+    };
+  }
+
+  function buildRankings(results, topN) {
+    topN = topN || 8;
+    var rows = results.map(rowOf);
+    var longs = rows.filter(function (x) { return x.trend_int === 1; })
+      .sort(function (a, b) { return b.strength - a.strength; });
+    var shorts = rows.filter(function (x) { return x.trend_int === -1; })
+      .sort(function (a, b) { return b.strength - a.strength; });
+    var near = rows.filter(function (x) { return x.near_trigger; })
+      .sort(function (a, b) {
+        return Math.abs(a.ema_gap_pct === null ? 9e9 : a.ema_gap_pct) - Math.abs(b.ema_gap_pct === null ? 9e9 : b.ema_gap_pct);
+      });
+    var strongest = rows.slice().sort(function (a, b) { return b.strength - a.strength; });
+    var fresh = rows.filter(function (x) { return x.signal !== 'HOLD'; });
+    return {
+      total_scanned: rows.length,
+      long_count: longs.length, short_count: shorts.length,
+      neutral_count: rows.length - longs.length - shorts.length,
+      near_trigger_count: near.length, fresh_signal_count: fresh.length,
+      top_long: longs.slice(0, topN), top_short: shorts.slice(0, topN),
+      top_near: near.slice(0, topN), top_strength: strongest.slice(0, topN),
+      all_rows: rows
+    };
+  }
+
+  return {
+    // 指標
+    ema: ema, sma: sma, rsi: rsi, macd: macd, atr: atr, supertrend: supertrend,
+    trueRange: trueRange, ewmAlpha: ewmAlpha, addIndicators: addIndicators,
+    // 訊號
+    generateSignals: generateSignals, analyzeFrame: analyzeFrame,
+    analyzeBars: analyzeBars, computeStrength: computeStrength,
+    // 掃描
+    rowOf: rowOf, buildRankings: buildRankings,
+    topSymbolsByVolume: topSymbolsByVolume, isStablecoin: isStablecoin,
+    // 常數 / 工具
+    defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
+    WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
+    VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
+    VERSION: '1.0.0'
+  };
+});
+
+/* ===================== 內嵌歷史資料（僅供第 3 節，非即時） ===================== */
+const HISTORY = {"monitor":{"run_at_utc":"2026-10-12T06:43:37.213434","last_run_utc":"2026-10-12T06:43:37.213434","list_source":"top20_by_quote_volume","interval":"1h","scanned":20,"failed":null,"event_count":null,"events":[],"tracked_symbols":{"BTCUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":49.6,"price":84022.0,"atr_pct":0.3639,"near_trigger":true,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"ETHUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":70.6,"price":2565.3,"atr_pct":0.5304,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"NEARUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":79.3,"price":5.893,"atr_pct":2.1532,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"ZECUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":79.4,"price":1334.45,"atr_pct":1.4429,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"SOLUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":57.2,"price":112.86,"atr_pct":0.7398,"near_trigger":true,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"STRKUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":68.1,"price":0.10627,"atr_pct":6.2629,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"XRPUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":39.2,"price":1.4136,"atr_pct":0.6304,"near_trigger":true,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"SUIUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":47.6,"price":1.1276,"atr_pct":1.1744,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"BNBUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":29.5,"price":753.6,"atr_pct":0.3909,"near_trigger":true,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"ENAUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":67.8,"price":0.2396,"atr_pct":2.1237,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"SUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":75.1,"price":0.06094,"atr_pct":4.8112,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"UNIUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":46.9,"price":7.742,"atr_pct":1.2819,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"WUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":97.2,"price":0.02803,"atr_pct":5.393,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"WLDUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":47.8,"price":0.554,"atr_pct":1.7375,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"MAGICUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":61.2,"price":0.1209,"atr_pct":7.2216,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"AVAXUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":79.3,"price":11.051,"atr_pct":1.0162,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"DOGEUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":55.0,"price":0.08765,"atr_pct":0.6941,"near_trigger":true,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"CFXUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":64.6,"price":0.06293,"atr_pct":3.7939,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"ONDOUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":72.3,"price":0.5245,"atr_pct":1.6906,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"},"TAOUSDT@1h":{"trend_label":"LONG","trend_int":1,"signal_label":"HOLD","strength":80.7,"price":299.9,"atr_pct":1.1279,"near_trigger":false,"bar_is_in_progress":true,"seen_at_utc":"2026-10-12T06:43:37.213434"}},"symbol_count":20,"notification":{"mode":"file_only","file_written":true,"webhook":null,"telegram":null,"note":"未提供 webhook 或 Telegram 憑證，通知僅寫入本機 state.json / signals_history.jsonl / monitor.log。**並未對外發送任何訊息。**"},"history_recent":[{"symbol":"BTCUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":49.6,"price":84022.0,"atr_pct":0.3639,"stop":83104.11272764,"take_profit":85836.80454472,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.4 分鐘","position_side":null,"state_key":"BTCUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"ETHUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":70.6,"price":2565.3,"atr_pct":0.5304,"stop":2523.98553816,"take_profit":2646.39892368,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":null,"state_key":"ETHUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"NEARUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":79.3,"price":5.893,"atr_pct":2.1532,"stop":5.46460251,"take_profit":6.58479498,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"NEARUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"ZECUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":79.4,"price":1334.45,"atr_pct":1.4429,"stop":1269.81169029,"take_profit":1440.17661942,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"ZECUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"SOLUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":57.2,"price":112.86,"atr_pct":0.7398,"stop":109.96044899,"take_profit":117.45910202,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"SOLUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"STRKUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":68.1,"price":0.10627,"atr_pct":6.2629,"stop":0.08737076,"take_profit":0.14427848,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"STRKUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"XRPUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":39.2,"price":1.4136,"atr_pct":0.6304,"stop":1.384704,"take_profit":1.464192,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"XRPUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"SUIUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":47.6,"price":1.1276,"atr_pct":1.1744,"stop":1.08551014,"take_profit":1.20157972,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"SUIUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"BNBUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":29.5,"price":753.6,"atr_pct":0.3909,"stop":745.28868176,"take_profit":771.90263648,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":null,"state_key":"BNBUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"ENAUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":67.8,"price":0.2396,"atr_pct":2.1237,"stop":0.22078968,"take_profit":0.26672064,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"ENAUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"SUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":75.1,"price":0.06094,"atr_pct":4.8112,"stop":0.05392528,"take_profit":0.08009944,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"SUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"UNIUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":46.9,"price":7.742,"atr_pct":1.2819,"stop":7.39318003,"take_profit":8.28363994,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":"LONG","state_key":"UNIUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"WUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":97.2,"price":0.02803,"atr_pct":5.393,"stop":0.02476612,"take_profit":0.03950776,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":null,"state_key":"WUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"WLDUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":47.8,"price":0.554,"atr_pct":1.7375,"stop":0.52094238,"take_profit":0.60601524,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":"LONG","state_key":"WLDUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"MAGICUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":61.2,"price":0.1209,"atr_pct":7.2216,"stop":0.09467813,"take_profit":0.16944374,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":null,"state_key":"MAGICUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"AVAXUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":79.3,"price":11.051,"atr_pct":1.0162,"stop":10.69487753,"take_profit":11.67324494,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":"LONG","state_key":"AVAXUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"DOGEUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":55.0,"price":0.08765,"atr_pct":0.6941,"stop":0.0856237,"take_profit":0.0910426,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"DOGEUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"CFXUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":64.6,"price":0.06293,"atr_pct":3.7939,"stop":0.05665551,"take_profit":0.07721898,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"CFXUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"ONDOUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":72.3,"price":0.5245,"atr_pct":1.6906,"stop":0.49295555,"take_profit":0.5725889,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"ONDOUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"TAOUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":80.7,"price":299.9,"atr_pct":1.1279,"stop":288.75544512,"take_profit":318.88910976,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"TAOUSDT@1h","note":"首次建立基準，非狀態變化"},{"symbol":"MAGICUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.0469,"atr_pct":4.8815,"stop":0.04003177,"take_profit":null,"detected_at_utc":"2026-09-19T00:00:00","bar_open_utc":"2026-09-19T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"MAGICUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:39.751606","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.4203,"atr_pct":6.1068,"stop":0.34329914,"take_profit":null,"detected_at_utc":"2026-09-19T00:00:00","bar_open_utc":"2026-09-19T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"SUIUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.8575,"atr_pct":6.0033,"stop":0.70306419,"take_profit":null,"detected_at_utc":"2026-09-19T00:00:00","bar_open_utc":"2026-09-19T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"SUIUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:31.255726","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"MAGICUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"SHORT","to_trend":"LONG","from_signal":"HOLD","to_signal":"BULL_CROSS","strength":null,"price":0.0456,"atr_pct":5.0357,"stop":0.03871114,"take_profit":null,"detected_at_utc":"2026-09-18T00:00:00","bar_open_utc":"2026-09-18T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"MAGICUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:39.751606","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"SHORT","to_trend":"LONG","from_signal":"HOLD","to_signal":"BULL_CROSS","strength":null,"price":0.3987,"atr_pct":5.9682,"stop":0.32731446,"take_profit":null,"detected_at_utc":"2026-09-18T00:00:00","bar_open_utc":"2026-09-18T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"SUIUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"SHORT","to_trend":"LONG","from_signal":"HOLD","to_signal":"BULL_CROSS","strength":null,"price":0.8144,"atr_pct":6.0498,"stop":0.66659221,"take_profit":null,"detected_at_utc":"2026-09-18T00:00:00","bar_open_utc":"2026-09-18T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"SUIUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:31.255726","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"MAGICUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"SHORT","to_trend":"SHORT","from_signal":"BEAR_CROSS","to_signal":"HOLD","strength":null,"price":0.0435,"atr_pct":5.2428,"stop":0.05034185,"take_profit":null,"detected_at_utc":"2026-09-17T00:00:00","bar_open_utc":"2026-09-17T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"MAGICUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:39.751606","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"MAGICUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"LONG","to_trend":"SHORT","from_signal":"HOLD","to_signal":"BEAR_CROSS","strength":null,"price":0.0421,"atr_pct":5.505,"stop":0.04905276,"take_profit":null,"detected_at_utc":"2026-09-16T00:00:00","bar_open_utc":"2026-09-16T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"MAGICUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:39.751606","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"SHORT","to_trend":"SHORT","from_signal":"BEAR_CROSS","to_signal":"HOLD","strength":null,"price":0.3475,"atr_pct":6.4773,"stop":0.41502583,"take_profit":null,"detected_at_utc":"2026-09-16T00:00:00","bar_open_utc":"2026-09-16T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"SUIUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"SHORT","to_trend":"SHORT","from_signal":"BEAR_CROSS","to_signal":"HOLD","strength":null,"price":0.7135,"atr_pct":6.6479,"stop":0.85579898,"take_profit":null,"detected_at_utc":"2026-09-16T00:00:00","bar_open_utc":"2026-09-16T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"SUIUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:31.255726","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"LONG","to_trend":"SHORT","from_signal":"HOLD","to_signal":"BEAR_CROSS","strength":null,"price":0.3282,"atr_pct":6.7693,"stop":0.3948509,"take_profit":null,"detected_at_utc":"2026-09-15T00:00:00","bar_open_utc":"2026-09-15T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"SUIUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"LONG","to_trend":"SHORT","from_signal":"HOLD","to_signal":"BEAR_CROSS","strength":null,"price":0.6869,"atr_pct":6.983,"stop":0.8307989,"take_profit":null,"detected_at_utc":"2026-09-15T00:00:00","bar_open_utc":"2026-09-15T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"SUIUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:31.255726","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"STRKUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.02796,"atr_pct":8.7926,"stop":0.02058477,"take_profit":null,"detected_at_utc":"2026-09-10T00:00:00","bar_open_utc":"2026-09-10T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"STRKUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:28.841409","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"STRKUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"SHORT","to_trend":"LONG","from_signal":"HOLD","to_signal":"BULL_CROSS","strength":null,"price":0.03126,"atr_pct":7.5884,"stop":0.02414359,"take_profit":null,"detected_at_utc":"2026-09-09T00:00:00","bar_open_utc":"2026-09-09T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"STRKUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:28.841409","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"WUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.01042,"atr_pct":6.1413,"stop":0.00850024,"take_profit":null,"detected_at_utc":"2026-09-06T00:00:00","bar_open_utc":"2026-09-06T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"WUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:37.215653","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"WUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"SHORT","to_trend":"LONG","from_signal":"HOLD","to_signal":"BULL_CROSS","strength":null,"price":0.01014,"atr_pct":6.1591,"stop":0.00826641,"take_profit":null,"detected_at_utc":"2026-09-05T00:00:00","bar_open_utc":"2026-09-05T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"WUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:37.215653","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.3576,"atr_pct":6.6065,"stop":0.2867259,"take_profit":null,"detected_at_utc":"2026-09-04T00:00:00","bar_open_utc":"2026-09-04T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"SHORT","to_trend":"LONG","from_signal":"BEAR_CROSS","to_signal":"BULL_CROSS","strength":null,"price":0.363,"atr_pct":6.5829,"stop":0.29131251,"take_profit":null,"detected_at_utc":"2026-09-03T00:00:00","bar_open_utc":"2026-09-03T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"ONDOUSDT","interval":"1d","change_type":"TREND_FLIP","from_trend":"LONG","to_trend":"SHORT","from_signal":"HOLD","to_signal":"BEAR_CROSS","strength":null,"price":0.3484,"atr_pct":6.7902,"stop":0.41937114,"take_profit":null,"detected_at_utc":"2026-09-02T00:00:00","bar_open_utc":"2026-09-02T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"SHORT","state_key":"ONDOUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:44.446330","note":"由歷史 K 線回補產生（非當時即時偵測）"},{"symbol":"MAGICUSDT","interval":"1d","change_type":"NEW_CROSS","from_trend":"LONG","to_trend":"LONG","from_signal":"BULL_CROSS","to_signal":"HOLD","strength":null,"price":0.0456,"atr_pct":6.4325,"stop":0.0368003,"take_profit":null,"detected_at_utc":"2026-08-31T00:00:00","bar_open_utc":"2026-08-31T00:00:00","bar_close_utc":null,"bar_is_in_progress":false,"data_delay_human":null,"position_side":"LONG","state_key":"MAGICUSDT@1d","replayed":true,"source_kind":"backfilled_history","recorded_at_utc":"2026-10-12T06:44:39.751606","note":"由歷史 K 線回補產生（非當時即時偵測）"}],"last_signal_per_symbol":{"BTCUSDT":{"symbol":"BTCUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":49.6,"price":84022.0,"atr_pct":0.3639,"stop":83104.11272764,"take_profit":85836.80454472,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.4 分鐘","position_side":null,"state_key":"BTCUSDT@1h","note":"首次建立基準，非狀態變化"},"ETHUSDT":{"symbol":"ETHUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":70.6,"price":2565.3,"atr_pct":0.5304,"stop":2523.98553816,"take_profit":2646.39892368,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":null,"state_key":"ETHUSDT@1h","note":"首次建立基準，非狀態變化"},"NEARUSDT":{"symbol":"NEARUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":79.3,"price":5.893,"atr_pct":2.1532,"stop":5.46460251,"take_profit":6.58479498,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"NEARUSDT@1h","note":"首次建立基準，非狀態變化"},"ZECUSDT":{"symbol":"ZECUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":79.4,"price":1334.45,"atr_pct":1.4429,"stop":1269.81169029,"take_profit":1440.17661942,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"ZECUSDT@1h","note":"首次建立基準，非狀態變化"},"SOLUSDT":{"symbol":"SOLUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":57.2,"price":112.86,"atr_pct":0.7398,"stop":109.96044899,"take_profit":117.45910202,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"SOLUSDT@1h","note":"首次建立基準，非狀態變化"},"STRKUSDT":{"symbol":"STRKUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":68.1,"price":0.10627,"atr_pct":6.2629,"stop":0.08737076,"take_profit":0.14427848,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.3 分鐘","position_side":"LONG","state_key":"STRKUSDT@1h","note":"首次建立基準，非狀態變化"},"XRPUSDT":{"symbol":"XRPUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":39.2,"price":1.4136,"atr_pct":0.6304,"stop":1.384704,"take_profit":1.464192,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"XRPUSDT@1h","note":"首次建立基準，非狀態變化"},"SUIUSDT":{"symbol":"SUIUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":47.6,"price":1.1276,"atr_pct":1.1744,"stop":1.08551014,"take_profit":1.20157972,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"SUIUSDT@1h","note":"首次建立基準，非狀態變化"},"BNBUSDT":{"symbol":"BNBUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":29.5,"price":753.6,"atr_pct":0.3909,"stop":745.28868176,"take_profit":771.90263648,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":null,"state_key":"BNBUSDT@1h","note":"首次建立基準，非狀態變化"},"ENAUSDT":{"symbol":"ENAUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":67.8,"price":0.2396,"atr_pct":2.1237,"stop":0.22078968,"take_profit":0.26672064,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"ENAUSDT@1h","note":"首次建立基準，非狀態變化"},"SUSDT":{"symbol":"SUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":75.1,"price":0.06094,"atr_pct":4.8112,"stop":0.05392528,"take_profit":0.08009944,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.2 分鐘","position_side":"LONG","state_key":"SUSDT@1h","note":"首次建立基準，非狀態變化"},"UNIUSDT":{"symbol":"UNIUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":46.9,"price":7.742,"atr_pct":1.2819,"stop":7.39318003,"take_profit":8.28363994,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":"LONG","state_key":"UNIUSDT@1h","note":"首次建立基準，非狀態變化"},"WUSDT":{"symbol":"WUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":97.2,"price":0.02803,"atr_pct":5.393,"stop":0.02476612,"take_profit":0.03950776,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":null,"state_key":"WUSDT@1h","note":"首次建立基準，非狀態變化"},"WLDUSDT":{"symbol":"WLDUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":47.8,"price":0.554,"atr_pct":1.7375,"stop":0.52094238,"take_profit":0.60601524,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":"LONG","state_key":"WLDUSDT@1h","note":"首次建立基準，非狀態變化"},"MAGICUSDT":{"symbol":"MAGICUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":61.2,"price":0.1209,"atr_pct":7.2216,"stop":0.09467813,"take_profit":0.16944374,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":null,"state_key":"MAGICUSDT@1h","note":"首次建立基準，非狀態變化"},"AVAXUSDT":{"symbol":"AVAXUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":79.3,"price":11.051,"atr_pct":1.0162,"stop":10.69487753,"take_profit":11.67324494,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.1 分鐘","position_side":"LONG","state_key":"AVAXUSDT@1h","note":"首次建立基準，非狀態變化"},"DOGEUSDT":{"symbol":"DOGEUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":55.0,"price":0.08765,"atr_pct":0.6941,"stop":0.0856237,"take_profit":0.0910426,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"DOGEUSDT@1h","note":"首次建立基準，非狀態變化"},"CFXUSDT":{"symbol":"CFXUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":64.6,"price":0.06293,"atr_pct":3.7939,"stop":0.05665551,"take_profit":0.07721898,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"CFXUSDT@1h","note":"首次建立基準，非狀態變化"},"ONDOUSDT":{"symbol":"ONDOUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":72.3,"price":0.5245,"atr_pct":1.6906,"stop":0.49295555,"take_profit":0.5725889,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"ONDOUSDT@1h","note":"首次建立基準，非狀態變化"},"TAOUSDT":{"symbol":"TAOUSDT","interval":"1h","change_type":"BASELINE","from_trend":null,"to_trend":"LONG","from_signal":null,"to_signal":"HOLD","strength":80.7,"price":299.9,"atr_pct":1.1279,"stop":288.75544512,"take_profit":318.88910976,"detected_at_utc":"2026-10-12T06:43:37.213434","bar_open_utc":"2026-10-12T06:00:00","bar_close_utc":"2026-10-12T06:59:59.999000","bar_is_in_progress":true,"data_delay_human":"16.0 分鐘","position_side":"LONG","state_key":"TAOUSDT@1h","note":"首次建立基準，非狀態變化"}},"history_total":91,"snapshot_mode":"rebuilt_from_history"},"parity":{"status":"ALL PASS","summary":"34/34 項檢查通過（最大殘差 5.09e-11，位於 BTCUSDT 1d / ema_slow）"}};
+
+/* ===================== 即時資料層 ===================== */
+const API_BASES = ['https://data-api.binance.vision'];
+const LIVE_SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT'];
+const KLINE_LIMIT = 400;
+const SCAN_TOP_N = 25;
+const SCAN_CONCURRENCY = 6;
+
+const state = {
+  intervalMs: 30000,
+  timer: null,
+  countdownTimer: null,
+  nextAt: 0,
+  busy: false,
+  lastOk: null,
+  lastErr: null,
+  proxyMode: false
+};
+
+function $(id){ return document.getElementById(id); }
+
+function fmtNum(x, nd){
+  if (x === null || x === undefined || !Number.isFinite(Number(x))) return '—';
+  const n = Number(x);
+  const d = nd === undefined ? 4 : nd;
+  return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmtPct(x, nd){
+  if (x === null || x === undefined || !Number.isFinite(Number(x))) return '—';
+  return fmtNum(x, nd === undefined ? 2 : nd) + '%';
+}
+function esc(s){
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+function utcNow(){ return new Date().toISOString().replace('Z',' UTC').replace('T',' '); }
+function trendBadge(t){
+  if (t === 'LONG') return '<span class="badge b-long">多頭</span>';
+  if (t === 'SHORT') return '<span class="badge b-short">空頭</span>';
+  return '<span class="badge b-neut">中性</span>';
+}
+function strengthColor(s){
+  if (!Number.isFinite(s)) return 'var(--dim)';
+  if (s >= 75) return 'var(--long)';
+  if (s >= 60) return '#7fd6a8';
+  if (s >= 45) return 'var(--warn)';
+  if (s >= 30) return '#e08a5a';
+  return 'var(--short)';
+}
+function setStatus(kind, text){
+  const p = $('statusPill');
+  p.className = 'pill ' + (kind === 'ok' ? 'ok' : kind === 'err' ? 'err' : 'load');
+  $('statusText').textContent = text;
+}
+function setNote(kind, html){
+  const n = $('fetchNote');
+  n.className = 'note' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : kind === 'info' ? ' info' : '');
+  $('fetchNoteText').innerHTML = html;
+}
+
+/* ---- HTTP：直連優先，失敗則嘗試本機代理 ---- */
+async function getJson(pathAndQuery){
+  const errors = [];
+  const bases = state.proxyMode ? ['/binance'] : API_BASES;
+  for (const b of bases){
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 15000);
+      const r = await fetch(b + pathAndQuery, {signal: ctl.signal, cache:'no-store'});
+      clearTimeout(to);
+      if (!r.ok) { errors.push(b + ' → HTTP ' + r.status); continue; }
+      return await r.json();
+    } catch (e){
+      errors.push(b + ' → ' + (e && e.name === 'AbortError' ? '逾時' : (e && e.message) || String(e)));
+    }
+  }
+  throw new Error(errors.join(' ; '));
+}
+
+async function fetchServerTime(){
+  try { const j = await getJson('/api/v3/time'); return Number(j.serverTime); }
+  catch(e){ return null; }
+}
+
+async function fetchKlines(symbol, interval, limit){
+  const raw = await getJson('/api/v3/klines?symbol=' + encodeURIComponent(symbol)
+    + '&interval=' + interval + '&limit=' + limit);
+  if (!Array.isArray(raw) || raw.length === 0) throw new Error('回傳空資料');
+  const now = Date.now();
+  return raw.map(r => ({
+    openTime: r[0], open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5],
+    closeTime: r[6], isClosed: r[6] < now
+  }));
+}
+
+async function fetchTickers(){
+  const raw = await getJson('/api/v3/ticker/24hr');
+  const map = {};
+  (Array.isArray(raw) ? raw : [raw]).forEach(t => { map[t.symbol] = t; });
+  return map;
+}
+
+/* ---- 併發限流的 map ---- */
+async function mapLimit(items, limit, fn){
+  const out = new Array(items.length);
+  let i = 0;
+  async function worker(){
+    while (true){
+      const k = i++;
+      if (k >= items.length) return;
+      try { out[k] = {ok:true, value: await fn(items[k], k)}; }
+      catch(e){ out[k] = {ok:false, error: (e && e.message) || String(e)}; }
+    }
+  }
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, worker));
+  return out;
+}
+
+/* ===================== 渲染 ===================== */
+function renderLive(list, serverTimeMs, intervalLabel){
+  $('liveMeta').innerHTML =
+    '即時 · 由瀏覽器直連幣安 <code>/api/v3/klines</code> 取得，於前端重算 · '
+    + '週期 <b>' + esc(intervalLabel) + '</b> · '
+    + '幣安伺服器時間 <b>' + (serverTimeMs ? new Date(serverTimeMs).toISOString().replace('T',' ').slice(0,19) + ' UTC' : '—')
+    + '</b>';
+
+  $('liveCards').innerHTML = list.map(x => {
+    const c = x.analysis.confirmed || x.analysis.provisional;
+    const lv = x.analysis.levels;
+    const st = c.strength;
+    const badge = x.analysis.bar_is_in_progress
+      ? '<span class="badge b-warn">K 棒未收盤</span>' : '<span class="badge b-neut">已收盤</span>';
+    const rp = x.analysis.repaint ? ' <span class="badge b-short">與確認版不一致</span>' : '';
+    return '<div class="card">'
+      + '<div class="row" style="align-items:baseline">'
+      +   '<span class="sym">' + esc(x.symbol) + '</span>'
+      +   '<span>' + trendBadge(c.trend_label) + rp + '</span>'
+      + '</div>'
+      + '<div class="hr"></div>'
+      + '<div class="row"><span>價格</span><b>' + fmtNum(c.price, 6) + '</b></div>'
+      + '<div class="row"><span>訊號</span><b>' + esc(c.signal_label) + '</b></div>'
+      + '<div class="row"><span>強度</span><b style="color:' + strengthColor(st.total) + '">'
+      +   fmtNum(st.total, 1) + ' (' + esc(st.label) + ')</b></div>'
+      + '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, st.total))
+      +   '%;background:' + strengthColor(st.total) + '"></i></div>'
+      + '<div class="hr"></div>'
+      + '<div class="row"><span>EMA 快 / 慢</span><b>' + fmtNum(c.ema_fast, 4) + ' / ' + fmtNum(c.ema_slow, 4) + '</b></div>'
+      + '<div class="row"><span>EMA 差距</span><b>' + fmtPct(c.ema_gap_pct, 3)
+      +   (c.ema_spread_atr !== null ? ' (' + fmtNum(c.ema_spread_atr, 3) + ' ATR)' : '') + '</b></div>'
+      + '<div class="row"><span>RSI / MACD 柱</span><b>' + fmtNum(c.rsi, 2) + ' / ' + fmtNum(c.macd_hist, 6) + '</b></div>'
+      + '<div class="row"><span>ATR%</span><b>' + fmtPct(c.atr_pct, 3) + '</b></div>'
+      + '<div class="row"><span>Supertrend</span><b>' + (c.st_dir === 1 ? '多頭' : c.st_dir === -1 ? '空頭' : '—') + '</b></div>'
+      + (lv ? '<div class="hr"></div>'
+          + '<div class="row"><span>建議停損</span><b>' + fmtNum(lv.stop, 6)
+          +   ' (−' + fmtPct(lv.risk_pct, 2) + ')</b></div>'
+          + '<div class="row"><span>建議停利</span><b>' + fmtNum(lv.take_profit, 6)
+          +   ' (+' + fmtPct(lv.reward_pct, 2) + ')</b></div>'
+          + '<div class="row"><span>風險報酬比</span><b>' + fmtNum(lv.rr_ratio, 2) + ' : 1</b></div>'
+        : '<div class="hr"></div><div class="row"><span>建議停損 / 停利</span><b>中性，不提供</b></div>')
+      + '<div class="hr"></div>'
+      + '<div class="row"><span>最後一次交叉</span><b>'
+      +   (c.last_cross ? esc(c.last_cross.type === 'BULL_CROSS' ? '看多' : '看空')
+          + ' · ' + c.last_cross.bars_ago + ' 根前' : '—')
+      +   (c.entry_passes && (c.entry_passes.long || c.entry_passes.short)
+          ? ' <span class="badge b-info">當時過濾通過</span>' : '') + '</b></div>'
+      + '<div class="row"><span>K 棒收盤</span><b>' + esc(x.analysis.bar_close_utc.replace('T',' ').slice(0,19)) + '</b></div>'
+      + '<div class="row"><span>資料延遲</span><b>' + esc(x.analysis.data_delay_human)
+      +   (x.analysis.bar_is_in_progress ? '（距收盤）' : '（距收盤已過）') + '</b></div>'
+      + '<div class="row"><span>狀態</span><b>' + badge + '</b></div>'
+      + '</div>';
+  }).join('');
+}
+
+function renderScan(rankings, listMeta){
+  const s = rankings;
+  $('scanMeta').innerHTML =
+    '即時 · 瀏覽器直連 <code>/api/v3/ticker/24hr</code> 取 24h 成交量前 '
+    + SCAN_TOP_N + ' 名（濾除穩定幣與槓桿代幣），再逐檔抓 K 線於前端重算 · '
+    + '排序依據為 <b>24 小時 USDT 計價成交量</b>（幣安公開 API 不提供市值）· '
+    + '<b>共 ' + s.total_scanned + ' 檔</b>';
+
+  $('scanKpis').innerHTML = [
+    ['掃描標的', s.total_scanned, '檔'],
+    ['多頭排列', s.long_count, '檔'],
+    ['空頭排列', s.short_count, '檔'],
+    ['中性', s.neutral_count, '檔'],
+    ['接近觸發', s.near_trigger_count, 'EMA 差距 < 0.5%'],
+    ['本次交叉訊號', s.fresh_signal_count, '檔'],
+  ].map(([k,v,sub]) =>
+    '<div class="kpi"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v)
+    + '</div><div class="s">' + esc(sub) + '</div></div>').join('');
+
+  const rows = s.all_rows.slice().sort((a,b) => b.strength - a.strength);
+  $('scanBody').innerHTML = rows.length
+    ? rows.map(r =>
+      '<tr>'
+      + '<td class="sym">' + esc(r.symbol) + '</td>'
+      + '<td>' + trendBadge(r.trend) + '</td>'
+      + '<td class="num" style="color:' + strengthColor(r.strength) + '">' + fmtNum(r.strength, 1) + '</td>'
+      + '<td class="num">' + fmtNum(r.price, 6) + '</td>'
+      + '<td class="num">' + fmtPct(r.ema_gap_pct, 3) + '</td>'
+      + '<td class="num">' + fmtNum(r.rsi, 2) + '</td>'
+      + '<td class="num">' + fmtPct(r.atr_pct, 3) + '</td>'
+      + '<td class="num">' + (r.stop === null ? '—' : fmtNum(r.stop, 6)) + '</td>'
+      + '<td>' + esc(r.signal) + (r.near_trigger ? ' <span class="badge b-warn">近</span>' : '') + '</td>'
+      + '</tr>').join('')
+    : '<tr><td colspan="9" class="muted">無資料（可能全部被過濾或抓取失敗）</td></tr>';
+}
+
+function renderHistory(){
+  const H = HISTORY || {};
+  const mon = H.monitor || {};
+  $('monKpis').innerHTML = [
+    ['快照時間', (mon.run_at_utc || '—').replace('T',' ').slice(0,19), 'UTC'],
+    ['監控標的', mon.symbol_count || 0, '檔'],
+    ['歷史事件總數', mon.history_total || 0, '筆'],
+    ['本輪變化事件', (mon.events || []).length, '筆'],
+    ['通知模式', (mon.notification && mon.notification.mode) || '—', '未對外發送'],
+    ['快照來源', mon.snapshot_mode || '—', mon.interval ? ('週期 ' + mon.interval) : ''],
+  ].map(([k,v,sub]) =>
+    '<div class="kpi"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v)
+    + '</div><div class="s">' + esc(sub) + '</div></div>').join('');
+
+  const ev = (mon.history_recent || []).slice(0, 30);
+  $('monTimeline').innerHTML = ev.length ? ev.map(e => {
+    const cls = e.change_type === 'TREND_FLIP' ? 'flip'
+      : e.change_type === 'NEW_CROSS' ? 'cross' : 'base';
+    const lbl = e.change_type === 'TREND_FLIP' ? '趨勢翻轉'
+      : e.change_type === 'NEW_CROSS' ? '新交叉訊號'
+      : e.change_type === 'BASELINE' ? '基準建立' : esc(e.change_type);
+    const msg = e.change_type === 'BASELINE'
+      ? ('建立基準：' + esc(e.to_trend) + ' / ' + esc(e.to_signal))
+      : (lbl + '：' + esc(e.from_trend || '—') + ' → ' + esc(e.to_trend || '—'));
+    return '<li class="' + cls + '">'
+      + '<div class="t">' + esc((e.detected_at_utc || '').replace('T',' ').slice(0,19)) + ' UTC'
+      + ' &nbsp;·&nbsp; ' + esc(e.symbol)
+      + ' &nbsp;·&nbsp; <span class="badge b-neut">' + esc(e.interval) + '</span>'
+      + (e.replayed ? ' <span class="badge b-pur">回補</span>' : '')
+      + ' <span class="badge b-info">歷史</span></div>'
+      + '<div class="m">' + msg
+      + ' &nbsp;|&nbsp; 分數 ' + (e.strength === null || e.strength === undefined ? '—' : fmtNum(e.strength,1))
+      + ' &nbsp;|&nbsp; 價格 ' + fmtNum(e.price, 6)
+      + ' &nbsp;|&nbsp; ATR% ' + fmtNum(e.atr_pct, 2) + '</div></li>';
+  }).join('') : '<li class="muted">無歷史事件</li>';
+
+  const tracked = mon.tracked_symbols || {};
+  const keys = Object.keys(tracked).sort((a,b) => (tracked[b].strength||0) - (tracked[a].strength||0));
+  $('monBody').innerHTML = keys.length ? keys.map(k => {
+    const t = tracked[k];
+    return '<tr>'
+      + '<td class="sym">' + esc(k) + '</td>'
+      + '<td>' + trendBadge(t.trend_label) + '</td>'
+      + '<td class="num" style="color:' + strengthColor(t.strength) + '">' + fmtNum(t.strength, 1) + '</td>'
+      + '<td class="num">' + fmtNum(t.price, 6) + '</td>'
+      + '<td class="num">' + fmtPct(t.atr_pct, 3) + '</td>'
+      + '<td>' + esc(t.signal_label) + (t.near_trigger ? ' <span class="badge b-warn">近</span>' : '') + '</td>'
+      + '<td class="mono">' + esc((t.seen_at_utc || '').replace('T',' ').slice(0,19)) + '</td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="7" class="muted">無監控資料</td></tr>';
+
+  const par = (H.parity || null);
+  $('parityText').innerHTML = par
+    ? ('<b>' + esc(par.status) + '</b> — ' + esc(par.summary))
+    : '見專案 <code>live_web/engine_test.mjs</code> 的執行輸出。';
+}
+
+/* ===================== 主流程 ===================== */
+async function refreshAll(){
+  if (state.busy) return;
+  state.busy = true;
+  $('refreshBtn').disabled = true;
+  setStatus('load', '抓取中…');
+  setNote('info', '正在向幣安公開端點請求 K 線與報價…');
+
+  const t0 = Date.now();
+  try {
+    const serverTimeMs = await fetchServerTime();
+
+    // --- 即時訊號（3 檔，序列抓取以貼近 Python 行為並避免尖峰） ---
+    const liveResults = [];
+    const liveErrors = [];
+    for (const sym of LIVE_SYMBOLS){
+      try {
+        const bars = await fetchKlines(sym, '1d', KLINE_LIMIT);
+        const a = CTMA.analyzeBars(bars, sym, {
+          interval: '1d', nowMs: Date.now(), serverTimeMs
+        });
+        liveResults.push({symbol: sym, analysis: a});
+      } catch(e){
+        liveErrors.push(sym + '：' + ((e && e.message) || e));
+      }
+    }
+
+    // --- 市場掃描 ---
+    let rankings = null, scanErrors = [];
+    try {
+      const tickers = await fetchTickers();
+      const top = CTMA.topSymbolsByVolume(tickers, SCAN_TOP_N);
+      const res = await mapLimit(top.map(t => t.symbol), SCAN_CONCURRENCY, async (sym) => {
+        const bars = await fetchKlines(sym, '1d', KLINE_LIMIT);
+        return CTMA.analyzeBars(bars, sym, {interval:'1d', nowMs: Date.now(), serverTimeMs});
+      });
+      const ok = [];
+      res.forEach((r, i) => {
+        if (r && r.ok) ok.push(r.value);
+        else scanErrors.push(top[i].symbol + '：' + ((r && r.error) || '未知錯誤'));
+      });
+      rankings = CTMA.buildRankings(ok, 8);
+    } catch(e){
+      scanErrors.push('ticker/24hr：' + ((e && e.message) || e));
+    }
+
+    const dt = ((Date.now() - t0) / 1000).toFixed(1);
+
+    if (liveResults.length) renderLive(liveResults, serverTimeMs, '1d');
+    if (rankings) renderScan(rankings, null);
+
+    // 暴露結構化結果供自動化驗證讀取（不影響畫面）
+    window.__CTMA_DASH__.lastLive = liveResults.map(x => {
+      const c = x.analysis.confirmed || x.analysis.provisional;
+      const pv = x.analysis.provisional;
+      return {
+        symbol: x.symbol,
+        row_source: x.analysis.confirmed ? 'confirmed' : 'provisional',
+        // 主口徑（已收盤那根）——同一交易日內不會變
+        price: c.price, atr: c.atr, atr_pct: c.atr_pct,
+        stop: x.analysis.levels ? x.analysis.levels.stop : null,
+        stop_mult: x.analysis.levels ? x.analysis.levels.stop_mult : null,
+        risk_pct: x.analysis.levels ? x.analysis.levels.risk_pct : null,
+        trend: c.trend, strength: c.strength.total,
+        bar_is_in_progress: x.analysis.bar_is_in_progress,
+        // 即時（未收盤那根）——每次刷新都應反映當下市價
+        live_price: pv.price,
+        live_strength: pv.strength.total,
+        bar_open_utc: x.analysis.bar_open_utc,
+        fetched_at_utc: x.analysis.fetched_at_utc
+      };
+    });
+    window.__CTMA_DASH__.lastScanMeta = rankings ? {
+      total_scanned: rankings.total_scanned,
+      long_count: rankings.long_count, short_count: rankings.short_count,
+      fresh_signal_count: rankings.fresh_signal_count
+    } : null;
+
+    const parts = [];
+    parts.push('即時訊號 <b>' + liveResults.length + '/' + LIVE_SYMBOLS.length + '</b> 檔成功');
+    if (rankings) parts.push('市場掃描 <b>' + rankings.total_scanned + '</b> 檔成功');
+    parts.push('耗時 <b>' + dt + ' 秒</b>');
+    const allErr = liveErrors.concat(scanErrors);
+    if (allErr.length){
+      setNote('err', parts.join(' · ') + '<br><b>部分失敗：</b>'
+        + esc(allErr.slice(0,5).join('；'))
+        + (allErr.length > 5 ? '（其餘 ' + (allErr.length-5) + ' 筆略）' : ''));
+    } else {
+      setNote('ok', parts.join(' · ') + ' — 全部由瀏覽器即時抓取並於前端重算，<b>非內嵌快照</b>。');
+    }
+
+    if (!liveResults.length && !rankings){
+      setStatus('err', '抓取失敗');
+      state.lastErr = new Date();
+    } else {
+      setStatus('ok', '即時資料正常');
+      state.lastOk = new Date();
+      state.lastErr = null;
+    }
+  } catch(e){
+    setStatus('err', '抓取失敗');
+    state.lastErr = new Date();
+    setNote('err', '<b>無法取得資料：</b>' + esc((e && e.message) || String(e))
+      + '<br>可能原因：網路中斷、跨域被擋（CORS）、端點暫時不可用或所在地區限制。'
+      + '<br>本頁<b>不會以舊資料冒充即時值</b>；請按「立即刷新」重試。'
+      + '若持續失敗，可改用隨附的 <code>serve_proxy.py</code> 本機代理模式。');
+  } finally {
+    state.busy = false;
+    $('refreshBtn').disabled = false;
+    $('lastUpdate').innerHTML = '最後更新 <b>'
+      + (state.lastOk ? state.lastOk.toISOString().replace('T',' ').slice(0,19) + ' UTC' : '—') + '</b>';
+    state.nextAt = Date.now() + state.intervalMs;
+    updateCountdown();
+  }
+}
+
+function updateCountdown(){
+  const el = $('countdown');
+  if (!state.intervalMs){ el.textContent = '已關閉'; return; }
+  const left = Math.max(0, state.nextAt - Date.now());
+  el.textContent = (left / 1000).toFixed(0) + ' 秒';
+}
+
+function restartTimers(){
+  if (state.timer) clearInterval(state.timer);
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  state.nextAt = Date.now() + state.intervalMs;
+  if (state.intervalMs > 0){
+    state.timer = setInterval(() => { refreshAll(); }, state.intervalMs);
+    state.countdownTimer = setInterval(updateCountdown, 250);
+  }
+  updateCountdown();
+}
+
+/* ---- 事件綁定 ---- */
+$('refreshBtn').addEventListener('click', () => {
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
+});
+$('intervalSel').addEventListener('change', (e) => {
+  state.intervalMs = Number(e.target.value) * 1000;
+  restartTimers();
+});
+
+/* ---- 啟動 ---- */
+renderHistory();
+restartTimers();
+refreshAll();
+
+/* 供自動化驗證讀取（不影響使用者） */
+window.__CTMA_DASH__ = {
+  state,
+  refresh: refreshAll,
+  engineVersion: CTMA.VERSION,
+  lastPayload: () => ({
+    lastOk: state.lastOk ? state.lastOk.toISOString() : null,
+    liveCards: document.querySelectorAll('#liveCards .card').length,
+    scanRows: document.querySelectorAll('#scanBody tr').length,
+    firstCardText: (document.querySelector('#liveCards .card') || {}).textContent || ''
+  })
+};
+</script>
+</body>
+</html>

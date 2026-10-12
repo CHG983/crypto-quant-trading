@@ -1,0 +1,298 @@
+{
+  "generated_at_utc": "2026-10-12T07:13:48.828Z",
+  "tool": "engine_test.mjs",
+  "engine_version": "1.0.0",
+  "tolerance": {
+    "numeric": 1e-9,
+    "percent": 0.000001
+  },
+  "total_checks": 34,
+  "failed_checks": 0,
+  "status": "ALL PASS",
+  "max_abs_delta": 5.093170329928398e-11,
+  "max_abs_delta_at": "BTCUSDT 1d / ema_slow",
+  "pairs": [
+    {
+      "label": "BTCUSDT 1d",
+      "checks": [
+        {
+          "name": "ema_fast",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 4.3655745685100555e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "ema_slow",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 5.093170329928398e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "rsi",
+          "passed": true,
+          "n": 386,
+          "max_abs_delta": 4.9901416332431836e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "macd",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 5.002220859751105e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "macd_signal",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 4.990852175978944e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "macd_hist",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 4.990852175978944e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "atr",
+          "passed": true,
+          "n": 387,
+          "max_abs_delta": 5.002220859751105e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "atr_pct",
+          "passed": true,
+          "n": 387,
+          "max_abs_delta": 4.9960480197341894e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "supertrend",
+          "passed": true,
+          "n": 391,
+          "max_abs_delta": 4.3655745685100555e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "st_dir",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 0,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "bull_cross",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "bear_cross",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "long_entry_ok",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "short_entry_ok",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "signal",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "analyzeFrame scalars",
+          "passed": true,
+          "n": 16,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "entry_passes",
+          "passed": true,
+          "n": 2,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        }
+      ]
+    },
+    {
+      "label": "ETHUSDT 1d",
+      "checks": [
+        {
+          "name": "ema_fast",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 5.002220859751105e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "ema_slow",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 5.002220859751105e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "rsi",
+          "passed": true,
+          "n": 386,
+          "max_abs_delta": 4.999378688808065e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "macd",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 4.999378688808065e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "macd_signal",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 4.9887205477716634e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "macd_hist",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 4.993694346921984e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "atr",
+          "passed": true,
+          "n": 387,
+          "max_abs_delta": 4.995115432393504e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "atr_pct",
+          "passed": true,
+          "n": 387,
+          "max_abs_delta": 4.998046421178515e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "supertrend",
+          "passed": true,
+          "n": 391,
+          "max_abs_delta": 4.956746124662459e-11,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "st_dir",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": 0,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "bull_cross",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "bear_cross",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "long_entry_ok",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "short_entry_ok",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "signal",
+          "passed": true,
+          "n": 400,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "analyzeFrame scalars",
+          "passed": true,
+          "n": 16,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        },
+        {
+          "name": "entry_passes",
+          "passed": true,
+          "n": 2,
+          "max_abs_delta": null,
+          "mismatches": 0,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

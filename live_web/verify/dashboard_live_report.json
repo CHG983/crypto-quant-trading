@@ -1,0 +1,646 @@
+{
+  "generated_at_utc": "2026-10-12T16:17:48.781472+00:00",
+  "url": "http://127.0.0.1:8787/dashboard.html",
+  "checks": [
+    {
+      "name": "桌面：頁面成功載入並出現即時卡片",
+      "passed": true,
+      "detail": "cards=3"
+    },
+    {
+      "name": "桌面：確實對幣安端點發出請求（證明即時抓取）",
+      "passed": true,
+      "detail": "klines=28 ticker24hr=1"
+    },
+    {
+      "name": "桌面：狀態顯示即時資料正常",
+      "passed": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "name": "桌面：無橫向溢出",
+      "passed": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "name": "桌面：無破圖",
+      "passed": true,
+      "detail": "0/0"
+    },
+    {
+      "name": "桌面：中文免責聲明存在",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "桌面：新英文免責聲明開頭逐字存在",
+      "passed": true,
+      "detail": "All content on this page (including real-time signals, …)"
+    },
+    {
+      "name": "桌面：新英文免責聲明結尾逐字存在",
+      "passed": true,
+      "detail": "…assuming all associated risks."
+    },
+    {
+      "name": "桌面：舊英文免責聲明已移除",
+      "passed": true,
+      "detail": "As an AI Agent … 應已不存在"
+    },
+    {
+      "name": "桌面：歷史區塊標示存在",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "桌面：掃描表格已渲染",
+      "passed": true,
+      "detail": "rows=25"
+    },
+    {
+      "name": "桌面：歷史時間軸已渲染",
+      "passed": true,
+      "detail": "items=30"
+    },
+    {
+      "name": "桌面：顯示的停損與價格/ATR 內部一致（無口徑混用）",
+      "passed": true,
+      "detail": "checked=3 mismatches=0"
+    },
+    {
+      "name": "刷新：最後更新時間確實變動",
+      "passed": true,
+      "detail": "最後更新 2026-10-12 16:17:52 UTC → 最後更新 2026-10-12 16:18:35 UTC"
+    },
+    {
+      "name": "刷新：第二次仍抓到即時資料",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "刷新：數值指紋有變化",
+      "passed": true,
+      "detail": "changed"
+    },
+    {
+      "name": "刷新：即時（未收盤）價格確實隨市價變動",
+      "passed": true,
+      "detail": "[('BTCUSDT', 82900.67), ('ETHUSDT', 2531.28), ('SOLUSDT', 108.99)] → [('BTCUSDT', 82896), ('ETHUSDT', 2531.36), ('SOLUSDT', 109)]"
+    },
+    {
+      "name": "刷新：請求次數增加（證明重新抓取而非重繪快取）",
+      "passed": true,
+      "detail": "30 → 90"
+    },
+    {
+      "name": "刷新後：無橫向溢出",
+      "passed": true,
+      "detail": "overflow=0px"
+    },
+    {
+      "name": "手機：出現即時卡片",
+      "passed": true,
+      "detail": "cards=3"
+    },
+    {
+      "name": "手機：無橫向溢出",
+      "passed": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "name": "手機：無破圖",
+      "passed": true,
+      "detail": "0/0"
+    },
+    {
+      "name": "手機：狀態正常",
+      "passed": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "name": "手機：中文免責聲明存在",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "手機：新英文免責聲明逐字存在",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "手機：舊英文免責聲明已移除",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "CORS：瀏覽器可直連幣安（無失敗請求）",
+      "passed": true,
+      "detail": "failed=0"
+    }
+  ],
+  "desktop_settled": true,
+  "desktop_first": {
+    "snapshot": {
+      "statusText": "即時資料正常",
+      "lastUpdate": "最後更新 2026-10-12 16:17:52 UTC",
+      "countdown": "28 秒",
+      "liveMeta": "即時 · 由瀏覽器直連幣安 /api/v3/klines 取得，於前端重算 · 週期 1d · 幣安伺服器時間 2026-10-12 16:17:49 UTC",
+      "scanMeta": "即時 · 瀏覽器直連 /api/v3/ticker/24hr 取 24h 成交量前 25 名（濾除穩定幣與槓桿代幣），再逐檔抓 K 線於前端重算 · 排序依據為 24 小時 USDT 計價成交量（幣安公開 API 不提供市值）· 共 25 檔",
+      "fetchNote": "即時訊號 3/3 檔成功 · 市場掃描 25 檔成功 · 耗時 2.9 秒 — 全部由瀏覽器即時抓取並於前端重算，非內嵌快照。",
+      "cardCount": 3,
+      "scanRowCount": 25,
+      "timelineCount": 30,
+      "trackedRowCount": 20,
+      "firstCardText": "BTCUSDT多頭價格83,773.120000訊號HOLD強度67.5 (強)EMA 快 / 慢83,217.1871 / 79,522.1456EMA 差距4.411% (1.790 ATR)RSI / MACD 柱54.59 / -506.422231ATR%2.465%Supertrend多頭建議停損77,578.727984 (−7.39%)建議停利96,161.904033 (+14.79%)風險報酬比2.00 : 1最後一次交叉看多 · 52 根前 當時過濾通過K 棒收盤2026-10-12 23:59:59資料延遲7.70 小時（距收盤）狀態K 棒未收盤",
+      "firstCardNums": [
+        "83,773.120000",
+        "67.5",
+        "83,217.1871",
+        "79,522.1456",
+        "4.411",
+        "1.790",
+        "54.59",
+        "-506.422231",
+        "2.465",
+        "77,578.727984",
+        "7.39",
+        "96,161.904033",
+        "14.79",
+        "2.00",
+        "1",
+        "52",
+        "2026",
+        "-10",
+        "-12",
+        "23",
+        "59",
+        "59",
+        "7.70"
+      ],
+      "hasDisclaimer": true,
+      "hasEnglishDisclaimer": true,
+      "hasEnglishDisclaimerTail": true,
+      "hasOldEnglishDisclaimer": false,
+      "hasLiveSection": true,
+      "hasHistoryNotice": true,
+      "hasParity": "ALL PASS — 34/34 項檢查通過（最大殘差 5.09e-11，位於 BTCUSDT 1d / ema_slow）",
+      "engineVersion": "1.0.0",
+      "lastLive": [
+        {
+          "symbol": "BTCUSDT",
+          "row_source": "confirmed",
+          "price": 83773.12,
+          "atr": 2064.79733878,
+          "atr_pct": 2.4647,
+          "stop": 77578.72798366,
+          "stop_mult": 3,
+          "risk_pct": 7.3942,
+          "trend": 1,
+          "strength": 67.5,
+          "bar_is_in_progress": true,
+          "live_price": 82900.67,
+          "live_strength": 64.8,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:17:50.372Z"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "row_source": "confirmed",
+          "price": 2536.94,
+          "atr": 84.14263305,
+          "atr_pct": 3.3167,
+          "stop": 2284.51210085,
+          "stop_mult": 3,
+          "risk_pct": 9.9501,
+          "trend": 1,
+          "strength": 47.3,
+          "bar_is_in_progress": true,
+          "live_price": 2531.28,
+          "live_strength": 45.6,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:17:50.566Z"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "row_source": "confirmed",
+          "price": 111.35,
+          "atr": 4.70966505,
+          "atr_pct": 4.2296,
+          "stop": 97.22100485,
+          "stop_mult": 3,
+          "risk_pct": 12.6888,
+          "trend": 1,
+          "strength": 66,
+          "bar_is_in_progress": true,
+          "live_price": 108.99,
+          "live_strength": 66.1,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:17:50.753Z"
+        }
+      ],
+      "lastScanMeta": {
+        "total_scanned": 25,
+        "long_count": 25,
+        "short_count": 0,
+        "fresh_signal_count": 0
+      }
+    },
+    "overflow": {
+      "docScrollWidth": 1280,
+      "docClientWidth": 1280,
+      "innerWidth": 1280,
+      "horizontalOverflowPx": 0,
+      "offenders": [],
+      "offenderCount": 0
+    },
+    "images": {
+      "total": 0,
+      "broken": 0,
+      "brokenSrc": []
+    }
+  },
+  "network": {
+    "total_requests": 31,
+    "binance_requests": 30,
+    "klines_requests": 28,
+    "ticker24hr_requests": 1,
+    "failed_requests": [],
+    "sample_urls": [
+      "https://data-api.binance.vision/api/v3/time",
+      "https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=400",
+      "https://data-api.binance.vision/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=400",
+      "https://data-api.binance.vision/api/v3/klines?symbol=SOLUSDT&interval=1d&limit=400"
+    ]
+  },
+  "stop_consistency": {
+    "checked": 3,
+    "mismatches": []
+  },
+  "desktop_second_settled": true,
+  "desktop_second": {
+    "snapshot": {
+      "statusText": "即時資料正常",
+      "lastUpdate": "最後更新 2026-10-12 16:18:35 UTC",
+      "countdown": "28 秒",
+      "liveMeta": "即時 · 由瀏覽器直連幣安 /api/v3/klines 取得，於前端重算 · 週期 1d · 幣安伺服器時間 2026-10-12 16:18:33 UTC",
+      "scanMeta": "即時 · 瀏覽器直連 /api/v3/ticker/24hr 取 24h 成交量前 25 名（濾除穩定幣與槓桿代幣），再逐檔抓 K 線於前端重算 · 排序依據為 24 小時 USDT 計價成交量（幣安公開 API 不提供市值）· 共 25 檔",
+      "fetchNote": "即時訊號 3/3 檔成功 · 市場掃描 25 檔成功 · 耗時 1.9 秒 — 全部由瀏覽器即時抓取並於前端重算，非內嵌快照。",
+      "cardCount": 3,
+      "scanRowCount": 25,
+      "timelineCount": 30,
+      "trackedRowCount": 20,
+      "firstCardText": "BTCUSDT多頭價格83,773.120000訊號HOLD強度67.5 (強)EMA 快 / 慢83,217.1871 / 79,522.1456EMA 差距4.411% (1.790 ATR)RSI / MACD 柱54.59 / -506.422231ATR%2.465%Supertrend多頭建議停損77,578.727984 (−7.39%)建議停利96,161.904033 (+14.79%)風險報酬比2.00 : 1最後一次交叉看多 · 52 根前 當時過濾通過K 棒收盤2026-10-12 23:59:59資料延遲7.69 小時（距收盤）狀態K 棒未收盤",
+      "firstCardNums": [
+        "83,773.120000",
+        "67.5",
+        "83,217.1871",
+        "79,522.1456",
+        "4.411",
+        "1.790",
+        "54.59",
+        "-506.422231",
+        "2.465",
+        "77,578.727984",
+        "7.39",
+        "96,161.904033",
+        "14.79",
+        "2.00",
+        "1",
+        "52",
+        "2026",
+        "-10",
+        "-12",
+        "23",
+        "59",
+        "59",
+        "7.69"
+      ],
+      "hasDisclaimer": true,
+      "hasEnglishDisclaimer": true,
+      "hasEnglishDisclaimerTail": true,
+      "hasOldEnglishDisclaimer": false,
+      "hasLiveSection": true,
+      "hasHistoryNotice": true,
+      "hasParity": "ALL PASS — 34/34 項檢查通過（最大殘差 5.09e-11，位於 BTCUSDT 1d / ema_slow）",
+      "engineVersion": "1.0.0",
+      "lastLive": [
+        {
+          "symbol": "BTCUSDT",
+          "row_source": "confirmed",
+          "price": 83773.12,
+          "atr": 2064.79733878,
+          "atr_pct": 2.4647,
+          "stop": 77578.72798366,
+          "stop_mult": 3,
+          "risk_pct": 7.3942,
+          "trend": 1,
+          "strength": 67.5,
+          "bar_is_in_progress": true,
+          "live_price": 82896,
+          "live_strength": 64.8,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:18:33.825Z"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "row_source": "confirmed",
+          "price": 2536.94,
+          "atr": 84.14263305,
+          "atr_pct": 3.3167,
+          "stop": 2284.51210085,
+          "stop_mult": 3,
+          "risk_pct": 9.9501,
+          "trend": 1,
+          "strength": 47.3,
+          "bar_is_in_progress": true,
+          "live_price": 2531.36,
+          "live_strength": 45.6,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:18:34.015Z"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "row_source": "confirmed",
+          "price": 111.35,
+          "atr": 4.70966505,
+          "atr_pct": 4.2296,
+          "stop": 97.22100485,
+          "stop_mult": 3,
+          "risk_pct": 12.6888,
+          "trend": 1,
+          "strength": 66,
+          "bar_is_in_progress": true,
+          "live_price": 109,
+          "live_strength": 66.1,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:18:34.202Z"
+        }
+      ],
+      "lastScanMeta": {
+        "total_scanned": 25,
+        "long_count": 25,
+        "short_count": 0,
+        "fresh_signal_count": 0
+      }
+    },
+    "overflow": {
+      "docScrollWidth": 1280,
+      "docClientWidth": 1280,
+      "innerWidth": 1280,
+      "horizontalOverflowPx": 0,
+      "offenders": [],
+      "offenderCount": 0
+    },
+    "images": {
+      "total": 0,
+      "broken": 0,
+      "brokenSrc": []
+    }
+  },
+  "refresh": {
+    "last_update_before": "最後更新 2026-10-12 16:17:52 UTC",
+    "last_update_after": "最後更新 2026-10-12 16:18:35 UTC",
+    "nums_before": [
+      "83,773.120000",
+      "67.5",
+      "83,217.1871",
+      "79,522.1456",
+      "4.411",
+      "1.790",
+      "54.59",
+      "-506.422231",
+      "2.465",
+      "77,578.727984",
+      "7.39",
+      "96,161.904033",
+      "14.79",
+      "2.00",
+      "1",
+      "52",
+      "2026",
+      "-10",
+      "-12",
+      "23",
+      "59",
+      "59",
+      "7.70"
+    ],
+    "nums_after": [
+      "83,773.120000",
+      "67.5",
+      "83,217.1871",
+      "79,522.1456",
+      "4.411",
+      "1.790",
+      "54.59",
+      "-506.422231",
+      "2.465",
+      "77,578.727984",
+      "7.39",
+      "96,161.904033",
+      "14.79",
+      "2.00",
+      "1",
+      "52",
+      "2026",
+      "-10",
+      "-12",
+      "23",
+      "59",
+      "59",
+      "7.69"
+    ],
+    "numbers_changed": true,
+    "timestamp_changed": true,
+    "live_price_before": [
+      [
+        "BTCUSDT",
+        82900.67
+      ],
+      [
+        "ETHUSDT",
+        2531.28
+      ],
+      [
+        "SOLUSDT",
+        108.99
+      ]
+    ],
+    "live_price_after": [
+      [
+        "BTCUSDT",
+        82896
+      ],
+      [
+        "ETHUSDT",
+        2531.36
+      ],
+      [
+        "SOLUSDT",
+        109
+      ]
+    ],
+    "live_price_changed": true,
+    "confirmed_price_before": [
+      [
+        "BTCUSDT",
+        83773.12
+      ],
+      [
+        "ETHUSDT",
+        2536.94
+      ],
+      [
+        "SOLUSDT",
+        111.35
+      ]
+    ],
+    "confirmed_price_after": [
+      [
+        "BTCUSDT",
+        83773.12
+      ],
+      [
+        "ETHUSDT",
+        2536.94
+      ],
+      [
+        "SOLUSDT",
+        111.35
+      ]
+    ],
+    "confirmed_price_changed": false,
+    "confirmed_price_note": "已收盤日線收盤價在該交易日內不變，故兩次刷新相同屬預期行為；真正會變動的是未收盤 K 棒的 live_price 與時間戳。"
+  },
+  "checked_confirmed_stability": true,
+  "mobile_settled": true,
+  "mobile": {
+    "snapshot": {
+      "statusText": "即時資料正常",
+      "lastUpdate": "最後更新 2026-10-12 16:18:41 UTC",
+      "countdown": "28 秒",
+      "liveMeta": "即時 · 由瀏覽器直連幣安 /api/v3/klines 取得，於前端重算 · 週期 1d · 幣安伺服器時間 2026-10-12 16:18:39 UTC",
+      "scanMeta": "即時 · 瀏覽器直連 /api/v3/ticker/24hr 取 24h 成交量前 25 名（濾除穩定幣與槓桿代幣），再逐檔抓 K 線於前端重算 · 排序依據為 24 小時 USDT 計價成交量（幣安公開 API 不提供市值）· 共 25 檔",
+      "fetchNote": "即時訊號 3/3 檔成功 · 市場掃描 25 檔成功 · 耗時 2.8 秒 — 全部由瀏覽器即時抓取並於前端重算，非內嵌快照。",
+      "cardCount": 3,
+      "scanRowCount": 25,
+      "timelineCount": 30,
+      "trackedRowCount": 20,
+      "firstCardText": "BTCUSDT多頭價格83,773.120000訊號HOLD強度67.5 (強)EMA 快 / 慢83,217.1871 / 79,522.1456EMA 差距4.411% (1.790 ATR)RSI / MACD 柱54.59 / -506.422231ATR%2.465%Supertrend多頭建議停損77,578.727984 (−7.39%)建議停利96,161.904033 (+14.79%)風險報酬比2.00 : 1最後一次交叉看多 · 52 根前 當時過濾通過K 棒收盤2026-10-12 23:59:59資料延遲7.69 小時（距收盤）狀態K 棒未收盤",
+      "firstCardNums": [
+        "83,773.120000",
+        "67.5",
+        "83,217.1871",
+        "79,522.1456",
+        "4.411",
+        "1.790",
+        "54.59",
+        "-506.422231",
+        "2.465",
+        "77,578.727984",
+        "7.39",
+        "96,161.904033",
+        "14.79",
+        "2.00",
+        "1",
+        "52",
+        "2026",
+        "-10",
+        "-12",
+        "23",
+        "59",
+        "59",
+        "7.69"
+      ],
+      "hasDisclaimer": true,
+      "hasEnglishDisclaimer": true,
+      "hasEnglishDisclaimerTail": true,
+      "hasOldEnglishDisclaimer": false,
+      "hasLiveSection": true,
+      "hasHistoryNotice": true,
+      "hasParity": "ALL PASS — 34/34 項檢查通過（最大殘差 5.09e-11，位於 BTCUSDT 1d / ema_slow）",
+      "engineVersion": "1.0.0",
+      "lastLive": [
+        {
+          "symbol": "BTCUSDT",
+          "row_source": "confirmed",
+          "price": 83773.12,
+          "atr": 2064.79733878,
+          "atr_pct": 2.4647,
+          "stop": 77578.72798366,
+          "stop_mult": 3,
+          "risk_pct": 7.3942,
+          "trend": 1,
+          "strength": 67.5,
+          "bar_is_in_progress": true,
+          "live_price": 82896,
+          "live_strength": 64.8,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:18:39.778Z"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "row_source": "confirmed",
+          "price": 2536.94,
+          "atr": 84.14263305,
+          "atr_pct": 3.3167,
+          "stop": 2284.51210085,
+          "stop_mult": 3,
+          "risk_pct": 9.9501,
+          "trend": 1,
+          "strength": 47.3,
+          "bar_is_in_progress": true,
+          "live_price": 2531.37,
+          "live_strength": 45.6,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:18:39.980Z"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "row_source": "confirmed",
+          "price": 111.35,
+          "atr": 4.70966505,
+          "atr_pct": 4.2296,
+          "stop": 97.22100485,
+          "stop_mult": 3,
+          "risk_pct": 12.6888,
+          "trend": 1,
+          "strength": 66,
+          "bar_is_in_progress": true,
+          "live_price": 108.99,
+          "live_strength": 66.1,
+          "bar_open_utc": "2026-10-12T00:00:00.000Z",
+          "fetched_at_utc": "2026-10-12T16:18:40.164Z"
+        }
+      ],
+      "lastScanMeta": {
+        "total_scanned": 25,
+        "long_count": 25,
+        "short_count": 0,
+        "fresh_signal_count": 0
+      }
+    },
+    "overflow": {
+      "docScrollWidth": 390,
+      "docClientWidth": 390,
+      "innerWidth": 390,
+      "horizontalOverflowPx": 0,
+      "offenders": [],
+      "offenderCount": 0
+    },
+    "images": {
+      "total": 0,
+      "broken": 0,
+      "brokenSrc": []
+    }
+  },
+  "cors": {
+    "failed_binance_requests": [],
+    "mode": "direct"
+  },
+  "summary": {
+    "passed": 27,
+    "total": 27,
+    "status": "ALL PASS"
+  }
+}

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>加密貨幣量化交易 · 即時儀表板（瀏覽器直連版）</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#131a2e; --panel2:#1a2238; --line:#2a3554;
+  --tx:#e8ecf7; --dim:#93a0c2; --dim2:#6b7899;
+  --long:#2ec27e; --short:#f66151; --warn:#e5a50a; --info:#62a0ea; --pur:#c061cb;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--tx);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",
+    "PingFang TC","Microsoft JhengHei",sans-serif;
+  font-size:15px;line-height:1.6;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 18px 64px}
+header.top{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:20px}
+h1{margin:0 0 8px;font-size:clamp(1.35rem,4.2vw,2rem);line-height:1.3;letter-spacing:.2px}
+h2{margin:38px 0 14px;font-size:clamp(1.05rem,3vw,1.35rem);
+   border-left:4px solid var(--info);padding-left:11px;line-height:1.35}
+h3{margin:22px 0 10px;font-size:1.02rem;color:var(--tx)}
+p{margin:9px 0;color:var(--dim)}
+a{color:var(--info)}
+code{background:#0a0f1e;border:1px solid var(--line);border-radius:5px;
+     padding:1px 6px;font-size:.88em;word-break:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:12px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+      padding:4px 11px;font-size:.79rem;color:var(--dim);white-space:nowrap}
+.chip b{color:var(--tx);font-weight:600}
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.75rem;
+       font-weight:700;letter-spacing:.3px}
+.b-long{background:rgba(46,194,126,.16);color:var(--long);border:1px solid rgba(46,194,126,.4)}
+.b-short{background:rgba(246,97,81,.16);color:var(--short);border:1px solid rgba(246,97,81,.4)}
+.b-neut{background:rgba(147,160,194,.14);color:var(--dim);border:1px solid var(--line)}
+.b-warn{background:rgba(229,165,10,.16);color:var(--warn);border:1px solid rgba(229,165,10,.4)}
+.b-info{background:rgba(98,160,234,.16);color:var(--info);border:1px solid rgba(98,160,234,.4)}
+.b-pur{background:rgba(192,97,203,.16);color:var(--pur);border:1px solid rgba(192,97,203,.4)}
+
+/* ---- 即時控制列 ---- */
+.livebar{
+  position:sticky;top:0;z-index:20;background:rgba(11,16,32,.96);
+  backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;
+  padding:13px 15px;margin:14px 0 4px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+}
+.pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;
+      padding:5px 13px;font-size:.82rem;font-weight:600;border:1px solid var(--line);
+      background:var(--panel2);white-space:nowrap}
+.pill .dot{width:9px;height:9px;border-radius:50%;background:var(--dim2);flex:0 0 auto}
+.pill.ok{border-color:rgba(46,194,126,.45);color:var(--long)}
+.pill.ok .dot{background:var(--long);box-shadow:0 0 0 0 rgba(46,194,126,.7);
+  animation:pulse 1.9s infinite}
+.pill.load{border-color:rgba(98,160,234,.45);color:var(--info)}
+.pill.load .dot{background:var(--info);animation:pulse 1s infinite}
+.pill.err{border-color:rgba(246,97,81,.5);color:var(--short)}
+.pill.err .dot{background:var(--short)}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(98,160,234,.6)}
+  70%{box-shadow:0 0 0 7px rgba(98,160,234,0)}
+  100%{box-shadow:0 0 0 0 rgba(98,160,234,0)}
+}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(98,160,234,.3);
+      border-top-color:var(--info);border-radius:50%;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+button{font:inherit;cursor:pointer;border-radius:8px;padding:6px 13px;
+       border:1px solid var(--line);background:var(--panel2);color:var(--tx);
+       font-size:.83rem;font-weight:600;white-space:nowrap}
+button:hover{border-color:var(--info);color:var(--info)}
+button:disabled{opacity:.5;cursor:not-allowed}
+select{font:inherit;font-size:.83rem;background:var(--panel2);color:var(--tx);
+       border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.lbl{font-size:.79rem;color:var(--dim2);white-space:nowrap}
+.cd{font-variant-numeric:tabular-nums;font-weight:700;color:var(--tx)}
+.grow{flex:1 1 auto;min-width:0}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+      padding:16px;min-width:0}
+.card .sym{font-size:1.18rem;font-weight:700;letter-spacing:.4px}
+.card .row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;
+           font-size:.86rem;color:var(--dim)}
+.card .row b{color:var(--tx);font-weight:600;text-align:right;word-break:break-word}
+.hr{height:1px;background:var(--line);margin:11px 0}
+.bar{height:7px;border-radius:4px;background:#0a0f1e;overflow:hidden;margin-top:7px}
+.bar > i{display:block;height:100%;border-radius:4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:11px;margin:14px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.kpi .k{font-size:.72rem;color:var(--dim2);text-transform:uppercase;letter-spacing:.7px}
+.kpi .v{font-size:1.3rem;font-weight:700;margin-top:3px;line-height:1.2}
+.kpi .s{font-size:.74rem;color:var(--dim2);margin-top:2px}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+           border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:.85rem}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);
+      white-space:nowrap}
+th{background:var(--panel2);color:var(--dim);font-weight:600;font-size:.76rem;
+   text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(98,160,234,.05)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.sym{font-weight:600}
+.tl{list-style:none;padding:0;margin:12px 0}
+.tl li{position:relative;padding:0 0 16px 22px;border-left:1px solid var(--line);
+       margin-left:6px}
+.tl li:last-child{border-left-color:transparent;padding-bottom:0}
+.tl li::before{content:"";position:absolute;left:-5px;top:6px;width:9px;height:9px;
+               border-radius:50%;background:var(--info);border:2px solid var(--bg)}
+.tl li.flip::before{background:var(--warn)}
+.tl li.cross::before{background:var(--pur)}
+.tl li.base::before{background:var(--dim2)}
+.tl .t{font-size:.8rem;color:var(--dim2);font-variant-numeric:tabular-nums}
+.tl .m{font-size:.9rem}
+.note{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--warn);
+      border-radius:9px;padding:13px 15px;margin:16px 0;font-size:.87rem;color:var(--dim)}
+.note.ok{border-left-color:var(--long)}
+.note.info{border-left-color:var(--info)}
+.note.err{border-left-color:var(--short)}
+.note b{color:var(--tx)}
+details{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+        padding:12px 15px;margin:14px 0}
+summary{cursor:pointer;font-weight:600;font-size:.92rem}
+details p{font-size:.87rem}
+footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
+       color:var(--dim2);font-size:.82rem}
+.disc{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);
+      border-radius:10px;padding:16px 18px;margin-top:22px;font-size:.86rem;color:var(--dim)}
+.disc b{color:var(--tx)}
+.skel{background:linear-gradient(90deg,#1a2238 25%,#222c47 50%,#1a2238 75%);
+      background-size:200% 100%;animation:sh 1.3s infinite;border-radius:6px;
+      height:14px;margin:7px 0}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.muted{color:var(--dim2);font-size:.85rem}
+.mono{font-variant-numeric:tabular-nums}
+@media (max-width:520px){
+  .wrap{padding:20px 13px 52px}
+  body{font-size:14.5px}
+  .cards{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  table{min-width:640px;font-size:.8rem}
+  th,td{padding:7px 8px}
+  .livebar{gap:8px 10px;padding:11px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>加密貨幣量化交易 · 即時儀表板</h1>
+  <p>即時訊號 · 市場掃描 · 自動化監控 — <b>改由瀏覽器直接呼叫幣安公開 API</b>，
+     策略邏輯（EMA 快慢線 + RSI/MACD 動能 + ATR 風控）在<strong>前端即時重算</strong>，
+     不再使用內嵌的靜態快照。</p>
+  <div class="meta">
+    <span class="chip">資料來源 <b>Binance 公開 API</b></span>
+    <span class="chip">端點 <b>data-api.binance.vision</b></span>
+    <span class="chip">抓取方式 <b>瀏覽器直連（CORS 已開放）</b></span>
+    <span class="chip">免金鑰 <b>是</b></span>
+  </div>
+</header>
+
+<!-- ===== 即時控制列 ===== -->
+<div class="livebar">
+  <span class="pill load" id="statusPill"><span class="dot"></span><span id="statusText">初始化中…</span></span>
+  <button id="refreshBtn" type="button">立即刷新</button>
+  <span class="lbl">自動刷新</span>
+  <select id="intervalSel" aria-label="自動刷新間隔">
+    <option value="15">每 15 秒</option>
+    <option value="30" selected>每 30 秒</option>
+    <option value="60">每 60 秒</option>
+    <option value="120">每 2 分鐘</option>
+    <option value="0">關閉自動刷新</option>
+  </select>
+  <span class="lbl">下次更新</span>
+  <span class="cd" id="countdown">—</span>
+  <span class="grow"></span>
+  <span class="lbl" id="lastUpdate">尚未更新</span>
+</div>
+
+<div class="note info" id="fetchNote">
+  <b>資料抓取狀態：</b><span id="fetchNoteText">正在連線幣安公開端點…</span>
+</div>
+
+<h2>1 · 即時訊號面板（瀏覽器直連）</h2>
+<p class="muted" id="liveMeta">載入中…</p>
+<div class="cards" id="liveCards">
+  <div class="card"><div class="skel" style="width:40%;height:20px"></div>
+    <div class="skel"></div><div class="skel" style="width:80%"></div>
+    <div class="skel" style="width:60%"></div></div>
+  <div class="card"><div class="skel" style="width:40%;height:20px"></div>
+    <div class="skel"></div><div class="skel" style="width:80%"></div>
+    <div class="skel" style="width:60%"></div></div>
+  <div class="card"><div class="skel" style="width:40%;height:20px"></div>
+    <div class="skel"></div><div class="skel" style="width:80%"></div>
+    <div class="skel" style="width:60%"></div></div>
+</div>
+
+<h2>2 · 市場掃描排行（瀏覽器直連）</h2>
+<p class="muted" id="scanMeta">載入中…</p>
+<div class="kpis" id="scanKpis"></div>
+<div class="tablewrap"><table>
+  <thead><tr>
+    <th>標的</th><th>趨勢</th><th>強度</th><th>價格</th>
+    <th>EMA 差距</th><th>RSI</th><th>ATR%</th><th>建議停損</th><th>訊號</th>
+  </tr></thead>
+  <tbody id="scanBody"><tr><td colspan="9" class="muted">載入中…</td></tr></tbody>
+</table></div>
+
+<h2>3 · 自動化監控狀態與訊號時間軸</h2>
+<div class="note">
+  <b>本區塊為歷史資料（非即時）。</b>由 <code>run_monitor.py</code> 執行時寫入的
+  <code>signals_history.jsonl</code> 快照內嵌於本頁產生，<b>不會隨自動刷新更新</b>。
+  時間軸中標示 <span class="badge b-pur">回補</span> 者為<b>由歷史 K 線重放產生</b>的事件
+  —— 事件時間為真實 K 棒時間，但<b>並非當時即時偵測</b>。
+</div>
+<div class="kpis" id="monKpis"></div>
+<h3>最近訊號時間軸</h3>
+<ul class="tl" id="monTimeline"><li class="muted">載入中…</li></ul>
+<h3>監控中標的的當前狀態（歷史快照）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的（含週期）</th><th>趨勢</th><th>強度</th><th>價格</th>
+    <th>ATR%</th><th>訊號</th><th>快照時間 (UTC)</th></tr></thead>
+  <tbody id="monBody"><tr><td colspan="7" class="muted">載入中…</td></tr></tbody>
+</table></div>
+
+<h2>4 · 方法、參數與資料揭露</h2>
+<details open>
+<summary>自動更新架構（與前一版的差異）</summary>
+<p><b>前一版：</b><code>build_dashboard.py</code> 先跑 Python 抓資料、算好一切，
+把結果用 <code>const DATA = {...}</code> 內嵌進 HTML。頁面內容是<b>產生當下的快照</b>，
+重新整理也不會變，除非重新產生整份 HTML。</p>
+<p><b>本版：</b>HTML 內嵌一段完整的策略引擎（<code>live_engine.js</code>），
+在<b>瀏覽器端</b>用 <code>fetch()</code> 直接呼叫幣安 <code>/api/v3/klines</code> 與
+<code>/api/v3/ticker/24hr</code>，取得 K 線後<b>即時重算</b> EMA / RSI / MACD / ATR / Supertrend
+與訊號、強度、停損停利。每 30 秒（可調）自動重算一次，並顯示最後更新時間與倒數。</p>
+<p><b>CORS：</b><code>data-api.binance.vision</code> 回應
+<code>access-control-allow-origin: *</code>，因此<b>不需要任何代理</b>即可直連。
+若您的環境（公司網路、代理、地區限制）擋掉跨域請求，頁面會顯示明確錯誤，
+可改用隨附的 <code>serve_proxy.py</code> 本機代理模式（見下方說明）。</p>
+</details>
+<details>
+<summary>策略邏輯（CTMA，與 Python 端逐值一致）</summary>
+<p>趨勢：EMA 21/55 交叉；動能：RSI(14) 站中軸同側 + MACD 柱方向一致；
+波動度：ATR(14) 用於停損距離與 ATR% 過濾；風控：3×ATR 初始停損、5×ATR 移動停損、選用 6×ATR 停利。</p>
+<p>做多進場：EMA 快線上穿慢線 且 RSI&gt;50 且 MACD 柱&gt;0 且 ATR%≥門檻；
+做空進場：EMA 快線下穿慢線 且 RSI&lt;50 且 MACD 柱&lt;0 且 ATR%≥門檻；
+出場：反向交叉 或 ATR 停損／移動停損／停利。</p>
+<p><b>前端引擎與 Python 逐值比對結果：</b><span id="parityText">載入中…</span></p>
+</details>
+<details>
+<summary>訊號強度計分（0–100）</summary>
+<p><code>分數 = 100 × ( 0.35×趨勢 + 0.30×動能 + 0.20×波動健康度 + 0.15×Supertrend 一致性 )</code></p>
+<p>趨勢以 ATR 正規化（<code>(EMA快−EMA慢)/ATR / 1.5</code>），使不同波動度的幣種可互相比較；
+動能取 RSI 距中軸與 MACD 柱的平均，方向須與趨勢一致；波動健康度在 ATR% 落於
+<code>min_atr_pct</code>～8% 時最高分，過低視為盤整、過高視為狂野。</p>
+<p><b>這是啟發式排序分數，不是機率，也未經校準。</b>用途僅在於把「哪些標的訊號較乾淨」
+排出先後，不可當成勝率估計。</p>
+</details>
+<details>
+<summary>假資料防護：如何確認頁面數字是真的</summary>
+<p>1. 頁面上顯示「最後更新」時間與「資料時間戳」，每次刷新都會變。</p>
+<p>2. 開啟瀏覽器 DevTools → Network，可看到對
+<code>data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&amp;interval=1d</code> 的實際請求與回應。</p>
+<p>3. 網頁沒有任何寫死的價格數字；所有數值都由 <code>CTMA.analyzeBars()</code> 依當下抓到的 K 線算出。</p>
+<p>4. 抓取失敗時，區塊會顯示<b>錯誤訊息而非舊數字</b>，不會用前一次的資料冒充即時值。</p>
+<p>5. 點「立即刷新」後，<b>「最後更新」時間戳每次都會變</b>；<b>K 棒收盤 / 資料延遲</b>欄位也會跟著當下時間重算。
+但請注意：<b>已收盤日線的收盤價在同一交易日內不會變</b>（那是已定案的歷史值），
+因此卡片上的「價格」在盤中重複刷新可能相同 —— 這是正確行為，不是快取。
+真正逐次變動的是未收盤 K 棒的即時市價與各項時間欄位。</p>
+</details>
+
+<div class="disc">
+  <b>⚠ 投資免責聲明</b>
+  <p>本頁所有內容（含即時訊號、掃描排行、監控事件與參數）僅供<b>研究與教育用途</b>，
+  <b>不構成任何投資建議、要約或推薦</b>。訊號基於歷史價格計算，<b>無法預測未來走勢</b>；
+  歷史績效不代表未來表現。回測與訊號系統存在過度擬合、存活者偏差、交易成本估計誤差、
+  流動性假設等固有限制，實際交易結果可能與之顯著不同。即時資料可能因網路、端點或交易所
+  因素延遲、中斷或失真，<b>不可作為唯一交易依據</b>。加密貨幣波動極大，可能導致
+  <b>全部本金損失</b>。任何交易決策應由使用者自行判斷並承擔風險。</p>
+  <p style="margin-bottom:0">All content on this page (including real-time signals, ranking scans, monitored events, and parameters) is intended solely for research and educational purposes and does not constitute investment advice, an offer, or a recommendation. Signals are calculated based on historical prices and cannot predict future trends; past performance is not indicative of future results. Backtesting and signal systems are subject to inherent limitations—such as overfitting, survivorship bias, errors in estimating transaction costs, and liquidity assumptions—meaning actual trading results may differ significantly. Real-time data may be subject to delays, interruptions, or inaccuracies due to network, endpoint, or exchange issues and should not serve as the sole basis for trading decisions. Cryptocurrency markets are highly volatile and carry the risk of a total loss of principal. Users are responsible for making their own trading decisions and assuming all associated risks.</p>
+</div>
+
+<footer>
+  資料來源：Binance 公開 API（<code>data-api.binance.vision</code>，免金鑰），由瀏覽器直接抓取。
+  策略引擎 <code>live_engine.js</code> 內嵌於本頁（建置時比對 SHA-256 確保與受測版本逐字元相同）。
+  頁面由 <code>build_dashboard_v6.py</code> 產生框架，<b>資料於瀏覽器端即時取得</b>。
+</footer>
+
+</div>
+
+<script>
+/* ===================== 內嵌策略引擎（與受測版本同一份原文） ===================== */
+/*__LIVE_ENGINE__*/
+/* ===================== 內嵌歷史資料（僅供第 3 節，非即時） ===================== */
+const HISTORY = /*__HISTORY_JSON__*/;
+
+/* ===================== 即時資料層 ===================== */
+const API_BASES = ['https://data-api.binance.vision'];
+const LIVE_SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT'];
+const KLINE_LIMIT = 400;
+const SCAN_TOP_N = 25;
+const SCAN_CONCURRENCY = 6;
+
+const state = {
+  intervalMs: 30000,
+  timer: null,
+  countdownTimer: null,
+  nextAt: 0,
+  busy: false,
+  lastOk: null,
+  lastErr: null,
+  proxyMode: false
+};
+
+function $(id){ return document.getElementById(id); }
+
+function fmtNum(x, nd){
+  if (x === null || x === undefined || !Number.isFinite(Number(x))) return '—';
+  const n = Number(x);
+  const d = nd === undefined ? 4 : nd;
+  return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmtPct(x, nd){
+  if (x === null || x === undefined || !Number.isFinite(Number(x))) return '—';
+  return fmtNum(x, nd === undefined ? 2 : nd) + '%';
+}
+function esc(s){
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+function utcNow(){ return new Date().toISOString().replace('Z',' UTC').replace('T',' '); }
+function trendBadge(t){
+  if (t === 'LONG') return '<span class="badge b-long">多頭</span>';
+  if (t === 'SHORT') return '<span class="badge b-short">空頭</span>';
+  return '<span class="badge b-neut">中性</span>';
+}
+function strengthColor(s){
+  if (!Number.isFinite(s)) return 'var(--dim)';
+  if (s >= 75) return 'var(--long)';
+  if (s >= 60) return '#7fd6a8';
+  if (s >= 45) return 'var(--warn)';
+  if (s >= 30) return '#e08a5a';
+  return 'var(--short)';
+}
+function setStatus(kind, text){
+  const p = $('statusPill');
+  p.className = 'pill ' + (kind === 'ok' ? 'ok' : kind === 'err' ? 'err' : 'load');
+  $('statusText').textContent = text;
+}
+function setNote(kind, html){
+  const n = $('fetchNote');
+  n.className = 'note' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : kind === 'info' ? ' info' : '');
+  $('fetchNoteText').innerHTML = html;
+}
+
+/* ---- HTTP：直連優先，失敗則嘗試本機代理 ---- */
+async function getJson(pathAndQuery){
+  const errors = [];
+  const bases = state.proxyMode ? ['/binance'] : API_BASES;
+  for (const b of bases){
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 15000);
+      const r = await fetch(b + pathAndQuery, {signal: ctl.signal, cache:'no-store'});
+      clearTimeout(to);
+      if (!r.ok) { errors.push(b + ' → HTTP ' + r.status); continue; }
+      return await r.json();
+    } catch (e){
+      errors.push(b + ' → ' + (e && e.name === 'AbortError' ? '逾時' : (e && e.message) || String(e)));
+    }
+  }
+  throw new Error(errors.join(' ; '));
+}
+
+async function fetchServerTime(){
+  try { const j = await getJson('/api/v3/time'); return Number(j.serverTime); }
+  catch(e){ return null; }
+}
+
+async function fetchKlines(symbol, interval, limit){
+  const raw = await getJson('/api/v3/klines?symbol=' + encodeURIComponent(symbol)
+    + '&interval=' + interval + '&limit=' + limit);
+  if (!Array.isArray(raw) || raw.length === 0) throw new Error('回傳空資料');
+  const now = Date.now();
+  return raw.map(r => ({
+    openTime: r[0], open: +r[1], high: +r[2], low: +r[3], close: +r[4], volume: +r[5],
+    closeTime: r[6], isClosed: r[6] < now
+  }));
+}
+
+async function fetchTickers(){
+  const raw = await getJson('/api/v3/ticker/24hr');
+  const map = {};
+  (Array.isArray(raw) ? raw : [raw]).forEach(t => { map[t.symbol] = t; });
+  return map;
+}
+
+/* ---- 併發限流的 map ---- */
+async function mapLimit(items, limit, fn){
+  const out = new Array(items.length);
+  let i = 0;
+  async function worker(){
+    while (true){
+      const k = i++;
+      if (k >= items.length) return;
+      try { out[k] = {ok:true, value: await fn(items[k], k)}; }
+      catch(e){ out[k] = {ok:false, error: (e && e.message) || String(e)}; }
+    }
+  }
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, worker));
+  return out;
+}
+
+/* ===================== 渲染 ===================== */
+function renderLive(list, serverTimeMs, intervalLabel){
+  $('liveMeta').innerHTML =
+    '即時 · 由瀏覽器直連幣安 <code>/api/v3/klines</code> 取得，於前端重算 · '
+    + '週期 <b>' + esc(intervalLabel) + '</b> · '
+    + '幣安伺服器時間 <b>' + (serverTimeMs ? new Date(serverTimeMs).toISOString().replace('T',' ').slice(0,19) + ' UTC' : '—')
+    + '</b>';
+
+  $('liveCards').innerHTML = list.map(x => {
+    const c = x.analysis.confirmed || x.analysis.provisional;
+    const lv = x.analysis.levels;
+    const st = c.strength;
+    const badge = x.analysis.bar_is_in_progress
+      ? '<span class="badge b-warn">K 棒未收盤</span>' : '<span class="badge b-neut">已收盤</span>';
+    const rp = x.analysis.repaint ? ' <span class="badge b-short">與確認版不一致</span>' : '';
+    return '<div class="card">'
+      + '<div class="row" style="align-items:baseline">'
+      +   '<span class="sym">' + esc(x.symbol) + '</span>'
+      +   '<span>' + trendBadge(c.trend_label) + rp + '</span>'
+      + '</div>'
+      + '<div class="hr"></div>'
+      + '<div class="row"><span>價格</span><b>' + fmtNum(c.price, 6) + '</b></div>'
+      + '<div class="row"><span>訊號</span><b>' + esc(c.signal_label) + '</b></div>'
+      + '<div class="row"><span>強度</span><b style="color:' + strengthColor(st.total) + '">'
+      +   fmtNum(st.total, 1) + ' (' + esc(st.label) + ')</b></div>'
+      + '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, st.total))
+      +   '%;background:' + strengthColor(st.total) + '"></i></div>'
+      + '<div class="hr"></div>'
+      + '<div class="row"><span>EMA 快 / 慢</span><b>' + fmtNum(c.ema_fast, 4) + ' / ' + fmtNum(c.ema_slow, 4) + '</b></div>'
+      + '<div class="row"><span>EMA 差距</span><b>' + fmtPct(c.ema_gap_pct, 3)
+      +   (c.ema_spread_atr !== null ? ' (' + fmtNum(c.ema_spread_atr, 3) + ' ATR)' : '') + '</b></div>'
+      + '<div class="row"><span>RSI / MACD 柱</span><b>' + fmtNum(c.rsi, 2) + ' / ' + fmtNum(c.macd_hist, 6) + '</b></div>'
+      + '<div class="row"><span>ATR%</span><b>' + fmtPct(c.atr_pct, 3) + '</b></div>'
+      + '<div class="row"><span>Supertrend</span><b>' + (c.st_dir === 1 ? '多頭' : c.st_dir === -1 ? '空頭' : '—') + '</b></div>'
+      + (lv ? '<div class="hr"></div>'
+          + '<div class="row"><span>建議停損</span><b>' + fmtNum(lv.stop, 6)
+          +   ' (−' + fmtPct(lv.risk_pct, 2) + ')</b></div>'
+          + '<div class="row"><span>建議停利</span><b>' + fmtNum(lv.take_profit, 6)
+          +   ' (+' + fmtPct(lv.reward_pct, 2) + ')</b></div>'
+          + '<div class="row"><span>風險報酬比</span><b>' + fmtNum(lv.rr_ratio, 2) + ' : 1</b></div>'
+        : '<div class="hr"></div><div class="row"><span>建議停損 / 停利</span><b>中性，不提供</b></div>')
+      + '<div class="hr"></div>'
+      + '<div class="row"><span>最後一次交叉</span><b>'
+      +   (c.last_cross ? esc(c.last_cross.type === 'BULL_CROSS' ? '看多' : '看空')
+          + ' · ' + c.last_cross.bars_ago + ' 根前' : '—')
+      +   (c.entry_passes && (c.entry_passes.long || c.entry_passes.short)
+          ? ' <span class="badge b-info">當時過濾通過</span>' : '') + '</b></div>'
+      + '<div class="row"><span>K 棒收盤</span><b>' + esc(x.analysis.bar_close_utc.replace('T',' ').slice(0,19)) + '</b></div>'
+      + '<div class="row"><span>資料延遲</span><b>' + esc(x.analysis.data_delay_human)
+      +   (x.analysis.bar_is_in_progress ? '（距收盤）' : '（距收盤已過）') + '</b></div>'
+      + '<div class="row"><span>狀態</span><b>' + badge + '</b></div>'
+      + '</div>';
+  }).join('');
+}
+
+function renderScan(rankings, listMeta){
+  const s = rankings;
+  $('scanMeta').innerHTML =
+    '即時 · 瀏覽器直連 <code>/api/v3/ticker/24hr</code> 取 24h 成交量前 '
+    + SCAN_TOP_N + ' 名（濾除穩定幣與槓桿代幣），再逐檔抓 K 線於前端重算 · '
+    + '排序依據為 <b>24 小時 USDT 計價成交量</b>（幣安公開 API 不提供市值）· '
+    + '<b>共 ' + s.total_scanned + ' 檔</b>';
+
+  $('scanKpis').innerHTML = [
+    ['掃描標的', s.total_scanned, '檔'],
+    ['多頭排列', s.long_count, '檔'],
+    ['空頭排列', s.short_count, '檔'],
+    ['中性', s.neutral_count, '檔'],
+    ['接近觸發', s.near_trigger_count, 'EMA 差距 < 0.5%'],
+    ['本次交叉訊號', s.fresh_signal_count, '檔'],
+  ].map(([k,v,sub]) =>
+    '<div class="kpi"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v)
+    + '</div><div class="s">' + esc(sub) + '</div></div>').join('');
+
+  const rows = s.all_rows.slice().sort((a,b) => b.strength - a.strength);
+  $('scanBody').innerHTML = rows.length
+    ? rows.map(r =>
+      '<tr>'
+      + '<td class="sym">' + esc(r.symbol) + '</td>'
+      + '<td>' + trendBadge(r.trend) + '</td>'
+      + '<td class="num" style="color:' + strengthColor(r.strength) + '">' + fmtNum(r.strength, 1) + '</td>'
+      + '<td class="num">' + fmtNum(r.price, 6) + '</td>'
+      + '<td class="num">' + fmtPct(r.ema_gap_pct, 3) + '</td>'
+      + '<td class="num">' + fmtNum(r.rsi, 2) + '</td>'
+      + '<td class="num">' + fmtPct(r.atr_pct, 3) + '</td>'
+      + '<td class="num">' + (r.stop === null ? '—' : fmtNum(r.stop, 6)) + '</td>'
+      + '<td>' + esc(r.signal) + (r.near_trigger ? ' <span class="badge b-warn">近</span>' : '') + '</td>'
+      + '</tr>').join('')
+    : '<tr><td colspan="9" class="muted">無資料（可能全部被過濾或抓取失敗）</td></tr>';
+}
+
+function renderHistory(){
+  const H = HISTORY || {};
+  const mon = H.monitor || {};
+  $('monKpis').innerHTML = [
+    ['快照時間', (mon.run_at_utc || '—').replace('T',' ').slice(0,19), 'UTC'],
+    ['監控標的', mon.symbol_count || 0, '檔'],
+    ['歷史事件總數', mon.history_total || 0, '筆'],
+    ['本輪變化事件', (mon.events || []).length, '筆'],
+    ['通知模式', (mon.notification && mon.notification.mode) || '—', '未對外發送'],
+    ['快照來源', mon.snapshot_mode || '—', mon.interval ? ('週期 ' + mon.interval) : ''],
+  ].map(([k,v,sub]) =>
+    '<div class="kpi"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v)
+    + '</div><div class="s">' + esc(sub) + '</div></div>').join('');
+
+  const ev = (mon.history_recent || []).slice(0, 30);
+  $('monTimeline').innerHTML = ev.length ? ev.map(e => {
+    const cls = e.change_type === 'TREND_FLIP' ? 'flip'
+      : e.change_type === 'NEW_CROSS' ? 'cross' : 'base';
+    const lbl = e.change_type === 'TREND_FLIP' ? '趨勢翻轉'
+      : e.change_type === 'NEW_CROSS' ? '新交叉訊號'
+      : e.change_type === 'BASELINE' ? '基準建立' : esc(e.change_type);
+    const msg = e.change_type === 'BASELINE'
+      ? ('建立基準：' + esc(e.to_trend) + ' / ' + esc(e.to_signal))
+      : (lbl + '：' + esc(e.from_trend || '—') + ' → ' + esc(e.to_trend || '—'));
+    return '<li class="' + cls + '">'
+      + '<div class="t">' + esc((e.detected_at_utc || '').replace('T',' ').slice(0,19)) + ' UTC'
+      + ' &nbsp;·&nbsp; ' + esc(e.symbol)
+      + ' &nbsp;·&nbsp; <span class="badge b-neut">' + esc(e.interval) + '</span>'
+      + (e.replayed ? ' <span class="badge b-pur">回補</span>' : '')
+      + ' <span class="badge b-info">歷史</span></div>'
+      + '<div class="m">' + msg
+      + ' &nbsp;|&nbsp; 分數 ' + (e.strength === null || e.strength === undefined ? '—' : fmtNum(e.strength,1))
+      + ' &nbsp;|&nbsp; 價格 ' + fmtNum(e.price, 6)
+      + ' &nbsp;|&nbsp; ATR% ' + fmtNum(e.atr_pct, 2) + '</div></li>';
+  }).join('') : '<li class="muted">無歷史事件</li>';
+
+  const tracked = mon.tracked_symbols || {};
+  const keys = Object.keys(tracked).sort((a,b) => (tracked[b].strength||0) - (tracked[a].strength||0));
+  $('monBody').innerHTML = keys.length ? keys.map(k => {
+    const t = tracked[k];
+    return '<tr>'
+      + '<td class="sym">' + esc(k) + '</td>'
+      + '<td>' + trendBadge(t.trend_label) + '</td>'
+      + '<td class="num" style="color:' + strengthColor(t.strength) + '">' + fmtNum(t.strength, 1) + '</td>'
+      + '<td class="num">' + fmtNum(t.price, 6) + '</td>'
+      + '<td class="num">' + fmtPct(t.atr_pct, 3) + '</td>'
+      + '<td>' + esc(t.signal_label) + (t.near_trigger ? ' <span class="badge b-warn">近</span>' : '') + '</td>'
+      + '<td class="mono">' + esc((t.seen_at_utc || '').replace('T',' ').slice(0,19)) + '</td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="7" class="muted">無監控資料</td></tr>';
+
+  const par = (H.parity || null);
+  $('parityText').innerHTML = par
+    ? ('<b>' + esc(par.status) + '</b> — ' + esc(par.summary))
+    : '見專案 <code>live_web/engine_test.mjs</code> 的執行輸出。';
+}
+
+/* ===================== 主流程 ===================== */
+async function refreshAll(){
+  if (state.busy) return;
+  state.busy = true;
+  $('refreshBtn').disabled = true;
+  setStatus('load', '抓取中…');
+  setNote('info', '正在向幣安公開端點請求 K 線與報價…');
+
+  const t0 = Date.now();
+  try {
+    const serverTimeMs = await fetchServerTime();
+
+    // --- 即時訊號（3 檔，序列抓取以貼近 Python 行為並避免尖峰） ---
+    const liveResults = [];
+    const liveErrors = [];
+    for (const sym of LIVE_SYMBOLS){
+      try {
+        const bars = await fetchKlines(sym, '1d', KLINE_LIMIT);
+        const a = CTMA.analyzeBars(bars, sym, {
+          interval: '1d', nowMs: Date.now(), serverTimeMs
+        });
+        liveResults.push({symbol: sym, analysis: a});
+      } catch(e){
+        liveErrors.push(sym + '：' + ((e && e.message) || e));
+      }
+    }
+
+    // --- 市場掃描 ---
+    let rankings = null, scanErrors = [];
+    try {
+      const tickers = await fetchTickers();
+      const top = CTMA.topSymbolsByVolume(tickers, SCAN_TOP_N);
+      const res = await mapLimit(top.map(t => t.symbol), SCAN_CONCURRENCY, async (sym) => {
+        const bars = await fetchKlines(sym, '1d', KLINE_LIMIT);
+        return CTMA.analyzeBars(bars, sym, {interval:'1d', nowMs: Date.now(), serverTimeMs});
+      });
+      const ok = [];
+      res.forEach((r, i) => {
+        if (r && r.ok) ok.push(r.value);
+        else scanErrors.push(top[i].symbol + '：' + ((r && r.error) || '未知錯誤'));
+      });
+      rankings = CTMA.buildRankings(ok, 8);
+    } catch(e){
+      scanErrors.push('ticker/24hr：' + ((e && e.message) || e));
+    }
+
+    const dt = ((Date.now() - t0) / 1000).toFixed(1);
+
+    if (liveResults.length) renderLive(liveResults, serverTimeMs, '1d');
+    if (rankings) renderScan(rankings, null);
+
+    // 暴露結構化結果供自動化驗證讀取（不影響畫面）
+    window.__CTMA_DASH__.lastLive = liveResults.map(x => {
+      const c = x.analysis.confirmed || x.analysis.provisional;
+      const pv = x.analysis.provisional;
+      return {
+        symbol: x.symbol,
+        row_source: x.analysis.confirmed ? 'confirmed' : 'provisional',
+        // 主口徑（已收盤那根）——同一交易日內不會變
+        price: c.price, atr: c.atr, atr_pct: c.atr_pct,
+        stop: x.analysis.levels ? x.analysis.levels.stop : null,
+        stop_mult: x.analysis.levels ? x.analysis.levels.stop_mult : null,
+        risk_pct: x.analysis.levels ? x.analysis.levels.risk_pct : null,
+        trend: c.trend, strength: c.strength.total,
+        bar_is_in_progress: x.analysis.bar_is_in_progress,
+        // 即時（未收盤那根）——每次刷新都應反映當下市價
+        live_price: pv.price,
+        live_strength: pv.strength.total,
+        bar_open_utc: x.analysis.bar_open_utc,
+        fetched_at_utc: x.analysis.fetched_at_utc
+      };
+    });
+    window.__CTMA_DASH__.lastScanMeta = rankings ? {
+      total_scanned: rankings.total_scanned,
+      long_count: rankings.long_count, short_count: rankings.short_count,
+      fresh_signal_count: rankings.fresh_signal_count
+    } : null;
+
+    const parts = [];
+    parts.push('即時訊號 <b>' + liveResults.length + '/' + LIVE_SYMBOLS.length + '</b> 檔成功');
+    if (rankings) parts.push('市場掃描 <b>' + rankings.total_scanned + '</b> 檔成功');
+    parts.push('耗時 <b>' + dt + ' 秒</b>');
+    const allErr = liveErrors.concat(scanErrors);
+    if (allErr.length){
+      setNote('err', parts.join(' · ') + '<br><b>部分失敗：</b>'
+        + esc(allErr.slice(0,5).join('；'))
+        + (allErr.length > 5 ? '（其餘 ' + (allErr.length-5) + ' 筆略）' : ''));
+    } else {
+      setNote('ok', parts.join(' · ') + ' — 全部由瀏覽器即時抓取並於前端重算，<b>非內嵌快照</b>。');
+    }
+
+    if (!liveResults.length && !rankings){
+      setStatus('err', '抓取失敗');
+      state.lastErr = new Date();
+    } else {
+      setStatus('ok', '即時資料正常');
+      state.lastOk = new Date();
+      state.lastErr = null;
+    }
+  } catch(e){
+    setStatus('err', '抓取失敗');
+    state.lastErr = new Date();
+    setNote('err', '<b>無法取得資料：</b>' + esc((e && e.message) || String(e))
+      + '<br>可能原因：網路中斷、跨域被擋（CORS）、端點暫時不可用或所在地區限制。'
+      + '<br>本頁<b>不會以舊資料冒充即時值</b>；請按「立即刷新」重試。'
+      + '若持續失敗，可改用隨附的 <code>serve_proxy.py</code> 本機代理模式。');
+  } finally {
+    state.busy = false;
+    $('refreshBtn').disabled = false;
+    $('lastUpdate').innerHTML = '最後更新 <b>'
+      + (state.lastOk ? state.lastOk.toISOString().replace('T',' ').slice(0,19) + ' UTC' : '—') + '</b>';
+    state.nextAt = Date.now() + state.intervalMs;
+    updateCountdown();
+  }
+}
+
+function updateCountdown(){
+  const el = $('countdown');
+  if (!state.intervalMs){ el.textContent = '已關閉'; return; }
+  const left = Math.max(0, state.nextAt - Date.now());
+  el.textContent = (left / 1000).toFixed(0) + ' 秒';
+}
+
+function restartTimers(){
+  if (state.timer) clearInterval(state.timer);
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  state.nextAt = Date.now() + state.intervalMs;
+  if (state.intervalMs > 0){
+    state.timer = setInterval(() => { refreshAll(); }, state.intervalMs);
+    state.countdownTimer = setInterval(updateCountdown, 250);
+  }
+  updateCountdown();
+}
+
+/* ---- 事件綁定 ---- */
+$('refreshBtn').addEventListener('click', () => {
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
+});
+$('intervalSel').addEventListener('change', (e) => {
+  state.intervalMs = Number(e.target.value) * 1000;
+  restartTimers();
+});
+
+/* ---- 啟動 ---- */
+renderHistory();
+restartTimers();
+refreshAll();
+
+/* 供自動化驗證讀取（不影響使用者） */
+window.__CTMA_DASH__ = {
+  state,
+  refresh: refreshAll,
+  engineVersion: CTMA.VERSION,
+  lastPayload: () => ({
+    lastOk: state.lastOk ? state.lastOk.toISOString() : null,
+    liveCards: document.querySelectorAll('#liveCards .card').length,
+    scanRows: document.querySelectorAll('#scanBody tr').length,
+    firstCardText: (document.querySelector('#liveCards .card') || {}).textContent || ''
+  })
+};
+</script>
+</body>
+</html>

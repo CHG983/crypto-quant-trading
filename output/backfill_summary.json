@@ -1,0 +1,133 @@
+{
+  "list_source": "top20_by_quote_volume",
+  "interval": "1d",
+  "lookback_bars": 120,
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "NEARUSDT",
+    "ZECUSDT",
+    "SOLUSDT",
+    "STRKUSDT",
+    "XRPUSDT",
+    "SUIUSDT",
+    "BNBUSDT",
+    "ENAUSDT",
+    "SUSDT",
+    "UNIUSDT",
+    "WUSDT",
+    "WLDUSDT",
+    "MAGICUSDT",
+    "AVAXUSDT",
+    "DOGEUSDT",
+    "CFXUSDT",
+    "ONDOUSDT",
+    "TAOUSDT"
+  ],
+  "new_records": 0,
+  "history_total": 91,
+  "failed": 0,
+  "by_type": {},
+  "per_symbol": [
+    {
+      "symbol": "BTCUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "ETHUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "NEARUSDT",
+      "replayed": 4,
+      "added": 0
+    },
+    {
+      "symbol": "ZECUSDT",
+      "replayed": 4,
+      "added": 0
+    },
+    {
+      "symbol": "SOLUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "STRKUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "XRPUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "SUIUSDT",
+      "replayed": 6,
+      "added": 0
+    },
+    {
+      "symbol": "BNBUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "ENAUSDT",
+      "replayed": 6,
+      "added": 0
+    },
+    {
+      "symbol": "SUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "UNIUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "WUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "WLDUSDT",
+      "replayed": 4,
+      "added": 0
+    },
+    {
+      "symbol": "MAGICUSDT",
+      "replayed": 6,
+      "added": 0
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "CFXUSDT",
+      "replayed": 2,
+      "added": 0
+    },
+    {
+      "symbol": "ONDOUSDT",
+      "replayed": 15,
+      "added": 0
+    },
+    {
+      "symbol": "TAOUSDT",
+      "replayed": 2,
+      "added": 0
+    }
+  ]
+}

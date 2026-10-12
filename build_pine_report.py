@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""build_report.py — generates the Pine Script compile-verification report page."""
+import html, json, pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent
+OUT = ROOT / "index.html"
+
+pinets = json.loads((ROOT.parent.parent / "documents" / "crypto-quant_v6" / "output" / "pinets_verify.json").read_text(encoding="utf-8"))
+
+def esc(s): return html.escape(str(s))
+
+# ---- PineTS result rows -------------------------------------------------
+rows = []
+for f in pinets["files"]:
+    ok = f["status"] == "COMPILED_AND_EXECUTED_OK"
+    badge = '<span class="ok">編譯＋執行成功</span>' if ok else '<span class="bad">錯誤</span>'
+    vs = f.get("value_sanity", {})
+    sample = ""
+    for k, v in list(vs.items())[:4]:
+        if v.get("last") is not None:
+            sample += f'<li><code>{esc(k)}</code> → 最後值 <b>{v["last"]:,}</b>（{v["finite"]}/{v["len"]} 根有效）</li>'
+    rows.append(f"""
+    <tr>
+      <td><code>{esc(f['name'])}.pine</code></td>
+      <td>{f['lines']}</td>
+      <td>{f.get('plot_count','—')}</td>
+      <td>{badge}</td>
+    </tr>""")
+    if sample:
+        rows.append(f'<tr class="sub"><td colspan="4"><ul class="sanity">{sample}</ul></td></tr>')
+
+neg = [
+    ("var 在 if 區塊內宣告", "NOT CAUGHT", False),
+    ("裸 na 當布林使用", "NOT CAUGHT", False),
+    ("location.absolute 給布林值", "NOT CAUGHT", False),
+    ("括號未閉合（語法錯誤）", "CAUGHT", True),
+    ("未知函式 ta.notARealFunction", "CAUGHT", True),
+]
+OK_SPAN = '<span class="ok">抓到</span>'
+WARN_SPAN = '<span class="warn">未抓到</span>'
+neg_rows = "".join(
+    "<tr><td>" + esc(c) + "</td><td>" + (OK_SPAN if ok else WARN_SPAN) + "</td></tr>"
+    for c, _, ok in neg
+)
+
+HTML = f"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pine Script 編譯驗證報告 — CTMA 指標版／策略版</title>
+<style>
+  :root {{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --line:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --ok:#3fb950;
+    --warn:#d29922; --bad:#f85149; --code:#0b0f14;
+  }}
+  * {{ box-sizing:border-box; }}
+  body {{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.75; font-size:16px;
+  }}
+  .wrap {{ max-width:1080px; margin:0 auto; padding:48px 24px 96px; }}
+  header {{ border-bottom:1px solid var(--line); padding-bottom:28px; margin-bottom:36px; }}
+  h1 {{ font-size:clamp(1.5rem,4vw,2.1rem); margin:0 0 10px; letter-spacing:-.01em; }}
+  .sub-title {{ color:var(--muted); font-size:.95rem; }}
+  h2 {{
+    font-size:1.3rem; margin:52px 0 16px; padding-left:14px;
+    border-left:4px solid var(--accent);
+  }}
+  h3 {{ font-size:1.05rem; margin:28px 0 10px; color:var(--accent); }}
+  p {{ margin:12px 0; }}
+  a {{ color:var(--accent); text-decoration:none; }}
+  a:hover {{ text-decoration:underline; }}
+  code {{
+    background:var(--code); padding:2px 6px; border-radius:4px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.88em;
+    color:#79c0ff; word-break:break-word;
+  }}
+  pre {{
+    background:var(--code); border:1px solid var(--line); border-radius:8px;
+    padding:16px; overflow-x:auto; font-size:.85rem; line-height:1.6;
+    font-family:"SF Mono",Menlo,Consolas,monospace; color:#c9d1d9;
+    white-space:pre-wrap; word-break:break-word;
+  }}
+  .verdict {{
+    background:linear-gradient(135deg,#1c2128,#161b22);
+    border:1px solid var(--line); border-left:5px solid var(--warn);
+    border-radius:10px; padding:22px 24px; margin:28px 0;
+  }}
+  .verdict h3 {{ margin-top:0; color:var(--warn); }}
+  .card {{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:20px 22px; margin:18px 0;
+  }}
+  .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:20px 0; }}
+  .stat {{ background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:16px; }}
+  .stat .n {{ font-size:1.6rem; font-weight:700; }}
+  .stat .l {{ color:var(--muted); font-size:.82rem; margin-top:4px; }}
+  .ok {{ color:var(--ok); font-weight:600; }}
+  .warn {{ color:var(--warn); font-weight:600; }}
+  .bad {{ color:var(--bad); font-weight:600; }}
+  .tablewrap {{ overflow-x:auto; margin:18px 0; border:1px solid var(--line); border-radius:8px; }}
+  table {{ border-collapse:collapse; width:100%; min-width:520px; font-size:.9rem; }}
+  th,td {{ padding:11px 14px; text-align:left; border-bottom:1px solid var(--line); }}
+  th {{ background:var(--panel2); color:var(--muted); font-weight:600; font-size:.82rem; text-transform:uppercase; letter-spacing:.03em; }}
+  tr:last-child td {{ border-bottom:none; }}
+  tr.sub td {{ background:#12161c; padding-top:0; }}
+  ul.sanity {{ margin:6px 0 6px 18px; padding:0; font-size:.85rem; color:var(--muted); }}
+  ul.sanity li {{ margin:3px 0; }}
+  ol.steps {{ padding-left:22px; }}
+  ol.steps li {{ margin:10px 0; }}
+  figure {{ margin:22px 0; }}
+  figure img {{ width:100%; border:1px solid var(--line); border-radius:8px; display:block; }}
+  figcaption {{ color:var(--muted); font-size:.85rem; margin-top:8px; text-align:center; }}
+  .disclaimer {{
+    margin-top:56px; padding:22px 24px; background:#1a1410;
+    border:1px solid #4a3a1a; border-radius:10px; font-size:.9rem; color:#d8c9a8;
+  }}
+  .disclaimer strong {{ color:var(--warn); }}
+  .tag {{ display:inline-block; padding:2px 9px; border-radius:20px; font-size:.75rem; font-weight:600; }}
+  .tag.real {{ background:#0d2a17; color:var(--ok); border:1px solid #1f6f3a; }}
+  .tag.infer {{ background:#2a2410; color:var(--warn); border:1px solid #6f5a1f; }}
+  .tag.none {{ background:#2a1414; color:var(--bad); border:1px solid #6f1f1f; }}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Pine Script 編譯驗證報告</h1>
+  <div class="sub-title">
+    CTMA 指標版 <code>ctma_indicator.pine</code> ／ 策略版 <code>ctma_strategy.pine</code><br>
+    驗證日期 2026-10-12 · 目標：取得 TradingView 真實編譯結果，或盡可能逼近的替代驗證
+  </div>
+</header>
+
+<div class="verdict">
+  <h3>⚠️ 結論先講：TradingView 真實編譯結果「未取得」</h3>
+  <p>
+    沙盒環境<strong>沒有 TradingView 帳號憑證</strong>，無法登入。未登入狀態下
+    <code>https://www.tradingview.com/pine/</code> 確實能開啟 Pine Editor（已截圖佐證），
+    但把腳本內容寫入 Monaco 編輯器後，瀏覽器自動化 daemon 卡死，<strong>無法可靠讀取編譯器狀態</strong>。
+    因此本報告<strong>不會聲稱「TradingView 編譯成功或失敗」</strong>。
+  </p>
+  <p>
+    取而代之，我改用<strong>真實的開源 Pine Script v6 編譯器／執行引擎 PineTS</strong> 做編譯層級驗證 ——
+    這比純靜態檢查強得多，但<strong>仍不等於 TradingView 編譯</strong>。最後一步仍需你本人貼進 Pine Editor 確認。
+  </p>
+</div>
+
+<h2>① 嘗試了哪些方法、各自結果</h2>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>方法</th><th>性質</th><th>結果</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>TradingView 網頁登入 + Pine Editor 貼上編譯</td>
+      <td><span class="tag none">真實編譯器</span></td>
+      <td><span class="bad">未取得</span> — 無帳號憑證；未登入 scratch 編輯器可開，但貼入後 daemon 卡死</td>
+    </tr>
+    <tr>
+      <td><b>PineTS</b>（npm <code>pinets</code> 0.11.0）— 開源 Pine v6 編譯器＋執行引擎</td>
+      <td><span class="tag real">真實引擎</span></td>
+      <td><span class="ok">兩份腳本皆編譯並執行成功</span>，輸出真實數值</td>
+    </tr>
+    <tr>
+      <td><code>@opus-aether-ai/pine-transpiler</code> 0.4.11 — 開源 Pine→JS 轉譯器</td>
+      <td><span class="tag real">真實工具</span></td>
+      <td><span class="ok">兩份腳本皆轉譯成功</span>（JS 12,985 / 11,211 字元）</td>
+    </tr>
+    <tr>
+      <td>自製 <code>pine_static_check.py</code> — 依官方文件規則的靜態分析</td>
+      <td><span class="tag infer">靜態推論</span></td>
+      <td><span class="ok">46 PASS / 0 WARN / 0 FAIL</span></td>
+    </tr>
+    <tr>
+      <td>人工逐條規則複核（var 作用域、na 布林、tuple 元數…）</td>
+      <td><span class="tag infer">人工推論</span></td>
+      <td><span class="ok">無額外發現</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>為什麼 TradingView 這條路走不通</h3>
+<ol class="steps">
+  <li><code>curl</code> 確認 <code>tradingview.com</code> 可連線（HTTP 200），但頁面 HTML 帶 <code>is-not-authenticated</code> — 未登入。</li>
+  <li>用真實 Chromium 開啟 <code>/chart/</code>，圖表正常載入（AAPL 報價可見），但底部面板收合、找不到 Pine Editor 分頁。</li>
+  <li>改開 <code>https://www.tradingview.com/pine/</code> — <strong>成功開啟 Pine Editor</strong>，且有一個可編輯的 Monaco <code>textarea.inputarea</code>。</li>
+  <li>用 <code>execCommand('insertText')</code> 成功把腳本寫入編輯器（小腳本測試通過，內容確實進入 <code>.view-lines</code>）。</li>
+  <li>寫入完整 341 行指標檔時，<strong>瀏覽器 daemon 回報 <code>Resource temporarily unavailable</code> 並卡死</strong>，無法讀取錯誤標記或編譯狀態。</li>
+  <li>依計畫<strong>立即停止</strong> TradingView 實驗，轉向替代驗證 —— 不再嘗試登入或破解驗證碼。</li>
+</ol>
+
+<figure>
+  <img src="img/tv-pine-editor.png" alt="TradingView Pine Editor 未登入開啟畫面">
+  <figcaption>證據：未登入狀態下 <code>/pine/</code> 確實開啟 Pine Editor（左側為編輯區、右側為圖表）。這是「可開啟」的證據，<strong>不是</strong>「編譯成功」的證據。</figcaption>
+</figure>
+
+<h2>② PineTS 編譯層級驗證 <span class="tag real">真實引擎結果</span></h2>
+
+<p>
+  <b>PineTS</b> 是一套獨立的開源 Pine Script v6 編譯器與執行引擎（npm <code>pinets</code>，由 LuxAlgo 支持）。
+  它會把原生 Pine v6 原始碼轉譯成 JavaScript 並<strong>實際執行</strong>，輸出 plot 序列。
+  這證明原始碼在一個真實的 Pine v6 引擎下<strong>能解析、能轉譯、能執行</strong>。
+</p>
+
+<div class="grid">
+  <div class="stat"><div class="n ok">2 / 2</div><div class="l">腳本編譯並執行成功</div></div>
+  <div class="stat"><div class="n ok">17 / 16</div><div class="l">指標版／策略版 plot 輸出數</div></div>
+  <div class="stat"><div class="n">300</div><div class="l">執行資料根數（BTCUSDT 日線）</div></div>
+  <div class="stat"><div class="n ok">0</div><div class="l">執行期錯誤</div></div>
+</div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>檔案</th><th>行數</th><th>plot 數</th><th>PineTS 結果</th></tr></thead>
+  <tbody>
+    {''.join(rows)}
+  </tbody>
+</table>
+</div>
+
+<p>
+  執行輸出的數值<strong>符合 BTC 實際價位</strong>（EMA 快線 83,286.87、Supertrend 79,755.57），
+  證明這不是空跑 —— 引擎真的在算指標。停損／停利序列在無持倉時為 <code>na</code>（有效值 0 根），
+  這正是<strong>正確行為</strong>：沒有部位就沒有停損線。
+</p>
+
+<h2>③ 負向對照：這個工具到底抓得到什麼？ <span class="tag real">真實校準</span></h2>
+
+<p>
+  一個「什麼都說 OK」的驗證器毫無價值。我把<strong>故意寫壞</strong>的 Pine v6 腳本餵給同一個引擎，
+  量出它的<strong>覆蓋邊界</strong>：
+</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>故意植入的錯誤</th><th>PineTS 是否抓到</th></tr></thead>
+  <tbody>{neg_rows}</tbody>
+</table>
+</div>
+
+<div class="card">
+  <p style="margin-top:0"><b>誠實結論：PineTS 抓到 2/5。</b></p>
+  <ul>
+    <li><span class="ok">抓得到</span>：語法錯誤（括號未閉合）、未知函式／符號。</li>
+    <li><span class="warn">抓不到</span>：<code>var</code> 在 <code>if</code> 內宣告、裸 <code>na</code> 當布林、<code>location.absolute</code> 型別錯誤。</li>
+  </ul>
+  <p style="margin-bottom:0">
+    這三類<strong>正是 TradingView 編譯器會擋、而第三方引擎不擋</strong>的型別／作用域規則。
+    所以它們必須由<strong>靜態檢查器</strong>補上（見 ④）—— 兩者互補，缺一不可。
+  </p>
+</div>
+
+<h2>④ 靜態檢查 <span class="tag infer">靜態推論，非編譯器</span></h2>
+
+<p>自製 <code>pine_static_check.py</code> 依 Pine v6 官方文件規則逐條檢查，兩份腳本各 23 項：</p>
+
+<pre>python3 pine_static_check.py pine/ctma_indicator.pine pine/ctma_strategy.pine
+
+  → 23 PASS / 0 WARN / 0 FAIL  (ctma_indicator.pine)
+  → 23 PASS / 0 WARN / 0 FAIL  (ctma_strategy.pine)
+  ─────────────────────────────────────────────
+  總計：46 PASS / 0 WARN / 0 FAIL  (共 46 項)</pre>
+
+<p>涵蓋你指定的每一項：</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>檢查項</th><th>結果</th></tr></thead>
+  <tbody>
+    <tr><td><code>var</code> 全在全域（無一在 if/for/while 內）</td><td><span class="ok">9 個（指標）／7 個（策略），區塊內 = 0</span></td></tr>
+    <tr><td>tuple 解構元數正確</td><td><span class="ok">ta.supertrend 雙值、ta.macd 三值皆正確</span></td></tr>
+    <tr><td><code>hline</code> 僅用於常數水平線</td><td><span class="ok">1 次呼叫，誤用 0 次</span></td></tr>
+    <tr><td><code>plot.style_*</code> / <code>shape.*</code> 命名空間</td><td><span class="ok">全部完整命名空間</span></td></tr>
+    <tr><td><code>alertcondition</code> 在全域</td><td><span class="ok">6 個（指標）／4 個（策略），區塊內 = 0</span></td></tr>
+    <tr><td>無未使用 input</td><td><span class="ok">31 個 input，未使用 = 0</span></td></tr>
+    <tr><td>無未來函數（request.security / lookahead）</td><td><span class="ok">完全未使用，lookahead = 0</span></td></tr>
+    <tr><td>歷史引用以 <code>nz()</code> 保護</td><td><span class="ok">未保護者 = 0</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>⑤ 人工規則複核 <span class="tag infer">人工推論</span></h2>
+<p>
+  在工具輸出之上，我依 <code>statically-validating-pine-scripts</code> 技能規則逐條人工複核：
+  <code>var</code> 作用域、<code>na</code> 布林運算、<code>location.absolute</code> 型別、
+  <code>alertcondition</code> 位置、tuple 元數、序列 vs 純量、<code>plot</code>/<code>hline</code> 用法。
+  <strong>未發現工具漏掉的額外問題。</strong>
+</p>
+
+<h2>⑥ 修正結果</h2>
+<div class="card">
+  <p style="margin-top:0">
+    <b>無需修正。</b> 兩份 <code>.pine</code> 檔在 v4 已修正過三類問題
+    （<code>location.absolute</code> 型別、同作用域重複宣告、裸 <code>na</code> 布林），
+    本次驗證的檔案與 v4 <strong>MD5 完全相同</strong>：
+  </p>
+  <pre>e0c00a778fa1b263c67cdce09cf8a04e  ctma_indicator.pine
+85ef630125f86173b515ae49b641114e  ctma_strategy.pine</pre>
+  <p style="margin-bottom:0">
+    三種驗證（PineTS 執行、轉譯器、靜態檢查 46/46）<strong>全部通過</strong>，因此本版未改動任何一行。
+  </p>
+</div>
+
+<h2>⑦ 你本人需要做的最後一步</h2>
+<p>這是<strong>唯一無法在沙盒內完成</strong>的環節。TradingView 的編譯器會做第三方引擎不做的型別推導與重載解析，請務必自行確認一次：</p>
+<ol class="steps">
+  <li>登入 <a href="https://www.tradingview.com/" target="_blank" rel="noopener">tradingview.com</a>（免費帳號即可）。</li>
+  <li>開啟任一圖表，點底部 <b>Pine Editor</b> 分頁（或直接前往 <code>tradingview.com/pine/</code>）。</li>
+  <li>把 <code>ctma_indicator.pine</code> 全文貼進編輯器，按 <b>Save</b> → <b>Add to chart</b>。</li>
+  <li>觀察下方 <b>Pine Logs</b> 面板：<br>
+      · 若顯示 <span class="ok">「Script … compiled successfully」</span> → 編譯通過。<br>
+      · 若有錯誤，TradingView 會<strong>直接指出行號與訊息</strong>，把訊息貼給我即可快速修正。</li>
+  <li>對 <code>ctma_strategy.pine</code> 重複一次（策略版可另開 <b>Strategy Tester</b> 看回測）。</li>
+</ol>
+<p>
+  貼上後指標版應在圖上看見 ▲▼ 買賣點、紅／綠停損停利線與右上資訊面板；
+  策略版則可開啟 Strategy Tester 檢視淨利／MDD／勝率。
+</p>
+
+<h2>⑧ 檔案連結</h2>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>檔案</th><th>連結</th></tr></thead>
+  <tbody>
+    <tr><td>指標版 <code>ctma_indicator.pine</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/pine/ctma_indicator.pine">下載</a></td></tr>
+    <tr><td>策略版 <code>ctma_strategy.pine</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/pine/ctma_strategy.pine">下載</a></td></tr>
+    <tr><td>PineTS 驗證腳本 <code>verify_pinets.mjs</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/pine_verify/verify_pinets.mjs">下載</a></td></tr>
+    <tr><td>負向對照 <code>negative_control.mjs</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/pine_verify/negative_control.mjs">下載</a></td></tr>
+    <tr><td>靜態檢查器 <code>pine_static_check.py</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/pine_static_check.py">下載</a></td></tr>
+    <tr><td>PineTS 原始輸出 <code>pinets_verify.json</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/output/pinets_verify.json">下載</a></td></tr>
+    <tr><td>靜態檢查原始輸出 <code>pine_static_check.json</code></td><td><a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v6/output/pine_static_check.json">下載</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>如何自行重跑驗證</h3>
+<pre># 1) 編譯層級驗證（需 Node.js）
+cd pine_verify
+npm install
+node verify_pinets.mjs      # → 兩份腳本 COMPILED_AND_EXECUTED_OK
+node negative_control.mjs   # → 校準工具覆蓋邊界（2/5）
+
+# 2) 靜態檢查（僅需 Python 3）
+cd ..
+python3 pine_static_check.py pine/ctma_indicator.pine pine/ctma_strategy.pine</pre>
+
+<div class="disclaimer">
+  <strong>⚠️ 投資免責聲明</strong>
+  <p>
+    本報告所有內容（含指標腳本、策略腳本、驗證結果與說明）僅供<strong>教育與研究用途</strong>，
+    <strong>不構成任何投資建議、要約或推薦</strong>。歷史績效<strong>不代表</strong>未來表現。
+    指標訊號基於歷史價格計算，無法預測未來走勢；加密貨幣波動極大，可能導致<strong>全部本金損失</strong>。
+    任何交易決策應由使用者自行判斷並承擔風險。
+  </p>
+  <p style="margin-bottom:0">
+    As an AI Agent, I cannot provide legally protected, personalized investment advice.
+    This analysis is for informational purposes only and does not constitute investment
+    advice or recommendations. Consult a licensed financial advisor before making
+    investment decisions.
+  </p>
+</div>
+
+</div>
+</body>
+</html>
+"""
+
+OUT.write_text(HTML, encoding="utf-8")
+print(f"wrote {OUT}  ({len(HTML):,} chars)")

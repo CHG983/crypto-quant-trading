@@ -1,0 +1,15 @@
+{
+  "name": "ctma-pine-verify",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Compile-level verification harness for the CTMA Pine Script files, using the open-source PineTS (pinets) Pine v6 compiler/runtime and the @opus-aether-ai/pine-transpiler parser.",
+  "scripts": {
+    "verify": "node verify_pinets.mjs",
+    "negative": "node negative_control.mjs"
+  },
+  "dependencies": {
+    "pinets": "^0.11.0",
+    "@opus-aether-ai/pine-transpiler": "^0.4.11"
+  }
+}

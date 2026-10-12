@@ -1,0 +1,228 @@
+{
+  "engine": "pinets (PineTS) — open-source Pine Script v6 compiler/runtime",
+  "engine_version": "0.11.0",
+  "data_provider": "Binance BTCUSDT 1d, 300 bars",
+  "disclaimer": "PineTS is an independent open-source engine, NOT TradingView. A pass here is compile-level evidence, not a TradingView compile.",
+  "files": [
+    {
+      "name": "ctma_indicator",
+      "lines": 341,
+      "chars": 14941,
+      "status": "COMPILED_AND_EXECUTED_OK",
+      "plot_count": 17,
+      "plot_names": [
+        "EMA 快線",
+        "EMA 慢線",
+        "Supertrend",
+        "多單停損",
+        "空單停損",
+        "多單停利",
+        "空單停利",
+        "做多進場",
+        "做空進場",
+        "停損出場",
+        "零軸",
+        "__labels__",
+        "__lines__",
+        "__boxes__",
+        "__linefills__",
+        "__polylines__",
+        "__tables__"
+      ],
+      "value_sanity": {
+        "EMA 快線": {
+          "len": 300,
+          "finite": 280,
+          "last": 83283.2142
+        },
+        "EMA 慢線": {
+          "len": 300,
+          "finite": 246,
+          "last": 79678.9536
+        },
+        "Supertrend": {
+          "len": 300,
+          "finite": 291,
+          "last": 79755.5696
+        },
+        "多單停損": {
+          "len": 300,
+          "finite": 99,
+          "last": 75672.7751
+        },
+        "空單停損": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "多單停利": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "空單停利": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "做多進場": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "做空進場": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "停損出場": {
+          "len": 300,
+          "finite": 1,
+          "last": 71419.55
+        },
+        "零軸": {
+          "len": 300,
+          "finite": 300,
+          "last": 0
+        },
+        "__labels__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__lines__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__boxes__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__linefills__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__polylines__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__tables__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        }
+      }
+    },
+    {
+      "name": "ctma_strategy",
+      "lines": 280,
+      "chars": 13523,
+      "status": "COMPILED_AND_EXECUTED_OK",
+      "plot_count": 16,
+      "plot_names": [
+        "EMA 快線",
+        "EMA 慢線",
+        "Supertrend",
+        "多單停損",
+        "空單停損",
+        "多單停利",
+        "空單停利",
+        "做多進場",
+        "做空進場",
+        "零軸",
+        "__labels__",
+        "__lines__",
+        "__boxes__",
+        "__linefills__",
+        "__polylines__",
+        "__tables__"
+      ],
+      "value_sanity": {
+        "EMA 快線": {
+          "len": 300,
+          "finite": 280,
+          "last": 83283.2142
+        },
+        "EMA 慢線": {
+          "len": 300,
+          "finite": 246,
+          "last": 79678.9536
+        },
+        "Supertrend": {
+          "len": 300,
+          "finite": 291,
+          "last": 79755.5696
+        },
+        "多單停損": {
+          "len": 300,
+          "finite": 44,
+          "last": 71845.7928
+        },
+        "空單停損": {
+          "len": 300,
+          "finite": 78,
+          "last": 68837.9056
+        },
+        "多單停利": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "空單停利": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "做多進場": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "做空進場": {
+          "len": 300,
+          "finite": 0,
+          "last": null
+        },
+        "零軸": {
+          "len": 300,
+          "finite": 300,
+          "last": 0
+        },
+        "__labels__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__lines__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__boxes__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__linefills__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__polylines__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        },
+        "__tables__": {
+          "len": 1,
+          "finite": 0,
+          "last": null
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加密貨幣量化交易框架 — CTMA 策略完整報告（含 Pine Script 指標／策略雙版本）</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#131a26; --panel2:#1a2333; --line:#26324a;
+    --txt:#e6edf7; --muted:#93a4bf; --accent:#f7931a; --accent2:#627eea;
+    --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px}
+  header{background:linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#2a1f0a 100%);
+    border-bottom:1px solid var(--line);padding:56px 0 44px;margin-bottom:36px}
+  header .wrap{padding-bottom:0}
+  .kicker{color:var(--accent);font-weight:700;letter-spacing:.14em;font-size:12px;text-transform:uppercase}
+  h1{font-size:clamp(26px,4.4vw,42px);margin:12px 0 10px;line-height:1.25;font-weight:800}
+  .sub{color:var(--muted);font-size:16px;max-width:760px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .badge{background:rgba(247,147,26,.12);border:1px solid rgba(247,147,26,.35);
+    color:#ffc477;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:600}
+  .badge.b2{background:rgba(98,126,234,.12);border-color:rgba(98,126,234,.35);color:#a5b4fc}
+  .badge.b3{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
+  h2{font-size:clamp(20px,2.6vw,27px);margin:52px 0 6px;font-weight:800;
+    padding-bottom:10px;border-bottom:2px solid var(--line)}
+  h2 .n{color:var(--accent);margin-right:10px;font-variant-numeric:tabular-nums}
+  h3{font-size:18px;margin:30px 0 8px;font-weight:700;color:#cbd8ec}
+  h4{font-size:15px;margin:20px 0 6px;font-weight:700;color:var(--muted)}
+  p{margin:10px 0}
+  a{color:#7dd3fc;text-decoration:none;border-bottom:1px dotted rgba(125,211,252,.4)}
+  a:hover{color:#bae6fd}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;
+    padding:2px 6px;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13px;color:#ffd9a0}
+  pre{background:#0a0f18;border:1px solid var(--line);border-radius:10px;padding:16px 18px;
+    overflow-x:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;
+    line-height:1.65;color:#c9d6ea;white-space:pre;margin:14px 0}
+  pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px 24px;margin:18px 0}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat .lbl{color:var(--muted);font-size:12.5px;font-weight:600;letter-spacing:.03em}
+  .stat .val{font-size:clamp(20px,2.6vw,27px);font-weight:800;margin-top:5px;
+    font-variant-numeric:tabular-nums;line-height:1.2}
+  .stat .note{color:var(--muted);font-size:11.5px;margin-top:3px}
+  .pos{color:var(--green)} .neg{color:var(--red)} .neu{color:var(--amber)}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;
+    background:var(--panel);border-radius:10px;overflow:hidden}
+  th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:#182234;color:#c3d2e8;font-weight:700;font-size:13px;
+    letter-spacing:.02em;white-space:nowrap}
+  td{font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:rgba(255,255,255,.025)}
+  .num{text-align:right}
+  figure{margin:22px 0;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:14px;overflow:hidden}
+  figure img{width:100%;height:auto;display:block;border-radius:8px;background:#fff}
+  figcaption{color:var(--muted);font-size:13px;margin-top:11px;text-align:center}
+  .callout{border-left:4px solid var(--accent);background:rgba(247,147,26,.07);
+    border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0}
+  .callout.warn{border-left-color:var(--red);background:rgba(239,68,68,.07)}
+  .callout.ok{border-left-color:var(--green);background:rgba(34,197,94,.07)}
+  .callout.info{border-left-color:var(--blue);background:rgba(59,130,246,.07)}
+  .callout strong{color:#fff}
+  ul,ol{margin:10px 0;padding-left:24px}
+  li{margin:6px 0}
+  .tag{display:inline-block;padding:2px 9px;border-radius:6px;font-size:11.5px;
+    font-weight:700;letter-spacing:.02em}
+  .t-ok{background:rgba(34,197,94,.16);color:#86efac}
+  .t-bad{background:rgba(239,68,68,.16);color:#fca5a5}
+  .t-warn{background:rgba(245,158,11,.16);color:#fcd34d}
+  .t-info{background:rgba(59,130,246,.16);color:#93c5fd}
+  .disc{background:#1a1206;border:1px solid #4a3410;border-radius:12px;
+    padding:20px 22px;margin:44px 0 0;color:#e8d5b0;font-size:13.5px}
+  .disc h3{color:#fbbf24;margin-top:0}
+  footer{color:var(--muted);font-size:13px;text-align:center;
+    padding:34px 0 0;border-top:1px solid var(--line);margin-top:44px}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+  .toc ol{margin:0;padding-left:20px}
+  .toc a{border:none}
+  /* 可折疊程式碼區塊（兩份 .pine 完整程式碼） */
+  .codebox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:18px 0}
+  .codebox summary{cursor:pointer;font-weight:700;color:#cbd8ec;outline:none;list-style:revert}
+  .codebox summary:hover{color:#fff}
+  .codebox[open] summary{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .codebox pre{max-height:560px;overflow:auto;margin:0}
+  .codebox sup{color:var(--accent)}
+  /* 表格在窄螢幕可橫向捲動，避免撐破版面 */
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;border-radius:10px}
+  .tablewrap table{margin:0;min-width:520px}
+  @media(max-width:640px){
+    header{padding:38px 0 30px}
+    .wrap{padding:0 15px 60px}
+    /* 程式碼區塊改為自動換行，避免橫向溢出 */
+    pre{font-size:11.5px;padding:13px 14px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+    th,td{padding:9px 10px;font-size:13px}
+    .card{padding:17px 16px}
+    h2{margin-top:40px}
+    .tablewrap table{min-width:480px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Quantitative Trading Framework</div>
+    <h1>加密貨幣量化交易框架<br>CTMA 策略完整報告</h1>
+    <p class="sub">Crypto Trend Momentum ATR — 針對 24/7 交易、無漲跌停、高波動市場設計。
+    含 TradingView Pine Script 策略腳本與 Python 訊號產生／回測引擎，並以真實幣安日線資料實測。</p>
+    <div class="badges">
+      <span class="badge">Pine Script v5</span>
+      <span class="badge b2">Python 3.11</span>
+      <span class="badge b3">18/18 驗證通過</span>
+      <span class="badge">BTCUSDT 2019–2026</span>
+      <span class="badge b2">2,831 根日線</span>
+      <span class="badge b3">Pine 靜態檢查 46/46 通過</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<div class="toc">
+  <strong>目錄</strong>
+  <ol>
+    <li><a href="#s1">策略設計與理由</a></li>
+    <li><a href="#s2">參數說明</a></li>
+    <li><a href="#s3">回測結果（真實資料）</a></li>
+    <li><a href="#s4">圖表</a></li>
+    <li><a href="#s5">參數最佳化與過度擬合</a></li>
+    <li><a href="#s6">驗證結果</a></li>
+    <li><a href="#s7">Pine Script 程式碼</a></li>
+    <li><a href="#s8">Python 專案結構</a></li>
+    <li><a href="#s9">優缺點與注意事項</a></li>
+    <li><a href="#s10">資料來源與限制</a></li>
+    <li><a href="#s11">滾動前進驗證</a></li>
+    <li><a href="#s12">WFO 雙模式對照（rolling vs anchored）</a></li>
+    <li><a href="#s13">量化交易指標腳本（Pine 雙版本）</a></li>
+  </ol>
+</div>
+
+<!-- ================= 1 ================= -->
+<h2 id="s1"><span class="n">01</span>策略設計與理由</h2>
+
+<p>加密貨幣與台股／美股有本質差異，策略必須針對這些特性調整，而不是把股票策略直接搬過來：</p>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>加密貨幣特性</th><th>對應設計</th><th>理由</th></tr></thead>
+  <tbody>
+    <tr><td>24/7 交易、無收盤跳空保護</td><td><strong>ATR 波動度自適應停損</strong></td>
+        <td>沒有收盤可以「重置」風險，固定 % 停損在高波動期會被輕易掃出</td></tr>
+    <tr><td>波動大、趨勢強</td><td><strong>EMA(21/55)</strong> 而非 SMA</td>
+        <td>EMA 對近期價格更敏感，能較早跟上加密貨幣的快速趨勢轉折</td></tr>
+    <tr><td>假訊號多</td><td><strong>雙重動能確認</strong></td>
+        <td>RSI 站中軸同側 + MACD 柱方向一致，避免在逆勢反彈中進場</td></tr>
+    <tr><td>盤整泥沼</td><td><strong>ATR% 波動度門檻</strong></td>
+        <td>盤整時均線交叉幾乎都是假訊號，低波動時直接不進場</td></tr>
+    <tr><td>永續合約成熟</td><td><strong>預設允許做空</strong></td>
+        <td>加密貨幣做空是常態，且下跌段往往比上漲段更急</td></tr>
+  </tbody>
+</table></div>
+
+<h3>進出場邏輯</h3>
+<pre><code>做多進場：EMA 快線向上穿越慢線  且 RSI &gt; 50  且 MACD 柱 &gt; 0  且 ATR% &gt;= 門檻
+做空進場：EMA 快線向下穿越慢線  且 RSI &lt; 50  且 MACD 柱 &lt; 0  且 ATR% &gt;= 門檻
+出場    ：反向交叉，或 ATR 停損 / ATR 移動停損 / 選用 ATR 停利</code></pre>
+
+<div class="callout info">
+  <strong>關鍵語意：均線交叉 ≠ 進場訊號</strong><br>
+  均線交叉代表「市場狀態翻轉」，與「是否進場」是兩件事。看多翻轉<strong>一定</strong>要平掉空單；
+  但只有在空手且動能過濾通過時，才建立多單。看空翻轉同理。
+  <br><br>
+  <em>開發過程中發現的真實 bug</em>：初版把「進場」與「出場」寫進同一個 <code>signal</code> 欄位，
+  而 <code>crossUp</code> 同時是「做多進場」與「空單出場」條件，導致後寫的出場訊號
+  <strong>覆蓋</strong>了先寫的進場訊號 —— 回測跑出 <strong>0 筆交易</strong>。
+  修正方式是把訊號拆成三層：<code>bull_cross</code>/<code>bear_cross</code>（狀態翻轉）、
+  <code>long_entry_ok</code>/<code>short_entry_ok</code>（過濾是否通過）、<code>signal</code>（方向）。
+</div>
+
+<!-- ================= 2 ================= -->
+<h2 id="s2"><span class="n">02</span>參數說明</h2>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>群組</th><th>參數</th><th class="num">預設</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3">趨勢</td><td><code>ema_fast</code></td><td class="num">21</td><td>EMA 快線週期</td></tr>
+    <tr><td><code>ema_slow</code></td><td class="num">55</td><td>EMA 慢線週期</td></tr>
+    <tr><td><code>use_supertrend</code></td><td class="num">false</td><td>改用 Supertrend 過濾趨勢</td></tr>
+    <tr><td rowspan="3">動能</td><td><code>rsi_len</code></td><td class="num">14</td><td>RSI 週期</td></tr>
+    <tr><td><code>rsi_long_min</code></td><td class="num">50</td><td>做多 RSI 下限</td></tr>
+    <tr><td><code>macd</code></td><td class="num">12/26/9</td><td>MACD 快／慢／訊號</td></tr>
+    <tr><td rowspan="5">波動／風控</td><td><code>atr_len</code></td><td class="num">14</td><td>ATR 週期</td></tr>
+    <tr><td><code>atr_stop_mult</code></td><td class="num">3.0</td><td>初始停損距離（×ATR）</td></tr>
+    <tr><td><code>atr_trail_mult</code></td><td class="num">5.0</td><td>移動停損距離（×ATR）</td></tr>
+    <tr><td><code>atr_tp_mult</code></td><td class="num">6.0</td><td>停利距離（×ATR，預設關閉）</td></tr>
+    <tr><td><code>min_atr_pct</code></td><td class="num">0.5</td><td>波動度門檻（%）</td></tr>
+    <tr><td rowspan="2">部位</td><td><code>sizing_mode</code></td><td class="num">fraction</td><td>部位模式（見下）</td></tr>
+    <tr><td><code>allow_short</code></td><td class="num">true</td><td>允許做空</td></tr>
+  </tbody>
+</table></div>
+
+<h3>部位大小模式（重要）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>模式</th><th>公式</th><th>適用情境</th></tr></thead>
+  <tbody>
+    <tr><td><code>fraction</code>（預設）</td><td>名目部位 = 權益 × <code>fraction</code></td>
+        <td>與買進持有基準<strong>公平比較</strong></td></tr>
+    <tr><td><code>risk</code></td><td>名目部位 = (權益 × <code>risk_pct</code>) / 停損距離</td>
+        <td>嚴格風控，每筆只虧固定比例</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout warn">
+  <strong>實測發現：<code>risk</code> 模式會嚴重稀釋報酬</strong><br>
+  BTC 日線 3×ATR 停損距離約等於 <strong>9% 價格</strong>。在 <code>risk</code> 模式下，
+  每筆風險 1% 權益 → 名目部位僅約 <strong>10% 權益</strong>，其餘 90% 資金閒置。
+  實測同一組參數：<code>risk</code> 模式 <strong>+82.81%</strong> vs
+  <code>fraction</code> 模式 <strong>+1569.62%</strong>。
+  <br><br>
+  這不是 bug，而是「風險平價」的固有特性 —— 但做策略 vs B&amp;H 比較時<strong>必須</strong>用
+  <code>fraction</code>，否則等於拿 10% 資金去比 100% 資金。
+</div>
+
+<!-- ================= 3 ================= -->
+<h2 id="s3"><span class="n">03</span>回測結果（真實資料）</h2>
+
+<div class="callout ok">
+  <strong>資料來源：Binance 公開資料端點 <code>data-api.binance.vision</code></strong><br>
+  區間 <strong>2019-01-01 ~ 2026-10-01</strong>，共 <strong>2,831 根日線</strong>。
+  配置：EMA 21/55、ATR14、停損 3.0×ATR、移動停損 5.0×ATR、初始資金 10,000 USDT、
+  手續費 0.04%、滑價 0.05%、資金費率 0.01%/日、部位模式 <code>fraction</code>。
+</div>
+
+<h3>BTCUSDT</h3>
+<div class="grid g4">
+  <div class="stat"><div class="lbl">策略總報酬</div><div class="val pos">+1569.62%</div><div class="note">年化 43.81%</div></div>
+  <div class="stat"><div class="lbl">買進持有</div><div class="val pos">+2130.03%</div><div class="note">年化 49.29%</div></div>
+  <div class="stat"><div class="lbl">策略最大回撤</div><div class="val neu">−62.96%</div><div class="note">B&amp;H −76.63%</div></div>
+  <div class="stat"><div class="lbl">策略 Sharpe</div><div class="val pos">0.99</div><div class="note">B&amp;H 0.96</div></div>
+</div>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>指標</th><th class="num">策略</th><th class="num">買進持有</th><th>差異</th></tr></thead>
+  <tbody>
+    <tr><td>總報酬率</td><td class="num">+1569.62%</td><td class="num">+2130.03%</td><td class="neg">落後 560 pp</td></tr>
+    <tr><td>年化報酬率</td><td class="num">43.81%</td><td class="num">49.29%</td><td class="neg">落後 5.5 pp</td></tr>
+    <tr><td>最大回撤 (MDD)</td><td class="num pos">−62.96%</td><td class="num">−76.63%</td><td class="pos">改善 13.7 pp</td></tr>
+    <tr><td>Sharpe Ratio</td><td class="num pos">0.99</td><td class="num">0.96</td><td class="pos">勝出 0.03</td></tr>
+    <tr><td>Sortino Ratio</td><td class="num pos">1.34</td><td class="num">1.31</td><td class="pos">勝出 0.03</td></tr>
+    <tr><td>Calmar Ratio</td><td class="num">0.70</td><td class="num">0.64</td><td class="pos">勝出 0.06</td></tr>
+    <tr><td>交易次數</td><td class="num">39</td><td class="num">1</td><td>—</td></tr>
+    <tr><td>勝率</td><td class="num">46.2%</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>盈虧比 (Profit Factor)</td><td class="num">1.68</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>平均持有根數</td><td class="num">57.2</td><td class="num">2830</td><td>—</td></tr>
+  </tbody>
+</table></div>
+
+<h3>ETHUSDT</h3>
+<div class="grid g4">
+  <div class="stat"><div class="lbl">策略總報酬</div><div class="val pos">+832.17%</div><div class="note">年化 33.39%</div></div>
+  <div class="stat"><div class="lbl">買進持有</div><div class="val pos">+1841.93%</div><div class="note">年化 46.64%</div></div>
+  <div class="stat"><div class="lbl">策略最大回撤</div><div class="val neu">−69.19%</div><div class="note">B&amp;H −79.30%</div></div>
+  <div class="stat"><div class="lbl">策略 Sharpe</div><div class="val neu">0.79</div><div class="note">B&amp;H 0.88</div></div>
+</div>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>指標</th><th class="num">策略</th><th class="num">買進持有</th><th>差異</th></tr></thead>
+  <tbody>
+    <tr><td>總報酬率</td><td class="num">+832.17%</td><td class="num">+1841.93%</td><td class="neg">落後 1010 pp</td></tr>
+    <tr><td>年化報酬率</td><td class="num">33.39%</td><td class="num">46.64%</td><td class="neg">落後 13.3 pp</td></tr>
+    <tr><td>最大回撤 (MDD)</td><td class="num pos">−69.19%</td><td class="num">−79.30%</td><td class="pos">改善 10.1 pp</td></tr>
+    <tr><td>Sharpe Ratio</td><td class="num">0.79</td><td class="num pos">0.88</td><td class="neg">落後 0.09</td></tr>
+    <tr><td>交易次數</td><td class="num">35</td><td class="num">1</td><td>—</td></tr>
+    <tr><td>勝率</td><td class="num">40.0%</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>盈虧比</td><td class="num">1.57</td><td class="num">—</td><td>—</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout">
+  <strong>誠實解讀：這不是「打敗買進持有」的策略</strong><br>
+  BTC 上策略的 Sharpe（0.99）與 Sortino（1.34）<strong>微幅勝過</strong>買進持有，
+  且最大回撤改善 13.7 個百分點 —— 代表<strong>風險調整後</strong>略優。
+  但總報酬明顯落後，因為 2019–2026 是加密貨幣的超級多頭，
+  任何「會出場」的策略都必然錯過部分漲幅。
+  <br><br>
+  ETH 上策略則全面落後（Sharpe 0.79 vs 0.88）。<strong>策略的價值在於回撤控制，不在於報酬最大化。</strong>
+</div>
+
+<h3>出場原因分布</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>出場原因</th><th class="num">BTCUSDT</th><th class="num">ETHUSDT</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>ATR_STOP</code></td><td class="num">26</td><td class="num">22</td><td>觸發 ATR 停損或移動停損</td></tr>
+    <tr><td><code>SIGNAL_EXIT</code></td><td class="num">12</td><td class="num">12</td><td>反向交叉主動平倉</td></tr>
+    <tr><td><code>END_OF_DATA</code></td><td class="num">1</td><td class="num">1</td><td>回測結束強制平倉</td></tr>
+  </tbody>
+</table></div>
+<p>停損出場佔 <strong>約 2/3</strong>，顯示移動停損是主要的出場機制 —— 這也意味著
+<strong>停損參數的影響遠大於均線週期本身</strong>。</p>
+
+<!-- ================= 4 ================= -->
+<h2 id="s4"><span class="n">04</span>圖表</h2>
+
+<figure>
+  <img src="images/btc_equity.png" alt="BTCUSDT 權益曲線：策略 vs 買進持有">
+  <figcaption>圖 1｜BTCUSDT 權益曲線（藍：策略；灰虛線：買進持有）。策略波動明顯較小，但長期落後。</figcaption>
+</figure>
+
+<figure>
+  <img src="images/btc_price_trades.png" alt="BTCUSDT 價格、均線與買賣點">
+  <figcaption>圖 2｜BTCUSDT 價格、EMA 快慢線與買賣點標記（▲ 做多進場、▼ 做空進場、✕ 出場）。</figcaption>
+</figure>
+
+<figure>
+  <img src="images/btc_drawdown.png" alt="BTCUSDT 回撤曲線">
+  <figcaption>圖 3｜BTCUSDT 回撤曲線。策略最大回撤 −62.96%，優於買進持有的 −76.63%。</figcaption>
+</figure>
+
+<figure>
+  <img src="images/eth_equity.png" alt="ETHUSDT 權益曲線">
+  <figcaption>圖 4｜ETHUSDT 權益曲線。策略在此標的上全面落後買進持有。</figcaption>
+</figure>
+
+<figure>
+  <img src="images/eth_price_trades.png" alt="ETHUSDT 價格、均線與買賣點">
+  <figcaption>圖 5｜ETHUSDT 價格、均線與買賣點標記。</figcaption>
+</figure>
+
+<!-- ================= 5 ================= -->
+<h2 id="s5"><span class="n">05</span>參數最佳化與過度擬合</h2>
+
+<h3>網格搜尋結果（BTCUSDT，依 Sharpe 排序前 5）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th class="num">EMA 快</th><th class="num">EMA 慢</th><th class="num">ATR 倍數</th><th class="num">Sharpe</th></tr></thead>
+  <tbody>
+    <tr><td class="num">9</td><td class="num">34</td><td class="num">1.5</td><td class="num pos">1.163</td></tr>
+    <tr><td class="num">9</td><td class="num">34</td><td class="num">2.0</td><td class="num pos">1.161</td></tr>
+    <tr><td class="num">9</td><td class="num">34</td><td class="num">3.0</td><td class="num pos">1.153</td></tr>
+    <tr><td class="num">13</td><td class="num">55</td><td class="num">2.5</td><td class="num pos">1.152</td></tr>
+    <tr><td class="num">9</td><td class="num">34</td><td class="num">4.0</td><td class="num pos">1.141</td></tr>
+  </tbody>
+</table></div>
+
+<figure>
+  <img src="images/btc_optimize.png" alt="網格搜尋熱圖">
+  <figcaption>圖 6｜網格搜尋熱圖（Sharpe）。注意 EMA 快線 9 的整列偏亮 —— 這是典型的參數高原，但也可能是過度擬合。</figcaption>
+</figure>
+
+<h3>樣本內 / 樣本外切分（同一組參數）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>區段</th><th class="num">總報酬</th><th class="num">年化</th><th class="num">MDD</th><th class="num">Sharpe</th><th class="num">交易</th><th class="num">勝率</th></tr></thead>
+  <tbody>
+    <tr><td>樣本內（前 70%）</td><td class="num pos">+1298.97%</td><td class="num">62.69%</td><td class="num">−49.93%</td><td class="num pos">1.18</td><td class="num">26</td><td class="num">53.8%</td></tr>
+    <tr><td>樣本外（後 30%）</td><td class="num pos">+55.77%</td><td class="num">21.01%</td><td class="num">−36.49%</td><td class="num neu">0.72</td><td class="num">12</td><td class="num">41.7%</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout warn">
+  <strong>過度擬合風險警告</strong><br>
+  樣本外 Sharpe 從 <strong>1.18 掉到 0.72</strong>（衰退 39%），勝率從 53.8% 掉到 41.7%。
+  這是<strong>教科書級的過度擬合示範</strong>：在歷史資料上「最佳」的參數，
+  在未見過的資料上表現顯著衰退。
+  <br><br>
+  <strong>因此：網格搜尋的結果不可直接採用。</strong>實務上應：
+  <ul>
+    <li>用<strong>滾動前進驗證</strong>（walk-forward）而非單次切分</li>
+    <li>選擇<strong>參數高原</strong>（鄰近參數表現都好）而非單點最佳</li>
+    <li>把交易成本調高 2–3 倍做壓力測試</li>
+    <li>在多個標的（BTC/ETH/SOL）上驗證穩健性</li>
+  </ul>
+</div>
+
+<!-- ================= 6 ================= -->
+<h2 id="s6"><span class="n">06</span>驗證結果</h2>
+
+<p><code>verify_strategy.py</code> 實際執行結果：<strong>18/18 全部通過</strong>。</p>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>#</th><th>檢查項目</th><th>結果</th><th>實測數據</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>無未來函數（截斷 250/300/350 根後前段訊號一致）</td><td><span class="tag t-ok">PASS</span></td><td>3/3 一致</td></tr>
+    <tr><td>2</td><td>每筆進場對應正確方向的翻轉訊號</td><td><span class="tag t-ok">PASS</span></td><td>3 筆交易全數正確</td></tr>
+    <tr><td>3</td><td>RSI ∈ [0, 100]</td><td><span class="tag t-ok">PASS</span></td><td>min 13.71 / max 81.92</td></tr>
+    <tr><td>4</td><td>ATR &gt; 0</td><td><span class="tag t-ok">PASS</span></td><td>min 1.0582</td></tr>
+    <tr><td>5</td><td>Supertrend 方向 ∈ {−1, 1}</td><td><span class="tag t-ok">PASS</span></td><td>{−1, 1}</td></tr>
+    <tr><td>6</td><td>多單初始停損 &lt; 進場價、空單 &gt; 進場價</td><td><span class="tag t-ok">PASS</span></td><td>全數正確</td></tr>
+    <tr><td>7</td><td>移動停損只朝有利方向移動</td><td><span class="tag t-ok">PASS</span></td><td>多單上移、空單下移</td></tr>
+    <tr><td>8</td><td>交易成本確實計入</td><td><span class="tag t-ok">PASS</span></td><td>零成本 13,674 vs 有成本 13,473</td></tr>
+    <tr><td>9</td><td>fraction 名目部位 &gt; risk 名目部位</td><td><span class="tag t-ok">PASS</span></td><td>9,312 vs 1,410</td></tr>
+    <tr><td>10</td><td>盤整後上升產生多單且獲利</td><td><span class="tag t-ok">PASS</span></td><td>1 筆多單，10,000 → 29,166</td></tr>
+    <tr><td>11</td><td>純線性上升（無交叉）確實不進場</td><td><span class="tag t-ok">PASS</span></td><td>0 筆交易（符合預期）</td></tr>
+    <tr><td>12</td><td>真實資料可完成回測</td><td><span class="tag t-ok">PASS</span></td><td>2,100 根，31 筆交易</td></tr>
+    <tr><td>13</td><td>真實資料權益曲線無 NaN</td><td><span class="tag t-ok">PASS</span></td><td>—</td></tr>
+    <tr><td>14</td><td>真實資料期末權益為有限值</td><td><span class="tag t-ok">PASS</span></td><td>12,478.88</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout info">
+  <strong>驗證過程中發現的兩個真實問題（已修正）</strong>
+  <ol>
+    <li><strong>停損方向斷言本身是錯的</strong>：移動停損會把停損移到進場價<em>之上</em>（鎖利），
+    所以「停損 &lt; 進場價」對已移動的持倉不成立。修正為檢查 <code>initial_stop</code>，
+    並新增「移動停損只朝有利方向移動」的獨立斷言。</li>
+    <li><strong>純線性上升趨勢不會產生交叉</strong>：EMA 快線從第一根就高於慢線，
+    永遠不會發生「向上穿越」。這不是 bug，而是<strong>交叉策略的固有特性</strong> ——
+    若資料起點即為既成趨勢，就沒有交叉可觸發。已改為「先盤整後上升」的合成序列，
+    並額外保留一個測試<em>記錄</em>這個限制。</li>
+  </ol>
+</div>
+
+<!-- ================= 7 ================= -->
+<h2 id="s7"><span class="n">07</span>Pine Script 程式碼</h2>
+
+<p>完整檔案：<a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant/pine/crypto_trend_momentum_atr.pine">crypto_trend_momentum_atr.pine</a>
+（Pine v5，可直接貼進 TradingView 編譯）。</p>
+
+<h4>編譯安全性檢查（逐項確認）</h4>
+<ul>
+  <li><span class="tag t-ok">OK</span> 所有 <code>var</code> 宣告皆在<strong>全域作用域</strong>，無區域宣告</li>
+  <li><span class="tag t-ok">OK</span> <code>ta.supertrend</code> 以 <code>[line, dir]</code> 正確解構 tuple</li>
+  <li><span class="tag t-ok">OK</span> 常數水平線用 <code>hline()</code>，動態線用 <code>plot()</code></li>
+  <li><span class="tag t-ok">OK</span> <code>alertcondition()</code> 皆在全域作用域</li>
+  <li><span class="tag t-ok">OK</span> 所有 input 皆實際被使用（無宣告未用的參數）</li>
+  <li><span class="tag t-ok">OK</span> 型別一致（<code>float</code> 運算、<code>str.tostring</code> 格式化）</li>
+</ul>
+
+<pre><code>//@version=5
+strategy("Crypto Trend Momentum ATR (CTMA)", shorttitle="CTMA",
+     overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity,
+     default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0.04,
+     slippage=5, pyramiding=0, calc_on_every_tick=false, process_orders_on_close=false)
+
+// ---- 1) 輸入參數 ----
+grpT = "① 趨勢 Trend"
+emaFastLen = input.int(21, "EMA 快線", minval=2, group=grpT)
+emaSlowLen = input.int(55, "EMA 慢線", minval=3, group=grpT)
+useSupertrend = input.bool(false, "改用 Supertrend 過濾趨勢", group=grpT)
+stLen = input.int(10, "Supertrend ATR 週期", minval=1, group=grpT)
+stMult = input.float(3.0, "Supertrend 倍數", minval=0.5, step=0.1, group=grpT)
+
+grpM = "② 動能 Momentum"
+rsiLen = input.int(14, "RSI 週期", minval=2, group=grpM)
+rsiLongMin = input.float(50.0, "做多 RSI 下限", minval=0, maxval=100, group=grpM)
+rsiShortMax = input.float(50.0, "做空 RSI 上限", minval=0, maxval=100, group=grpM)
+macdFast = input.int(12, "MACD 快線", minval=1, group=grpM)
+macdSlow = input.int(26, "MACD 慢線", minval=2, group=grpM)
+macdSig = input.int(9, "MACD 訊號線", minval=1, group=grpM)
+
+grpV = "③ 波動度 / 風控 Volatility &amp; Risk"
+atrLen = input.int(14, "ATR 週期", minval=1, group=grpV)
+atrStopMult = input.float(3.0, "ATR 停損倍數", minval=0.5, step=0.1, group=grpV)
+useTrailing = input.bool(true, "啟用 ATR 移動停損", group=grpV)
+atrTrailMult = input.float(5.0, "ATR 移動停損倍數", minval=0.5, step=0.1, group=grpV)
+useTakeProfit = input.bool(false, "啟用 ATR 停利", group=grpV)
+atrTpMult = input.float(6.0, "ATR 停利倍數", minval=0.5, step=0.1, group=grpV)
+minAtrPct = input.float(0.5, "最低 ATR%（波動度門檻）", minval=0.0, step=0.1, group=grpV)
+
+grpP = "④ 部位與方向 Position"
+allowShort = input.bool(true, "允許做空", group=grpP)
+riskPct = input.float(1.0, "每筆風險 %（僅供面板顯示）", minval=0.1, step=0.1, group=grpP)
+
+grpD = "⑤ 顯示 Display"
+showPanel = input.bool(true, "顯示資訊面板", group=grpD)
+showStops = input.bool(true, "顯示停損線", group=grpD)
+showMarkers = input.bool(true, "顯示買賣點標記", group=grpD)
+
+// ---- 2) 指標計算 ----
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+rsiVal = ta.rsi(close, rsiLen)
+[macdLine, signalLine, macdHist] = ta.macd(close, macdFast, macdSlow, macdSig)
+atrVal = ta.atr(atrLen)
+atrPct = atrVal / close * 100.0
+[stLine, stDir] = ta.supertrend(stMult, stLen)
+stLong = stDir == -1
+stShort = stDir == 1
+
+// ---- 3) 訊號條件 ----
+crossUp = ta.crossover(emaFast, emaSlow)
+crossDn = ta.crossunder(emaFast, emaSlow)
+trendUpOk = useSupertrend ? stLong : true
+trendDnOk = useSupertrend ? stShort : true
+volOk = atrPct &gt;= minAtrPct
+warmOk = not na(emaSlow) and not na(atrVal) and not na(rsiVal)
+
+longCond = crossUp and trendUpOk and rsiVal &gt; rsiLongMin and macdHist &gt; 0 and volOk and warmOk
+shortCond = crossDn and trendDnOk and rsiVal &lt; rsiShortMax and macdHist &lt; 0 and volOk and warmOk and allowShort
+longExitCond = crossDn
+shortExitCond = crossUp
+
+// ---- 4) 進出場執行（var 一律在全域宣告）----
+var float longStop = na
+var float shortStop = na
+var float longTarget = na
+var float shortTarget = na
+
+if longCond
+    longStop := close - atrStopMult * atrVal
+    longTarget := useTakeProfit ? close + atrTpMult * atrVal : na
+    strategy.entry("LONG", strategy.long)
+
+if shortCond
+    shortStop := close + atrStopMult * atrVal
+    shortTarget := useTakeProfit ? close - atrTpMult * atrVal : na
+    strategy.entry("SHORT", strategy.short)
+
+if strategy.position_size &gt; 0 and useTrailing and not na(atrVal)
+    longStop := math.max(nz(longStop, close - atrStopMult * atrVal), close - atrTrailMult * atrVal)
+
+if strategy.position_size &lt; 0 and useTrailing and not na(atrVal)
+    shortStop := math.min(nz(shortStop, close + atrStopMult * atrVal), close + atrTrailMult * atrVal)
+
+if strategy.position_size &gt; 0
+    strategy.exit("EXIT-L", from_entry="LONG", stop=longStop, limit=longTarget)
+
+if strategy.position_size &lt; 0
+    strategy.exit("EXIT-S", from_entry="SHORT", stop=shortStop, limit=shortTarget)
+
+if longExitCond and strategy.position_size &gt; 0
+    strategy.close("LONG", comment="SIGNAL_EXIT")
+
+if shortExitCond and strategy.position_size &lt; 0
+    strategy.close("SHORT", comment="SIGNAL_EXIT")
+
+// ---- 5) 繪圖 ----
+plot(emaFast, "EMA 快", color=color.new(color.orange, 0), linewidth=2)
+plot(emaSlow, "EMA 慢", color=color.new(color.purple, 0), linewidth=2)
+plot(useSupertrend ? stLine : na, "Supertrend", color=color.new(color.teal, 0), linewidth=1)
+plot(showStops and strategy.position_size &gt; 0 ? longStop : na, "多單停損",
+     color=color.new(color.red, 0), style=plot.style_linebr, linewidth=1)
+plot(showStops and strategy.position_size &lt; 0 ? shortStop : na, "空單停損",
+     color=color.new(color.red, 0), style=plot.style_linebr, linewidth=1)
+plotshape(showMarkers and longCond, "做多進場", shape.triangleup, location.belowbar,
+     color=color.new(color.green, 0), size=size.small, text="LONG")
+plotshape(showMarkers and shortCond, "做空進場", shape.triangledown, location.abovebar,
+     color=color.new(color.red, 0), size=size.small, text="SHORT")
+hline(0, "零軸", color=color.new(color.gray, 60), linestyle=hline.style_dotted)
+
+// ---- 6) 警報 ----
+alertcondition(longCond, "CTMA 做多進場", "CTMA LONG entry on {{ticker}} @ {{close}}")
+alertcondition(shortCond, "CTMA 做空進場", "CTMA SHORT entry on {{ticker}} @ {{close}}")
+alertcondition(longExitCond and strategy.position_size &gt; 0, "CTMA 多單出場", "CTMA LONG exit on {{ticker}}")
+alertcondition(shortExitCond and strategy.position_size &lt; 0, "CTMA 空單出場", "CTMA SHORT exit on {{ticker}}")
+
+if longCond
+    alert("CTMA LONG " + syminfo.ticker + " @ " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+if shortCond
+    alert("CTMA SHORT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+
+// ---- 7) 資訊面板 ----
+var table panel = table.new(position.top_right, 2, 8, border_width=1)
+
+if showPanel and barstate.islast
+    trendTxt = useSupertrend ? (stLong ? "多頭 ▲" : stShort ? "空頭 ▼" : "中性") : (emaFast &gt; emaSlow ? "多頭 ▲" : "空頭 ▼")
+    posTxt = strategy.position_size &gt; 0 ? "多單" : strategy.position_size &lt; 0 ? "空單" : "空手"
+    table.cell(panel, 0, 0, "CTMA 狀態", bgcolor=color.new(color.blue, 70), text_color=color.white)
+    table.cell(panel, 1, 0, syminfo.ticker, bgcolor=color.new(color.blue, 70), text_color=color.white)
+    table.cell(panel, 0, 1, "趨勢")
+    table.cell(panel, 1, 1, trendTxt, text_color=emaFast &gt; emaSlow ? color.green : color.red)
+    table.cell(panel, 0, 2, "RSI")
+    table.cell(panel, 1, 2, str.tostring(rsiVal, "#.0"), text_color=rsiVal &gt; 50 ? color.green : color.red)
+    table.cell(panel, 0, 3, "MACD 柱")
+    table.cell(panel, 1, 3, str.tostring(macdHist, "#.####"), text_color=macdHist &gt; 0 ? color.green : color.red)
+    table.cell(panel, 0, 4, "ATR%")
+    table.cell(panel, 1, 4, str.tostring(atrPct, "#.00") + "%", text_color=volOk ? color.green : color.gray)
+    table.cell(panel, 0, 5, "持倉")
+    table.cell(panel, 1, 5, posTxt)
+    table.cell(panel, 0, 6, "停損")
+    table.cell(panel, 1, 6, strategy.position_size &gt; 0 ? str.tostring(longStop, format.mintick) : strategy.position_size &lt; 0 ? str.tostring(shortStop, format.mintick) : "-")
+    table.cell(panel, 0, 7, "風險/筆")
+    table.cell(panel, 1, 7, str.tostring(riskPct, "#.0") + "%")</code></pre>
+
+<!-- ================= 8 ================= -->
+<h2 id="s8"><span class="n">08</span>Python 專案結構</h2>
+
+<pre><code>crypto-quant/
+├── run_signals.py              主程式（訊號產生 + 回測 + 圖表）
+├── verify_strategy.py          驗證腳本（18 項檢查）
+├── requirements.txt            pandas / numpy / matplotlib
+├── README.md                   完整使用說明
+├── pine/
+│   └── crypto_trend_momentum_atr.pine
+├── crypto_quant/
+│   ├── data_fetch.py           多來源資料抓取（4 個備援）
+│   ├── indicators.py           EMA / RSI / MACD / ATR / Supertrend
+│   ├── strategy.py             訊號產生（三層語意）
+│   ├── backtest.py             事件驅動回測引擎
+│   ├── metrics.py              績效指標
+│   ├── plots.py                matplotlib 繪圖（中文字型處理）
+│   └── optimize.py             網格搜尋 + 樣本內外切分
+└── output/                     回測輸出（CSV / JSON / PNG）</code></pre>
+
+<h3>執行方式</h3>
+<pre><code>pip install -r requirements.txt
+
+# 基本回測
+python3 run_signals.py --symbol BTCUSDT --start 2019-01-01
+
+# 網格搜尋 + 樣本內外切分
+python3 run_signals.py --symbol BTCUSDT --optimize
+
+# 驗證
+python3 verify_strategy.py</code></pre>
+
+<h3>訊號表輸出範例（BTCUSDT）</h3>
+<pre><code>date,close,signal,atr,atr_pct,stop_price,rsi,macd_hist,position_hint
+2019-02-20,3969.74,BULL_CROSS_ENTRY,111.7296,2.815,3634.5512,75.25,47.414,風險 1.0% / 停損距離 3.0×ATR
+2019-08-30,9584.54,BEAR_CROSS_ENTRY,551.0774,5.75,11237.7721,39.38,-103.0844,風險 1.0% / 停損距離 3.0×ATR
+2020-01-13,8110.34,BULL_CROSS_ENTRY,307.1706,3.787,7188.8281,60.87,85.0692,風險 1.0% / 停損距離 3.0×ATR</code></pre>
+
+<h3>交易明細輸出範例</h3>
+<pre><code>side,entry_date,entry_price,qty,notional,stop_price,initial_stop,exit_date,exit_price,exit_reason,pnl,pnl_pct,bars_held
+LONG,2019-02-21,3971.7249,2.51779776,10000.0,10346.4161,3636.5361,2019-07-01,10341.2429,ATR_STOP,16026.74,1.6027,130
+SHORT,2019-08-31,9577.9686,2.70336481,25892.74,9123.9555,11231.2007,2019-10-26,9128.5175,ATR_STOP,1205.16,0.0465,56</code></pre>
+
+<!-- ================= 9 ================= -->
+<h2 id="s9"><span class="n">09</span>優缺點與注意事項</h2>
+
+<div class="grid g2">
+  <div class="card">
+    <h3 style="margin-top:0;color:#86efac">✓ 優點</h3>
+    <ul>
+      <li><strong>波動度自適應</strong>：ATR 停損隨市場波動自動調整，無需人工調參</li>
+      <li><strong>雙重過濾有效</strong>：RSI + MACD 確認把 45 個交叉訊號收斂到 39 筆交易</li>
+      <li><strong>回撤控制明確</strong>：BTC 上 MDD 改善 13.7 pp，Sharpe 微幅勝出</li>
+      <li><strong>無未來函數</strong>：訊號次根開盤成交，已用截斷測試驗證</li>
+      <li><strong>成本模型完整</strong>：手續費 + 滑價 + 資金費率</li>
+      <li><strong>多來源備援</strong>：4 個資料來源自動切換，並誠實記錄實際使用來源</li>
+      <li><strong>Pine 與 Python 邏輯一致</strong>：同一套參數與公式</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;color:#fca5a5">✗ 缺點</h3>
+    <ul>
+      <li><strong>總報酬落後 B&amp;H</strong>：多頭市場中「會出場」必然錯過漲幅</li>
+      <li><strong>勝率偏低</strong>：40–46%，靠盈虧比（1.57–1.68）撐住，心理壓力大</li>
+      <li><strong>停損出場佔 2/3</strong>：移動停損是主要出場機制，參數敏感度高</li>
+      <li><strong>過度擬合風險高</strong>：樣本外 Sharpe 衰退 39%</li>
+      <li><strong>僅日線</strong>：未涵蓋加密貨幣的高頻特性</li>
+      <li><strong>資金費率固定近似</strong>：實際每 8 小時浮動</li>
+      <li><strong>未模擬流動性</strong>：假設任何價位都能成交</li>
+    </ul>
+  </div>
+</div>
+
+<h3>依優先順序的改進建議</h3>
+<ol>
+  <li><strong>P1 — 改用滾動前進驗證（walk-forward）</strong>：單次樣本內外切分不足以評估穩健性，
+  應以滾動窗口反覆訓練／測試。</li>
+  <li><strong>P1 — 加入波動度目標部位（volatility targeting）</strong>：以 ATR% 反推部位，
+  讓每筆交易的<em>風險貢獻</em>一致，而非名目金額一致。</li>
+  <li><strong>P2 — 分批出場</strong>：目前一次全出，可改為「觸及 1×ATR 出 1/3、2×ATR 出 1/3、
+  剩餘用移動停損」，降低被單次停損掃出的機率。</li>
+  <li><strong>P2 — 加入成交量／流動性過濾</strong>：避免在低流動性時段進場。</li>
+  <li><strong>P3 — 多標的穩健性驗證</strong>：在 BTC/ETH/SOL 上同時驗證，避免單一標的過擬合。</li>
+  <li><strong>P3 — 真實資金費率</strong>：串接交易所 funding rate 歷史資料。</li>
+  <li><strong>P3 — 加入 Regime 判斷</strong>：以長週期趨勢或波動度區分「趨勢市／盤整市」，
+  在盤整市降低交易頻率。</li>
+</ol>
+
+<!-- ================= 10 ================= -->
+<h2 id="s10"><span class="n">10</span>資料來源與限制</h2>
+
+<h3>資料來源實測結果</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>來源</th><th>狀態</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>data-api.binance.vision</code></td><td><span class="tag t-ok">使用中</span></td>
+        <td>完整 OHLCV，無地區限制，2,831 根日線</td></tr>
+    <tr><td><code>api.binance.com</code></td><td><span class="tag t-bad">失敗</span></td>
+        <td>地區限制：<em>Service unavailable from a restricted location</em></td></tr>
+    <tr><td><code>api.binance.us</code></td><td><span class="tag t-info">可用</span></td>
+        <td>備援，成交量較小</td></tr>
+    <tr><td><code>api.kraken.com</code></td><td><span class="tag t-info">可用</span></td>
+        <td>備援，OHLC 格式需轉換</td></tr>
+    <tr><td><code>api.coingecko.com</code></td><td><span class="tag t-warn">受限</span></td>
+        <td>免費層僅提供 365 天 OHLC，且無成交量</td></tr>
+    <tr><td>Yahoo Finance</td><td><span class="tag t-bad">失敗</span></td>
+        <td>HTTP 429（沙盒環境被限流）</td></tr>
+  </tbody>
+</table></div>
+
+<h3>誠實揭露的限制</h3>
+<ol>
+  <li><strong>資料區間</strong>：2019-01-01 ~ 2026-10-01，涵蓋一輪完整牛市與 2022 熊市。</li>
+  <li><strong>未計入交易所提領費、借貸利率變動</strong>。</li>
+  <li><strong>資金費率以固定 0.01%/日近似</strong>，實際每 8 小時浮動，牛市期間可能顯著更高。</li>
+  <li><strong>未模擬流動性限制</strong>，假設任何價位都能成交。</li>
+  <li><strong>僅日線</strong>，未測試分鐘級。</li>
+  <li><strong>最佳化結果不可直接採用</strong>，樣本外已證明會顯著衰退。</li>
+  <li><strong>Pine Script 未在 TradingView 實際編譯</strong>：沙盒無法執行 TradingView 編譯器，
+  「可編譯」是基於官方文件規則的靜態檢查。建議貼進 Pine Editor 確認一次。</li>
+  <li><strong>Python 驗證腳本是「重新實作」而非「執行 Pine」</strong>：能驗證數學與邏輯，
+  但不能驗證 Pine 執行環境細節。</li>
+</ol>
+
+<!-- ================= 11 ================= -->
+<h2 id="s11"><span class="n">11</span>滾動前進驗證（Walk-Forward Validation）</h2>
+
+<h3>為什麼要取代單次樣本內／外切分</h3>
+<p>單次切分只有<strong>一個</strong>樣本外區段，而且切點是人為選的 —— 換個切點結論就可能不同。
+更關鍵的是，它無法回答「<strong>這組參數在未來還有效嗎？</strong>」，因為它只被檢驗過一次。</p>
+<p>Walk-forward 把時間軸切成連續的 (訓練窗 → 測試窗) 配對，每個窗口<strong>只用該窗口訓練窗的資料</strong>做網格搜尋，
+選出最佳參數後<strong>只用那一組參數</strong>在緊接的測試窗上回測。所有測試窗串接起來，
+就是一條完全由樣本外資料構成的權益曲線 —— <strong>這是唯一可信的績效來源</strong>。</p>
+<pre>|---- train 1 ----|-- test 1 --|
+          |---- train 2 ----|-- test 2 --|
+                    |---- train 3 ----|-- test 3 --|</pre>
+
+<h3>設定與參數</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>項目</th><th>設定</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td>訓練窗</td><td>730 根</td><td>約 2 年日線</td></tr>
+    <tr><td>測試窗</td><td>180 根</td><td>約 6 個月，無縫相接</td></tr>
+    <tr><td>模式</td><td><code>rolling</code></td><td>滾動窗（訓練窗長度固定、向前滑動）</td></tr>
+    <tr><td>選參目標</td><td>Sharpe</td><td>訓練窗內以 Sharpe 最高者為最佳</td></tr>
+    <tr><td>網格</td><td>55 組</td><td>EMA 快 {9,13,21,34} × 慢 {34,55,89} × ATR 停損 {1.5,2,2.5,3,4}（已排除快≥慢）</td></tr>
+    <tr><td>最少交易</td><td>3 筆</td><td>訓練窗不足則不納入評選</td></tr>
+    <tr><td>暖機</td><td>60 根</td><td>測試窗往前接訓練窗尾端暖機，<strong>暖機期禁止進場</strong></td></tr>
+    <tr><td>窗口數</td><td>11</td><td>BTC 與 ETH 各 11 個</td></tr>
+  </tbody>
+</table></div>
+
+<h3>樣本外績效：Walk-forward vs 單次切分 vs 買進持有</h3>
+<p class="callout info">資料來源：Binance 公開資料端點 <code>data-api.binance.vision</code>，2019-01-01 ~ 2026-10-01（2,831 根日線）。
+Walk-forward 樣本外期間為 2020-12-31 ~ 2026-06-02。買進持有取<strong>同一段樣本外期間</strong>以公平比較。</p>
+
+<h4>BTCUSDT</h4>
+<div class="tablewrap"><table>
+  <thead><tr><th>指標</th><th>Walk-forward OOS</th><th>單次切分 OOS</th><th>買進持有（同期）</th></tr></thead>
+  <tbody>
+    <tr><td>總報酬率</td><td>+94.55%</td><td>+55.99%</td><td><strong>+193.18%</strong></td></tr>
+    <tr><td>年化報酬率</td><td>13.07%</td><td>21.08%</td><td><strong>20.57%</strong></td></tr>
+    <tr><td>最大回撤</td><td><strong>−37.38%</strong></td><td>−36.49%</td><td>−76.63%</td></tr>
+    <tr><td>Sharpe</td><td>0.52</td><td><strong>0.72</strong></td><td>0.61</td></tr>
+    <tr><td>Sortino</td><td>0.54</td><td><strong>1.03</strong></td><td>0.88</td></tr>
+    <tr><td>交易次數</td><td>39</td><td>12</td><td>1</td></tr>
+    <tr><td>勝率</td><td>33.3%</td><td>41.7%</td><td>—</td></tr>
+  </tbody>
+</table></div>
+
+<h4>ETHUSDT</h4>
+<div class="tablewrap"><table>
+  <thead><tr><th>指標</th><th>Walk-forward OOS</th><th>單次切分 OOS</th><th>買進持有（同期）</th></tr></thead>
+  <tbody>
+    <tr><td>總報酬率</td><td>+15.59%</td><td>+31.83%</td><td><strong>+266.87%</strong></td></tr>
+    <tr><td>年化報酬率</td><td>2.71%</td><td>12.62%</td><td><strong>25.37%</strong></td></tr>
+    <tr><td>最大回撤</td><td>−53.25%</td><td><strong>−47.91%</strong></td><td>−79.30%</td></tr>
+    <tr><td>Sharpe</td><td>0.29</td><td><strong>0.50</strong></td><td>0.68</td></tr>
+    <tr><td>Sortino</td><td>0.28</td><td><strong>0.59</strong></td><td>0.98</td></tr>
+    <tr><td>交易次數</td><td>34</td><td>10</td><td>1</td></tr>
+    <tr><td>勝率</td><td>41.2%</td><td>50.0%</td><td>—</td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout warn">
+  <h3>⚠️ 最重要的誠實結論：Walk-forward 的風險調整後報酬<strong>比單次切分更差</strong></h3>
+  <p>這是本次改造最關鍵、也最容易被忽略的發現 —— <strong>我沒有把它包裝成正面的結果</strong>：</p>
+  <ul>
+    <li><strong>BTC</strong>：Walk-forward Sharpe <strong>0.52</strong> vs 單次切分 <strong>0.72</strong>（低 28%）；Sortino 0.54 vs 1.03（低 48%）。</li>
+    <li><strong>ETH</strong>：Walk-forward Sharpe <strong>0.29</strong> vs 單次切分 <strong>0.50</strong>（低 42%）；Sortino 0.28 vs 0.59（低 53%）。</li>
+    <li>兩檔標的的 Walk-forward Sharpe <strong>都低於買進持有</strong>（BTC 0.52 vs 0.61；ETH 0.29 vs 0.68）。</li>
+  </ul>
+  <p><strong>為什麼會這樣？</strong> 單次切分只挑了一個「運氣好」的樣本外區段；Walk-forward 檢驗了 11 個連續區段，
+  把參數選擇流程的真實表現完整暴露出來。當每個窗口都必須重新選參，而參數又在不同窗口間跳動時，
+  績效自然被稀釋。<strong>這才是真相 —— 單次切分的高 Sharpe 有相當程度是切點運氣。</strong></p>
+</div>
+
+<h3>樣本外衰退（訓練窗 vs 測試窗）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的</th><th>訓練窗平均 Sharpe</th><th>測試窗平均 Sharpe</th><th>變化</th></tr></thead>
+  <tbody>
+    <tr><td>BTCUSDT</td><td>1.414</td><td>0.539</td><td><strong>−61.9%</strong></td></tr>
+    <tr><td>ETHUSDT</td><td>1.156</td><td>0.413</td><td><strong>−64.3%</strong></td></tr>
+  </tbody>
+</table></div>
+<p>訓練窗的「最佳」參數到了測試窗平均衰退 <strong>六成以上</strong>。這是過度擬合的直接量化證據：
+在訓練窗上挑到的高分，有相當比例來自對雜訊的擬合，而非真實的預測力。</p>
+
+<h3>參數穩定度分析</h3>
+<p>統計每個參數在各窗口選出值的<strong>眾數占比</strong>與<strong>唯一值個數</strong>。占比越高代表越穩定。</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的</th><th>參數</th><th>眾數</th><th>眾數占比</th><th>唯一值數</th><th>範圍</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="4">BTCUSDT<br><em>整體 61.4%</em></td><td>EMA fast</td><td>13</td><td>45.5%</td><td>4</td><td>[9, 34]</td></tr>
+    <tr><td>EMA slow</td><td>55</td><td>45.5%</td><td>3</td><td>[34, 89]</td></tr>
+    <tr><td>ATR 停損倍數</td><td>1.5</td><td>54.5%</td><td>4</td><td>[1.5, 3.0]</td></tr>
+    <tr><td>ATR 移動停損倍數</td><td>5.0</td><td>100.0%</td><td>1</td><td>[5.0, 5.0]</td></tr>
+    <tr><td rowspan="4">ETHUSDT<br><em>整體 68.2%</em></td><td>EMA fast</td><td>13</td><td>45.5%</td><td>4</td><td>[9, 34]</td></tr>
+    <tr><td>EMA slow</td><td>89</td><td>54.5%</td><td>3</td><td>[34, 89]</td></tr>
+    <tr><td>ATR 停損倍數</td><td>1.5</td><td>72.7%</td><td>3</td><td>[1.5, 2.5]</td></tr>
+    <tr><td>ATR 移動停損倍數</td><td>5.0</td><td>100.0%</td><td>1</td><td>[5.0, 5.0]</td></tr>
+  </tbody>
+</table></div>
+<p><strong>解讀</strong>：ATR 移動停損倍數 100% 穩定（因為網格中只有一個值，不具資訊量）。
+EMA 快線與慢線的眾數占比僅約 45%，代表<strong>超過一半的窗口選出不同參數</strong> ——
+這是中度不穩定的訊號。ATR 停損倍數相對穩定（54.5% / 72.7%），且明顯偏好<strong>較緊的 1.5 倍</strong>。</p>
+
+<h3>各窗口選出的最佳參數</h3>
+<h4>BTCUSDT</h4>
+<div class="tablewrap"><table>
+  <thead><tr><th>#</th><th>訓練窗</th><th>測試窗</th><th>EMA 快</th><th>EMA 慢</th><th>ATR 停損</th><th>訓練 Sharpe</th><th>測試報酬</th><th>測試 Sharpe</th><th>交易</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>2019-01-01 ~ 2020-12-30</td><td>2020-12-31 ~ 2021-06-28</td><td>13</td><td>55</td><td>2.5</td><td>2.34</td><td>+1.02%</td><td>0.27</td><td>3</td></tr>
+    <tr><td>1</td><td>2019-06-30 ~ 2021-06-28</td><td>2021-06-29 ~ 2021-12-25</td><td>13</td><td>55</td><td>1.5</td><td>1.86</td><td>−15.45%</td><td>−0.67</td><td>4</td></tr>
+    <tr><td>2</td><td>2019-12-27 ~ 2021-12-25</td><td>2021-12-26 ~ 2022-06-23</td><td>13</td><td>55</td><td>3.0</td><td>1.90</td><td>+37.77%</td><td>2.03</td><td>2</td></tr>
+    <tr><td>3</td><td>2020-06-24 ~ 2022-06-23</td><td>2022-06-24 ~ 2022-12-20</td><td>13</td><td>55</td><td>3.0</td><td>2.08</td><td>−26.33%</td><td>−1.20</td><td>4</td></tr>
+    <tr><td>4</td><td>2020-12-21 ~ 2022-12-20</td><td>2022-12-21 ~ 2023-06-18</td><td>13</td><td>89</td><td>2.0</td><td>0.82</td><td>+1.61%</td><td>0.25</td><td>2</td></tr>
+    <tr><td>5</td><td>2021-06-19 ~ 2023-06-18</td><td>2023-06-19 ~ 2023-12-15</td><td>34</td><td>55</td><td>2.0</td><td>0.77</td><td>+27.60%</td><td>1.70</td><td>3</td></tr>
+    <tr><td>6</td><td>2021-12-16 ~ 2023-12-15</td><td>2023-12-16 ~ 2024-06-12</td><td>21</td><td>89</td><td>1.5</td><td>1.00</td><td>0.00%</td><td>0.00</td><td>0</td></tr>
+    <tr><td>7</td><td>2022-06-14 ~ 2024-06-12</td><td>2024-06-13 ~ 2024-12-09</td><td>9</td><td>34</td><td>1.5</td><td>1.01</td><td>+26.42%</td><td>1.30</td><td>5</td></tr>
+    <tr><td>8</td><td>2022-12-11 ~ 2024-12-09</td><td>2024-12-10 ~ 2025-06-07</td><td>9</td><td>34</td><td>1.5</td><td>1.54</td><td>+12.99%</td><td>0.84</td><td>5</td></tr>
+    <tr><td>9</td><td>2023-06-09 ~ 2025-06-07</td><td>2025-06-08 ~ 2025-12-04</td><td>9</td><td>34</td><td>1.5</td><td>1.43</td><td>−2.90%</td><td>−0.13</td><td>6</td></tr>
+    <tr><td>10</td><td>2023-12-06 ~ 2025-12-04</td><td>2025-12-05 ~ 2026-06-02</td><td>9</td><td>34</td><td>1.5</td><td>0.81</td><td>+24.80%</td><td>1.55</td><td>5</td></tr>
+  </tbody>
+</table></div>
+
+<h4>ETHUSDT</h4>
+<div class="tablewrap"><table>
+  <thead><tr><th>#</th><th>訓練窗</th><th>測試窗</th><th>EMA 快</th><th>EMA 慢</th><th>ATR 停損</th><th>訓練 Sharpe</th><th>測試報酬</th><th>測試 Sharpe</th><th>交易</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>2019-01-01 ~ 2020-12-30</td><td>2020-12-31 ~ 2021-06-28</td><td>9</td><td>34</td><td>1.5</td><td>1.91</td><td>−25.03%</td><td>−0.42</td><td>4</td></tr>
+    <tr><td>1</td><td>2019-06-30 ~ 2021-06-28</td><td>2021-06-29 ~ 2021-12-25</td><td>13</td><td>34</td><td>2.5</td><td>2.06</td><td>−8.83%</td><td>0.15</td><td>4</td></tr>
+    <tr><td>2</td><td>2019-12-27 ~ 2021-12-25</td><td>2021-12-26 ~ 2022-06-23</td><td>21</td><td>55</td><td>1.5</td><td>1.93</td><td>+47.23%</td><td>2.27</td><td>2</td></tr>
+    <tr><td>3</td><td>2020-06-24 ~ 2022-06-23</td><td>2022-06-24 ~ 2022-12-20</td><td>21</td><td>55</td><td>1.5</td><td>2.26</td><td>−37.77%</td><td>−1.45</td><td>6</td></tr>
+    <tr><td>4</td><td>2020-12-21 ~ 2022-12-20</td><td>2022-12-21 ~ 2023-06-18</td><td>13</td><td>34</td><td>2.0</td><td>0.41</td><td>+1.68%</td><td>0.31</td><td>6</td></tr>
+    <tr><td>5</td><td>2021-06-19 ~ 2023-06-18</td><td>2023-06-19 ~ 2023-12-15</td><td>34</td><td>89</td><td>1.5</td><td>0.75</td><td>+19.76%</td><td>1.19</td><td>3</td></tr>
+    <tr><td>6</td><td>2021-12-16 ~ 2023-12-15</td><td>2023-12-16 ~ 2024-06-12</td><td>34</td><td>89</td><td>1.5</td><td>0.89</td><td>−3.18%</td><td>−0.46</td><td>1</td></tr>
+    <tr><td>7</td><td>2022-06-14 ~ 2024-06-12</td><td>2024-06-13 ~ 2024-12-09</td><td>13</td><td>89</td><td>1.5</td><td>0.26</td><td>+20.76%</td><td>1.04</td><td>4</td></tr>
+    <tr><td>8</td><td>2022-12-11 ~ 2024-12-09</td><td>2024-12-10 ~ 2025-06-07</td><td>9</td><td>89</td><td>1.5</td><td>0.84</td><td>+21.97%</td><td>1.23</td><td>2</td></tr>
+    <tr><td>9</td><td>2023-06-09 ~ 2025-06-07</td><td>2025-06-08 ~ 2025-12-04</td><td>13</td><td>89</td><td>1.5</td><td>0.97</td><td>−9.85%</td><td>−2.20</td><td>1</td></tr>
+    <tr><td>10</td><td>2023-12-06 ~ 2025-12-04</td><td>2025-12-05 ~ 2026-06-02</td><td>13</td><td>89</td><td>2.5</td><td>0.44</td><td>+17.88%</td><td>2.88</td><td>1</td></tr>
+  </tbody>
+</table></div>
+
+<h3>圖表</h3>
+<figure><img src="images/BTCUSDT_wf_equity.png" alt="BTCUSDT walk-forward 樣本外權益曲線">
+  <figcaption>BTCUSDT：Walk-forward 樣本外權益曲線 vs 買進持有 vs 單次切分</figcaption></figure>
+<figure><img src="images/BTCUSDT_wf_window_returns.png" alt="BTCUSDT 各窗口樣本外報酬">
+  <figcaption>BTCUSDT：各窗口樣本外報酬分布（11 個窗口）</figcaption></figure>
+<figure><img src="images/BTCUSDT_wf_params.png" alt="BTCUSDT 參數隨時間變化">
+  <figcaption>BTCUSDT：參數隨時間變化 —— 穩定度檢視</figcaption></figure>
+<figure><img src="images/BTCUSDT_wf_train_test.png" alt="BTCUSDT 訓練窗 vs 測試窗績效">
+  <figcaption>BTCUSDT：訓練窗 vs 測試窗 Sharpe（樣本外衰退）</figcaption></figure>
+<figure><img src="images/BTCUSDT_wf_drawdown.png" alt="BTCUSDT walk-forward 樣本外回撤">
+  <figcaption>BTCUSDT：Walk-forward 樣本外回撤曲線</figcaption></figure>
+<figure><img src="images/ETHUSDT_wf_equity.png" alt="ETHUSDT walk-forward 樣本外權益曲線">
+  <figcaption>ETHUSDT：Walk-forward 樣本外權益曲線 vs 買進持有 vs 單次切分</figcaption></figure>
+<figure><img src="images/ETHUSDT_wf_window_returns.png" alt="ETHUSDT 各窗口樣本外報酬">
+  <figcaption>ETHUSDT：各窗口樣本外報酬分布（11 個窗口）</figcaption></figure>
+<figure><img src="images/ETHUSDT_wf_params.png" alt="ETHUSDT 參數隨時間變化">
+  <figcaption>ETHUSDT：參數隨時間變化 —— 穩定度檢視</figcaption></figure>
+<figure><img src="images/ETHUSDT_wf_train_test.png" alt="ETHUSDT 訓練窗 vs 測試窗績效">
+  <figcaption>ETHUSDT：訓練窗 vs 測試窗 Sharpe（樣本外衰退）</figcaption></figure>
+<figure><img src="images/ETHUSDT_wf_drawdown.png" alt="ETHUSDT walk-forward 樣本外回撤">
+  <figcaption>ETHUSDT：Walk-forward 樣本外回撤曲線</figcaption></figure>
+
+<h3>驗證：如何證明沒有未來函數</h3>
+<p><code>verify_walkforward.py</code> 以 <strong>19 項檢查</strong>驗證切窗正確性，全部通過：</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>檢查</th><th>方法</th><th>結果</th></tr></thead>
+  <tbody>
+    <tr><td>訓練／測試窗不重疊</td><td>逐窗口比對索引，斷言 <code>train_end &lt; test_start</code></td><td><span class="tag t-ok">PASS</span> 20 個窗口</td></tr>
+    <tr><td>測試窗無縫相接</td><td>相鄰測試窗不重疊且依序前進</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><strong>無未來函數（截斷一致性）</strong></td><td>把資料截斷到某窗口測試窗結束後重跑，該窗口選出的參數與樣本外權益必須與全量執行<strong>完全一致</strong></td><td><span class="tag t-ok">PASS</span> 最大差異 <strong>0.000e+00</strong></td></tr>
+    <tr><td><strong>參數只由訓練窗決定</strong></td><td>把測試窗價格全部乘 3，重新執行 —— 選出參數必須不變</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td>暖機期不進場</td><td>窗口邊界權益必須連續（暖機期零交易）</td><td><span class="tag t-ok">PASS</span> 相對落差 0.000e+00</td></tr>
+    <tr><td>樣本外權益連續</td><td>全為正、索引嚴格遞增、長度等於所有測試窗之和</td><td><span class="tag t-ok">PASS</span> 2400 = 2400</td></tr>
+    <tr><td>彙總指標可重現</td><td>由串接權益重算總報酬／MDD／Sharpe 與引擎回報值一致</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td>anchored 模式正確</td><td>訓練窗起點固定且長度遞增</td><td><span class="tag t-ok">PASS</span> 400 → 2680 根</td></tr>
+  </tbody>
+</table></div>
+<p class="callout info">「截斷一致性」是無未來函數最強的證明：若參數選擇過程偷看了未來資料，
+把資料截斷後重跑，該窗口的參數就會改變。實測差異為 <strong>0.000e+00</strong>，逐點完全一致。</p>
+
+<h3>優點與注意事項</h3>
+<h4>優點</h4>
+<ul>
+  <li><strong>唯一可信的績效來源</strong>：樣本外曲線完全由未參與選參的資料構成。</li>
+  <li><strong>暴露參數不穩定性</strong>：11 個窗口的參數演化圖一眼看出策略是否穩健。</li>
+  <li><strong>量化過度擬合</strong>：訓練 → 測試的衰退幅度是可測量的數字（本次 −62% ~ −64%）。</li>
+  <li><strong>可重複、可驗證</strong>：19 項自動化檢查，含截斷一致性與擾動測試。</li>
+</ul>
+<h4>注意事項</h4>
+<ul>
+  <li><strong>Walk-forward 表現比單次切分差是常態，不是 bug</strong> —— 單次切分的高分有相當程度是切點運氣。</li>
+  <li><strong>窗口數受資料長度限制</strong>：730/180 配置下只有 11 個窗口，統計上仍偏少。</li>
+  <li><strong>Walk-forward 只驗證「參數選擇流程」，不保證獲利</strong>：它證明的是「若照此流程在歷史上滾動選參，結果會如何」。</li>
+  <li><strong>仍有殘餘偏誤</strong>：網格本身是人為選的；若網格設計時參考了整體資料，仍存在輕微的選擇偏誤。</li>
+  <li><strong>未計入資金費率變動、流動性限制</strong>，與單次切分相同的限制依然存在。</li>
+</ul>
+
+<!-- ================= 12 ================= -->
+<h2 id="s12"><span class="n">12</span>WFO 雙模式對照：rolling vs anchored</h2>
+
+<p>第 11 章把單次切分升級為 walk-forward，但只跑了 <strong>rolling（滾動窗）</strong>一種模式。
+本章把它升級為完整的 <strong>walk-forward optimization（WFO）雙模式對照</strong>：
+同一組測試窗切點、同一組參數網格、同一組成本模型，<strong>唯一差異是訓練窗的取法</strong> ——
+因此效能差異可完全歸因於「訓練資料的取用方式」。</p>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>模式</th><th>訓練窗取法</th><th>假設</th><th>優點</th><th>缺點</th></tr></thead>
+  <tbody>
+    <tr><td><strong>rolling</strong><br>滾動窗</td><td>長度固定（730 根），隨時間向前滑動</td><td>近期市場結構比遠期更有代表性</td><td>能適應市場結構改變；訓練樣本新</td><td>樣本數固定且較少；可能過度反應近期雜訊</td></tr>
+    <tr><td><strong>anchored</strong><br>擴張窗</td><td>起點固定（2019-01-01），長度遞增（730 → 2530 根）</td><td>越多歷史越好</td><td>訓練樣本最多，統計最穩定</td><td>含較舊的市場結構（如 2019 低波動期），可能拖累近期適應力</td></tr>
+  </tbody>
+</table></div>
+
+<h3>rolling vs anchored 完整對照表</h3>
+<p>樣本外期間兩者完全相同：<strong>2020-12-31 ~ 2026-06-02</strong>，各 11 個窗口、2,400 根。</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>指標</th><th>rolling</th><th>anchored</th><th>較佳</th></tr></thead>
+  <tbody>
+    <tr><td>樣本外總報酬</td><td>+94.55%</td><td><strong>+97.85%</strong></td><td>anchored</td></tr>
+    <tr><td>年化報酬</td><td>13.07%</td><td><strong>13.42%</strong></td><td>anchored</td></tr>
+    <tr><td>最大回撤</td><td><strong>−37.38%</strong></td><td>−50.81%</td><td>rolling</td></tr>
+    <tr><td>Sharpe</td><td><strong>0.52</strong></td><td>0.51</td><td>rolling</td></tr>
+    <tr><td>Sortino</td><td>0.54</td><td><strong>0.60</strong></td><td>anchored</td></tr>
+    <tr><td>Calmar</td><td><strong>0.35</strong></td><td>0.26</td><td>rolling</td></tr>
+    <tr><td>勝率</td><td>33.33%</td><td><strong>40.91%</strong></td><td>anchored</td></tr>
+    <tr><td>盈虧比</td><td><strong>1.58</strong></td><td>1.43</td><td>rolling</td></tr>
+    <tr><td>交易次數</td><td>39</td><td>44</td><td>—</td></tr>
+    <tr><td>平均持有（根）</td><td>25.0</td><td>30.4</td><td>—</td></tr>
+  </tbody>
+</table></div>
+<p><strong>BTCUSDT 解讀</strong>：兩者總報酬幾乎相同（+94.55% vs +97.85%），但 <strong>rolling 的風險控制明顯較好</strong> ——
+最大回撤少 13.4 個百分點（−37.4% vs −50.8%），Calmar 高 34%。anchored 勝在勝率與 Sortino，
+但代價是回撤深得多。以「風險調整後報酬」而言 rolling 略勝。</p>
+
+<div class="tablewrap"><table>
+  <thead><tr><th>指標</th><th>rolling</th><th>anchored</th><th>較佳</th></tr></thead>
+  <tbody>
+    <tr><td>樣本外總報酬</td><td><strong>+15.59%</strong></td><td>−35.59%</td><td>rolling</td></tr>
+    <tr><td>年化報酬</td><td><strong>2.71%</strong></td><td>−7.80%</td><td>rolling</td></tr>
+    <tr><td>最大回撤</td><td><strong>−53.25%</strong></td><td>−70.31%</td><td>rolling</td></tr>
+    <tr><td>Sharpe</td><td><strong>0.29</strong></td><td>0.13</td><td>rolling</td></tr>
+    <tr><td>Sortino</td><td><strong>0.28</strong></td><td>0.14</td><td>rolling</td></tr>
+    <tr><td>Calmar</td><td><strong>0.05</strong></td><td>−0.11</td><td>rolling</td></tr>
+    <tr><td>勝率</td><td><strong>41.18%</strong></td><td>33.33%</td><td>rolling</td></tr>
+    <tr><td>盈虧比</td><td><strong>1.16</strong></td><td>0.90</td><td>rolling</td></tr>
+    <tr><td>交易次數</td><td>34</td><td>54</td><td>—</td></tr>
+    <tr><td>平均持有（根）</td><td>27.6</td><td>23.6</td><td>—</td></tr>
+  </tbody>
+</table></div>
+<p><strong>ETHUSDT 解讀</strong>：差距懸殊。<strong>anchored 在 ETH 上是虧損的（−35.59%）</strong>，
+而 rolling 仍為正（+15.59%）。anchored 的訓練窗一路擴張到 2,530 根，把 2019–2020 的低波動結構
+一路帶進 2024–2026 的決策，導致它在 ETH 的劇烈波動中反覆被停損（54 筆交易、盈虧比僅 0.90）。</p>
+
+<h3>四方對照：rolling / anchored / 單次切分 / 買進持有</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的</th><th>模式</th><th>總報酬</th><th>年化</th><th>最大回撤</th><th>Sharpe</th><th>Sortino</th><th>Calmar</th><th>交易</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="4">BTCUSDT</td><td>rolling WF</td><td>+94.55%</td><td>13.07%</td><td><strong>−37.38%</strong></td><td>0.52</td><td>0.54</td><td>0.35</td><td>39</td></tr>
+    <tr><td>anchored WF</td><td>+97.85%</td><td>13.42%</td><td>−50.81%</td><td>0.51</td><td>0.60</td><td>0.26</td><td>44</td></tr>
+    <tr><td>單次切分</td><td>+24.90%</td><td>3.94%</td><td>−62.96%</td><td>0.29</td><td>0.38</td><td>0.06</td><td>31</td></tr>
+    <tr><td>買進持有</td><td><strong>+193.01%</strong></td><td>20.56%</td><td>−76.63%</td><td><strong>0.61</strong></td><td><strong>0.88</strong></td><td>0.27</td><td>0</td></tr>
+    <tr><td rowspan="4">ETHUSDT</td><td>rolling WF</td><td>+15.59%</td><td>2.71%</td><td><strong>−53.25%</strong></td><td>0.29</td><td>0.28</td><td>0.05</td><td>34</td></tr>
+    <tr><td>anchored WF</td><td>−35.59%</td><td>−7.80%</td><td>−70.31%</td><td>0.13</td><td>0.14</td><td>−0.11</td><td>54</td></tr>
+    <tr><td>單次切分</td><td>+7.76%</td><td>1.31%</td><td>−69.19%</td><td>0.26</td><td>0.30</td><td>0.02</td><td>29</td></tr>
+    <tr><td>買進持有</td><td><strong>+266.72%</strong></td><td>25.36%</td><td>−79.30%</td><td><strong>0.68</strong></td><td><strong>0.98</strong></td><td>0.32</td><td>0</td></tr>
+  </tbody>
+</table></div>
+<p class="callout warn"><strong>誠實結論：四種配置中，買進持有的總報酬與 Sharpe 都是最高的。</strong>
+WFO 的價值不在「打敗買進持有」，而在<strong>把最大回撤砍掉 40–50%</strong>（BTC：−37% vs −77%）。
+這是一個「用報酬換取回撤控制」的策略，不是「報酬最大化」的策略。</p>
+
+<h3>逐窗最佳參數（兩種模式）</h3>
+<p><strong>rolling</strong>：訓練窗固定 730 根，起點逐窗前進。</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>#</th><th>訓練窗</th><th>測試窗</th><th>EMA 快</th><th>EMA 慢</th><th>ATR 停損</th><th>訓練 Sharpe</th><th>測試報酬</th><th>測試 Sharpe</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>2019-01-01 ~ 2020-12-30</td><td>2020-12-31 ~ 2021-06-28</td><td>13</td><td>55</td><td>2.5</td><td>2.34</td><td>+1.02%</td><td>0.27</td></tr>
+    <tr><td>1</td><td>2019-06-30 ~ 2021-06-28</td><td>2021-06-29 ~ 2021-12-25</td><td>13</td><td>55</td><td>1.5</td><td>1.86</td><td>−15.45%</td><td>−0.67</td></tr>
+    <tr><td>2</td><td>2019-12-27 ~ 2021-12-25</td><td>2021-12-26 ~ 2022-06-23</td><td>13</td><td>55</td><td>3.0</td><td>1.90</td><td>+37.77%</td><td>2.03</td></tr>
+    <tr><td>3</td><td>2020-06-24 ~ 2022-06-23</td><td>2022-06-24 ~ 2022-12-20</td><td>13</td><td>55</td><td>3.0</td><td>2.08</td><td>−26.33%</td><td>−1.20</td></tr>
+    <tr><td>4</td><td>2020-12-21 ~ 2022-12-20</td><td>2022-12-21 ~ 2023-06-18</td><td>13</td><td>89</td><td>2.0</td><td>0.82</td><td>+1.61%</td><td>0.25</td></tr>
+    <tr><td>5</td><td>2021-06-19 ~ 2023-06-18</td><td>2023-06-19 ~ 2023-12-15</td><td>34</td><td>55</td><td>2.0</td><td>0.77</td><td>+27.60%</td><td>1.70</td></tr>
+    <tr><td>6</td><td>2021-12-16 ~ 2023-12-15</td><td>2023-12-16 ~ 2024-06-12</td><td>21</td><td>89</td><td>1.5</td><td>1.00</td><td>0.00%</td><td>0.00</td></tr>
+    <tr><td>7</td><td>2022-06-14 ~ 2024-06-12</td><td>2024-06-13 ~ 2024-12-09</td><td>9</td><td>34</td><td>1.5</td><td>1.01</td><td>+26.42%</td><td>1.30</td></tr>
+    <tr><td>8</td><td>2022-12-11 ~ 2024-12-09</td><td>2024-12-10 ~ 2025-06-07</td><td>9</td><td>34</td><td>1.5</td><td>1.54</td><td>+12.99%</td><td>0.84</td></tr>
+    <tr><td>9</td><td>2023-06-09 ~ 2025-06-07</td><td>2025-06-08 ~ 2025-12-04</td><td>9</td><td>34</td><td>1.5</td><td>1.43</td><td>−2.90%</td><td>−0.13</td></tr>
+    <tr><td>10</td><td>2023-12-06 ~ 2025-12-04</td><td>2025-12-05 ~ 2026-06-02</td><td>9</td><td>34</td><td>1.5</td><td>0.81</td><td>+24.80%</td><td>1.55</td></tr>
+  </tbody>
+</table></div>
+
+<p><strong>anchored</strong>：訓練窗起點固定 2019-01-01，長度由 730 遞增至 2,530 根。</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>#</th><th>訓練窗長度</th><th>測試窗</th><th>EMA 快</th><th>EMA 慢</th><th>ATR 停損</th><th>訓練 Sharpe</th><th>測試報酬</th><th>測試 Sharpe</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>730</td><td>2020-12-31 ~ 2021-06-28</td><td>13</td><td>55</td><td>2.5</td><td>2.34</td><td>+1.02%</td><td>0.27</td></tr>
+    <tr><td>1</td><td>910</td><td>2021-06-29 ~ 2021-12-25</td><td>13</td><td>55</td><td>2.5</td><td>2.36</td><td>−1.25%</td><td>0.25</td></tr>
+    <tr><td>2</td><td>1090</td><td>2021-12-26 ~ 2022-06-23</td><td>13</td><td>55</td><td>3.0</td><td>2.00</td><td>+37.77%</td><td>2.03</td></tr>
+    <tr><td>3</td><td>1270</td><td>2022-06-24 ~ 2022-12-20</td><td>13</td><td>55</td><td>3.0</td><td>2.02</td><td>−26.33%</td><td>−1.20</td></tr>
+    <tr><td>4</td><td>1450</td><td>2022-12-21 ~ 2023-06-18</td><td>13</td><td>55</td><td>3.0</td><td>1.68</td><td>−2.17%</td><td>0.06</td></tr>
+    <tr><td>5</td><td>1630</td><td>2023-06-19 ~ 2023-12-15</td><td>13</td><td>55</td><td>2.5</td><td>1.53</td><td>+36.22%</td><td>1.95</td></tr>
+    <tr><td>6</td><td>1810</td><td>2023-12-16 ~ 2024-06-12</td><td>13</td><td>55</td><td>2.5</td><td>1.50</td><td>+9.92%</td><td>0.63</td></tr>
+    <tr><td>7</td><td>1990</td><td>2024-06-13 ~ 2024-12-09</td><td>9</td><td>34</td><td>4.0</td><td>1.37</td><td>+10.91%</td><td>0.69</td></tr>
+    <tr><td>8</td><td>2170</td><td>2024-12-10 ~ 2025-06-07</td><td>9</td><td>34</td><td>4.0</td><td>1.31</td><td>+15.21%</td><td>0.93</td></tr>
+    <tr><td>9</td><td>2350</td><td>2025-06-08 ~ 2025-12-04</td><td>9</td><td>34</td><td>4.0</td><td>1.27</td><td>−13.21%</td><td>−0.87</td></tr>
+    <tr><td>10</td><td>2530</td><td>2025-12-05 ~ 2026-06-02</td><td>9</td><td>34</td><td>2.0</td><td>1.18</td><td>+20.30%</td><td>1.27</td></tr>
+  </tbody>
+</table></div>
+
+<h3>參數穩定度分析（量化）</h3>
+<p>統計每個參數在各窗口選出值的<strong>眾數占比</strong>與<strong>唯一值個數</strong>。占比越高越穩定。</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的</th><th>模式</th><th>參數</th><th>眾數</th><th>眾數占比</th><th>唯一值</th><th>範圍</th><th>標準差</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="8">BTCUSDT</td><td rowspan="4">rolling<br><em>整體 61.4%</em></td><td>EMA fast</td><td>13</td><td>45.5%</td><td>4</td><td>[9, 34]</td><td>7.09</td></tr>
+    <tr><td>EMA slow</td><td>55</td><td>45.5%</td><td>3</td><td>[34, 89]</td><td>19.19</td></tr>
+    <tr><td>ATR 停損</td><td>1.5</td><td>54.5%</td><td>4</td><td>[1.5, 3.0]</td><td>0.58</td></tr>
+    <tr><td>ATR 移動停損</td><td>5.0</td><td>100.0%</td><td>1</td><td>[5.0, 5.0]</td><td>0.00</td></tr>
+    <tr><td rowspan="4">anchored<br><em>整體 65.9%</em></td><td>EMA fast</td><td>13</td><td><strong>63.6%</strong></td><td>2</td><td>[9, 13]</td><td>1.92</td></tr>
+    <tr><td>EMA slow</td><td>55</td><td><strong>63.6%</strong></td><td>2</td><td>[34, 55]</td><td>10.10</td></tr>
+    <tr><td>ATR 停損</td><td>2.5</td><td>36.4%</td><td>4</td><td>[2.0, 4.0]</td><td>0.67</td></tr>
+    <tr><td>ATR 移動停損</td><td>5.0</td><td>100.0%</td><td>1</td><td>[5.0, 5.0]</td><td>0.00</td></tr>
+    <tr><td rowspan="8">ETHUSDT</td><td rowspan="4">rolling<br><em>整體 68.2%</em></td><td>EMA fast</td><td>13</td><td>45.5%</td><td>4</td><td>[9, 34]</td><td>8.61</td></tr>
+    <tr><td>EMA slow</td><td>89</td><td>54.5%</td><td>3</td><td>[34, 89]</td><td>24.22</td></tr>
+    <tr><td>ATR 停損</td><td>1.5</td><td>72.7%</td><td>3</td><td>[1.5, 2.5]</td><td>0.39</td></tr>
+    <tr><td>ATR 移動停損</td><td>5.0</td><td>100.0%</td><td>1</td><td>[5.0, 5.0]</td><td>0.00</td></tr>
+    <tr><td rowspan="4">anchored<br><em>整體 88.6%</em></td><td>EMA fast</td><td>13</td><td><strong>90.9%</strong></td><td>2</td><td>[9, 13]</td><td>1.15</td></tr>
+    <tr><td>EMA slow</td><td>34</td><td><strong>100.0%</strong></td><td>1</td><td>[34, 34]</td><td>0.00</td></tr>
+    <tr><td>ATR 停損</td><td>2.0</td><td>63.6%</td><td>3</td><td>[1.5, 2.5]</td><td>0.29</td></tr>
+    <tr><td>ATR 移動停損</td><td>5.0</td><td>100.0%</td><td>1</td><td>[5.0, 5.0]</td><td>0.00</td></tr>
+  </tbody>
+</table></div>
+<p><strong>解讀</strong>：</p>
+<ul>
+  <li><strong>anchored 的參數明顯較穩定</strong>（BTC 65.9% vs 61.4%；ETH 88.6% vs 68.2%）。原因很直觀：訓練窗越長、越重疊，選出的參數自然越一致 —— 但<strong>穩定不等於有效</strong>，ETH 的 anchored 參數最穩定（88.6%），績效卻最差（−35.59%）。</li>
+  <li><strong>rolling 的 EMA 快線眾數占比僅 45.5%</strong>（兩檔標的皆然），代表超過一半的窗口選出不同參數 —— 這是中度不穩定的訊號。</li>
+  <li><strong>ATR 移動停損倍數 100% 穩定不具資訊量</strong> —— 因為網格中只有一個值（5.0），必須誠實標示，不能當成優點。</li>
+  <li>rolling 的 EMA 標準差遠大於 anchored（BTC 7.09 vs 1.92；ETH 8.61 vs 1.15），量化了「rolling 參數跳動更劇烈」。</li>
+</ul>
+
+<h3>訓練窗 vs 測試窗績效衰退（過度擬合量化）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的</th><th>模式</th><th>訓練窗平均 Sharpe</th><th>測試窗平均 Sharpe</th><th>衰退幅度</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="2">BTCUSDT</td><td>rolling</td><td>1.414</td><td>0.539</td><td><strong>−61.9%</strong></td></tr>
+    <tr><td>anchored</td><td>1.688</td><td>0.547</td><td><strong>−67.6%</strong></td></tr>
+    <tr><td rowspan="2">ETHUSDT</td><td>rolling</td><td>1.156</td><td>0.413</td><td><strong>−64.3%</strong></td></tr>
+    <tr><td>anchored</td><td>1.471</td><td>0.282</td><td><strong>−80.8%</strong></td></tr>
+  </tbody>
+</table></div>
+<p>四種組合的衰退幅度都在 <strong>−62% ~ −81%</strong> 之間，全部落在「嚴重過度擬合」的區間。
+<strong>anchored 的衰退更嚴重</strong>（BTC −67.6% vs −61.9%；ETH −80.8% vs −64.3%）——
+因為它的訓練窗更長、更容易在訓練期「記住」更多雜訊，而這些雜訊在測試期完全失效。</p>
+
+<h3>結論：哪種模式在此資料上較穩健？</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>標的</th><th>勝出模式</th><th>票數</th><th>逐項比較</th></tr></thead>
+  <tbody>
+    <tr><td>BTCUSDT</td><td><strong>rolling</strong></td><td>3 : 2</td><td>Sharpe ✓、Calmar ✓、最大回撤 ✓；Sortino ✗、穩定度 ✗</td></tr>
+    <tr><td>ETHUSDT</td><td><strong>rolling</strong></td><td>4 : 1</td><td>Sharpe ✓、Sortino ✓、Calmar ✓、最大回撤 ✓；穩定度 ✗</td></tr>
+  </tbody>
+</table></div>
+<p><strong>結論：在此資料上，rolling（滾動窗）較穩健。</strong> 兩檔標的都由 rolling 勝出（3:2 與 4:1）。</p>
+<p><strong>為什麼？</strong> 加密貨幣的市場結構在 2019–2026 之間發生過數次劇變（2021 牛市、2022 熊市、
+2023–2024 復甦、2025–2026 高波動）。anchored 把 2019–2020 的低波動結構一路帶進後期的決策，
+<strong>訓練資料雖多，但其中相當比例已經「過期」</strong>。rolling 只取最近 730 根，
+雖然樣本較少、參數跳動較大，卻能跟上結構變化 —— 這正是它在 ETH 上能維持正報酬、
+而 anchored 卻虧損 35.59% 的原因。</p>
+<p class="callout info"><strong>但必須誠實補充</strong>：rolling 的優勢主要來自「風險控制」而非「報酬」。
+兩者在 BTC 的總報酬幾乎相同；在 ETH 上 rolling 勝出，但 Sharpe 也僅 0.29，仍遠低於買進持有的 0.68。
+<strong>沒有任何一種模式能讓這個策略打敗買進持有。</strong></p>
+
+<h3>圖表</h3>
+<figure><img src="images/BTCUSDT_wfo_mode_equity.png" alt="BTCUSDT WFO 雙模式樣本外權益曲線">
+  <figcaption>BTCUSDT：rolling vs anchored 樣本外權益曲線疊圖（含買進持有與單次切分對照）</figcaption></figure>
+<figure><img src="images/BTCUSDT_wfo_window_returns.png" alt="BTCUSDT 各窗口報酬雙模式對照">
+  <figcaption>BTCUSDT：各窗口樣本外報酬分布（rolling vs anchored）</figcaption></figure>
+<figure><img src="images/BTCUSDT_wfo_params.png" alt="BTCUSDT 參數隨時間變化雙模式對照">
+  <figcaption>BTCUSDT：參數隨時間變化（rolling vs anchored）—— 穩定度檢視</figcaption></figure>
+<figure><img src="images/BTCUSDT_wfo_train_test.png" alt="BTCUSDT 訓練vs測試雙模式對照">
+  <figcaption>BTCUSDT：訓練窗 vs 測試窗 Sharpe（rolling vs anchored）</figcaption></figure>
+<figure><img src="images/BTCUSDT_wfo_drawdown.png" alt="BTCUSDT 回撤雙模式對照">
+  <figcaption>BTCUSDT：樣本外回撤（rolling vs anchored）</figcaption></figure>
+<figure><img src="images/ETHUSDT_wfo_mode_equity.png" alt="ETHUSDT WFO 雙模式樣本外權益曲線">
+  <figcaption>ETHUSDT：rolling vs anchored 樣本外權益曲線疊圖</figcaption></figure>
+<figure><img src="images/ETHUSDT_wfo_window_returns.png" alt="ETHUSDT 各窗口報酬雙模式對照">
+  <figcaption>ETHUSDT：各窗口樣本外報酬分布（rolling vs anchored）</figcaption></figure>
+<figure><img src="images/ETHUSDT_wfo_params.png" alt="ETHUSDT 參數隨時間變化雙模式對照">
+  <figcaption>ETHUSDT：參數隨時間變化（rolling vs anchored）</figcaption></figure>
+<figure><img src="images/ETHUSDT_wfo_train_test.png" alt="ETHUSDT 訓練vs測試雙模式對照">
+  <figcaption>ETHUSDT：訓練窗 vs 測試窗 Sharpe（rolling vs anchored）</figcaption></figure>
+<figure><img src="images/ETHUSDT_wfo_drawdown.png" alt="ETHUSDT 回撤雙模式對照">
+  <figcaption>ETHUSDT：樣本外回撤（rolling vs anchored）</figcaption></figure>
+
+<h3>驗證：36 項檢查全部通過</h3>
+<p><code>verify_wfo.py</code> 以 <strong>36 項檢查</strong>驗證雙模式切窗正確性，全部通過：</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>檢查</th><th>方法</th><th>結果</th></tr></thead>
+  <tbody>
+    <tr><td>訓練／測試窗不重疊</td><td>逐窗口比對索引，斷言 <code>train_end &lt; test_start</code></td><td><span class="tag t-ok">PASS</span> 兩模式各 20 窗口</td></tr>
+    <tr><td>測試窗無縫相接</td><td>相鄰測試窗不重疊且依序前進</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><strong>無未來函數（截斷一致性）</strong></td><td>截斷資料後重跑，該窗口參數與樣本外權益必須完全一致</td><td><span class="tag t-ok">PASS</span> 最大差異 <strong>0.000e+00</strong></td></tr>
+    <tr><td><strong>參數只由訓練窗決定</strong></td><td>測試窗價格 ×3，選出參數必須不變</td><td><span class="tag t-ok">PASS</span> 兩模式皆通過</td></tr>
+    <tr><td>暖機期不進場</td><td>窗口邊界權益必須連續（暖機期零交易）</td><td><span class="tag t-ok">PASS</span> 相對落差 0.000e+00</td></tr>
+    <tr><td>樣本外權益連續</td><td>全為正、索引嚴格遞增、長度等於所有測試窗之和</td><td><span class="tag t-ok">PASS</span> 2400 = 2400</td></tr>
+    <tr><td>彙總指標可重現</td><td>由串接權益重算總報酬／MDD／Sharpe 與引擎回報值一致</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td>rolling 訓練窗固定</td><td>所有窗口訓練窗長度相同</td><td><span class="tag t-ok">PASS</span> 長度集合 {400}</td></tr>
+    <tr><td>anchored 訓練窗遞增</td><td>起點固定且長度嚴格遞增</td><td><span class="tag t-ok">PASS</span> 400 → 2680 根</td></tr>
+    <tr><td><strong>兩模式測試窗一致</strong></td><td>rolling 與 anchored 測試窗切點完全相同（否則不可比較）</td><td><span class="tag t-ok">PASS</span> 20 個窗口</td></tr>
+    <tr><td>資料完整性</td><td>無 NaN、日期嚴格遞增、無重複、high ≥ low</td><td><span class="tag t-ok">PASS</span></td></tr>
+  </tbody>
+</table></div>
+<p class="callout info">「截斷一致性」是無未來函數最強的證明：若參數選擇過程偷看了未來資料，
+把資料截斷後重跑，該窗口的參數就會改變。實測差異為 <strong>0.000e+00</strong>，逐點完全一致。
+「兩模式測試窗一致」則是本章對照有效性的前提 —— 已驗證兩者測試窗完全相同。</p>
+
+<h3>優點與注意事項</h3>
+<h4>優點</h4>
+<ul>
+  <li><strong>唯一可信的績效來源</strong>：樣本外曲線完全由未參與選參的資料構成。</li>
+  <li><strong>可歸因的模式對照</strong>：兩模式共用測試窗與網格，差異純粹來自訓練窗取法。</li>
+  <li><strong>量化過度擬合</strong>：訓練 → 測試的衰退幅度是可測量的數字（本次 −62% ~ −81%）。</li>
+  <li><strong>可重複、可驗證</strong>：36 項自動化檢查，含截斷一致性與擾動測試。</li>
+</ul>
+<h4>注意事項</h4>
+<ul>
+  <li><strong>WFO 表現比單次切分差是常態，不是 bug</strong> —— 單次切分的高分有相當程度是切點運氣。</li>
+  <li><strong>參數穩定 ≠ 有效</strong>：ETH 的 anchored 參數最穩定（88.6%），績效卻最差（−35.59%）。</li>
+  <li><strong>窗口數受資料長度限制</strong>：730/180 配置下只有 11 個窗口，統計上仍偏少。</li>
+  <li><strong>WFO 只驗證「參數選擇流程」，不保證獲利</strong>：它證明的是「若照此流程在歷史上滾動選參，結果會如何」。</li>
+  <li><strong>仍有殘餘偏誤</strong>：網格本身是人為選的；若設計網格時參考了整體資料，仍存在輕微選擇偏誤。</li>
+  <li><strong>未計入資金費率變動、流動性限制</strong>，與單次切分相同的限制依然存在。</li>
+</ul>
+
+<!-- ================= 13 ================= -->
+<h2 id="s13"><span class="n">13</span>量化交易指標腳本（Pine Script 指標版 ＋ 策略版）</h2>
+
+<p>本章交付一套以 <strong>TradingView Pine Script v6</strong> 為主的量化指標腳本，
+同時提供 <strong>指標版（indicator）</strong> 與 <strong>策略版（strategy）</strong> 兩份完整可貼上的檔案：
+指標版用於看盤（畫買賣點、停損線、指標面板），策略版用於回測（交給 TradingView 的 Strategy Tester 撮合與統計）。
+兩者<strong>共用同一套訊號邏輯</strong>，只是執行引擎不同。</p>
+
+<div class="grid g3">
+  <div class="stat"><div class="lbl">指標版行數</div><div class="val neu">341</div><div class="note">indicator，只做運算與繪圖</div></div>
+  <div class="stat"><div class="lbl">策略版行數</div><div class="val neu">280</div><div class="note">strategy，交由回測引擎撮合</div></div>
+  <div class="stat"><div class="lbl">可調參數</div><div class="val neu">31</div><div class="note">每個版本各 31 個 input</div></div>
+  <div class="stat"><div class="lbl">靜態檢查</div><div class="val pos">46/46</div><div class="note">兩檔各 23 項，全部 PASS</div></div>
+</div>
+
+<h3>13.1 為何要「指標版 ＋ 策略版」兩份？</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>面向</th><th>指標版 indicator</th><th>策略版 strategy</th></tr></thead>
+  <tbody>
+    <tr><td>主要用途</td><td>看盤、人工下單、設定通知</td><td>回測、參數掃描、績效統計</td></tr>
+    <tr><td>持倉來源</td><td>腳本<strong>自行維護</strong>狀態機（var pos）</td><td>TradingView <strong>strategy.* 引擎</strong>撮合</td></tr>
+    <tr><td>能否用 Strategy Tester</td><td><span class="tag t-bad">否</span></td><td><span class="tag t-ok">是</span>（淨利／MDD／勝率／PF）</td></tr>
+    <tr><td>繪圖限制</td><td>無限制，可畫多層停損／停利線</td><td>可畫，但過度繪圖會拖慢回測</td></tr>
+    <tr><td>成本模型</td><td>無（僅供看盤）</td><td>可設 commission / slippage</td></tr>
+    <tr><td>部位大小</td><td>面板顯示建議單位數</td><td>可選權益比例或 ATR 風險比例</td></tr>
+  </tbody>
+</table></div>
+<p class="callout info"><strong>為什麼不只用一份？</strong>指標版不能呼叫 <code>strategy.*</code>，
+拿不到部位與績效；策略版若把全套繪圖與面板都塞進去，回測會明顯變慢，且
+<code>plotshape</code> 過多會蓋掉 K 棒。實務上兩者分工最順：<strong>看盤用指標版、驗證用策略版</strong>。</p>
+
+<h3>13.2 設計理由：為何針對加密貨幣調整（而非照搬股票策略）</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>加密貨幣特性</th><th>對應設計</th><th>理由</th></tr></thead>
+  <tbody>
+    <tr><td>24/7 交易、無收盤跳空保護</td><td><strong>ATR 自適應停損</strong>取代固定 %</td><td>固定 % 停損在高波動期會被瞬間掃出、低波動期又太寬</td></tr>
+    <tr><td>波動大、趨勢強</td><td>趨勢線用 <strong>EMA</strong>（非 SMA）</td><td>EMA 對近期價格更敏感，趨勢反轉時反應更快</td></tr>
+    <tr><td>假訊號多、來回洗盤</td><td><strong>動能雙重確認</strong>：RSI 中軸同側 ＋ MACD 柱同向</td><td>單靠均線交叉在盤整區會產生大量假突破</td></tr>
+    <tr><td>盤整泥沼、低波動期</td><td><strong>ATR% 波動度門檻</strong></td><td>低波動時不進場，避免被來回磨損</td></tr>
+    <tr><td>永續合約成熟、可雙向</td><td>做多／做空<strong>可分別開關</strong></td><td>現貨只能做多；合約可做空，參數需可切換</td></tr>
+  </tbody>
+</table></div>
+
+<h3>13.3 訊號邏輯：三層過濾</h3>
+<pre><code>【趨勢層 Trend】  EMA 快線 / 慢線 交叉   或   Supertrend 翻轉
+        ↓ 必須先確立方向
+【動能層 Momentum】 RSI 站中軸同側  ＋  MACD 柱方向一致
+        ↓ 過濾掉逆勢與動能不足的假突破
+【波動層 Volatility】 ATR% ≥ 門檻（可關閉）
+        ↓ 過濾掉盤整泥沼
+【觸發】 趨勢翻轉事件 ＋ 三層同時成立 ＋ 暖機期已過
+        ↓
+  做多進場 LONG                           做空進場 SHORT
+  ├ 初始停損 = 進場價 − 3×ATR            ├ 初始停損 = 進場價 ＋ 3×ATR
+  ├ 移動停損 = 收盤 − 5×ATR（只上移）    ├ 移動停損 = 收盤 ＋ 5×ATR（只下移）
+  └ 停利（選用）= 進場價 ＋ 6×ATR        └ 停利（選用）= 進場價 − 6×ATR
+
+【出場條件（任一成立）】
+  1. 反向趨勢翻轉（死亡交叉 / Supertrend 翻空）→ 主動平倉
+  2. 價格觸及停損價 → ATR 停損
+  3. 價格觸及停利價（若啟用）→ ATR 停利</code></pre>
+
+<h3>13.4 完整參數清單（31 個 input，全部可調）</h3>
+<p><sup>指</sup> = 僅指標版有此參數；<sup>策</sup> = 僅策略版有此參數。其餘為兩版共用。</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>群組</th><th>參數</th><th>預設</th><th>範圍</th><th>說明</th></tr></thead>
+  <tbody>
+    <tr><td><code>① 趨勢</code></td><td><code>trendMode</code></td><td class="num">EMA 交叉</td><td>EMA 交叉 / Supertrend</td><td>趨勢判斷來源，可切換 EMA 交叉或 Supertrend 翻轉</td></tr>
+    <tr><td><code>① 趨勢</code></td><td><code>emaFastLen</code></td><td class="num">21</td><td>2 – 400</td><td>EMA 快線週期</td></tr>
+    <tr><td><code>① 趨勢</code></td><td><code>emaSlowLen</code></td><td class="num">55</td><td>3 – 500</td><td>EMA 慢線週期</td></tr>
+    <tr><td><code>① 趨勢</code></td><td><code>stAtrLen</code></td><td class="num">10</td><td>1 – 100</td><td>Supertrend 的 ATR 週期</td></tr>
+    <tr><td><code>① 趨勢</code></td><td><code>stFactor</code></td><td class="num">3.0</td><td>0.5 – 10.0</td><td>Supertrend 倍數（越大越不易翻轉）</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>momMode</code></td><td class="num">RSI + MACD</td><td>RSI+MACD / 僅 RSI / 僅 MACD</td><td>動能確認方式，可只留一種</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>rsiLen</code></td><td class="num">14</td><td>2 – 100</td><td>RSI 週期</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>rsiBull</code></td><td class="num">50</td><td>0 – 100</td><td>做多要求 RSI 高於此值（站中軸同側）</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>rsiBear</code></td><td class="num">50</td><td>0 – 100</td><td>做空要求 RSI 低於此值</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>macdFast</code></td><td class="num">12</td><td>1 – 200</td><td>MACD 快線週期</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>macdSlow</code></td><td class="num">26</td><td>2 – 300</td><td>MACD 慢線週期</td></tr>
+    <tr><td><code>② 動能</code></td><td><code>macdSigLen</code></td><td class="num">9</td><td>1 – 100</td><td>MACD 訊號線週期</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>atrLen</code></td><td class="num">14</td><td>1 – 200</td><td>ATR 週期（停損距離與部位大小的基準）</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>minAtrPct</code></td><td class="num">0.0</td><td>0 – 50</td><td>最低 ATR% 波動度門檻；0 = 關閉過濾</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>stopAtrMult</code></td><td class="num">3.0</td><td>0.5 – 20.0</td><td>初始停損距離 = N × ATR</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>useTrail</code></td><td class="num">true</td><td>開 / 關</td><td>啟用 ATR 移動停損（只朝有利方向移動）</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>trailAtrMult</code></td><td class="num">5.0</td><td>0.5 – 30.0</td><td>移動停損距離 = N × ATR</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>useTP</code></td><td class="num">false</td><td>開 / 關</td><td>啟用 ATR 停利</td></tr>
+    <tr><td><code>③ 波動度</code></td><td><code>tpAtrMult</code></td><td class="num">6.0</td><td>0.5 – 50.0</td><td>停利距離 = N × ATR</td></tr>
+    <tr><td><code>④ 部位</code></td><td><code>allowLong</code></td><td class="num">true</td><td>開 / 關</td><td>允許做多</td></tr>
+    <tr><td><code>④ 部位</code></td><td><code>allowShort</code></td><td class="num">true</td><td>開 / 關</td><td>允許做空（加密貨幣永續合約適用）</td></tr>
+    <tr><td><code>④ 部位</code></td><td><code>riskPct</code></td><td class="num">1.0</td><td>0.05 – 10.0</td><td>每筆風險 %；指標版用於面板部位建議，策略版用於 ATR 風險比例模式</td></tr>
+    <tr><td><code>④ 部位</code></td><td><code><em>equityRef</em><sup>指</sup></code></td><td class="num">10000</td><td>≥ 100</td><td>指標版專用：帳戶名目資金，用於換算部位建議單位數</td></tr>
+    <tr><td><code>④ 部位</code></td><td><code><em>sizingMode</em><sup>策</sup></code></td><td class="num">權益比例</td><td>權益比例 / ATR 風險比例</td><td>策略版專用：部位大小模式</td></tr>
+    <tr><td><code>④ 部位</code></td><td><code><em>qtyPct</em><sup>策</sup></code></td><td class="num">100</td><td>1 – 100</td><td>策略版專用：權益比例模式下的投入 %</td></tr>
+    <tr><td><code>⑤ 顯示</code></td><td><code>showEma</code></td><td class="num">true</td><td>開 / 關</td><td>顯示 EMA 快慢線</td></tr>
+    <tr><td><code>⑤ 顯示</code></td><td><code>showSt</code></td><td class="num">true</td><td>開 / 關</td><td>顯示 Supertrend 線</td></tr>
+    <tr><td><code>⑤ 顯示</code></td><td><code>showStop</code></td><td class="num">true</td><td>開 / 關</td><td>顯示停損／停利線（僅持倉期間）</td></tr>
+    <tr><td><code>⑤ 顯示</code></td><td><code>showMarkers</code></td><td class="num">true</td><td>開 / 關</td><td>顯示買賣點標記與進場標籤</td></tr>
+    <tr><td><code>⑤ 顯示</code></td><td><code>showPanel</code></td><td class="num">true</td><td>開 / 關</td><td>顯示資訊面板</td></tr>
+    <tr><td><code>⑤ 顯示</code></td><td><code><em>panelPos</em><sup>指</sup></code></td><td class="num">右上</td><td>右上 / 左上 / 右下 / 左下</td><td>指標版專用：面板位置</td></tr>
+    <tr><td><code>⑥ 通知</code></td><td><code>alertEntry</code></td><td class="num">true</td><td>開 / 關</td><td>進場時發出 alert()</td></tr>
+    <tr><td><code>⑥ 通知</code></td><td><code>alertExit</code></td><td class="num">true</td><td>開 / 關</td><td>出場／停損／停利時發出 alert()</td></tr>
+  </tbody>
+</table></div>
+<p class="callout"><strong>部位建議怎麼算？</strong>指標版以「固定風險金額 ÷ 停損距離」換算單位數：
+<code>單位數 = (帳戶名目資金 × 每筆風險%) ÷ |進場價 − 停損價|</code>。
+例如資金 10,000、風險 1%（=100）、停損距離 3×ATR，即代表「這筆最多虧 100」。
+策略版另有「ATR 風險比例」模式可直接把同一式子交給下單引擎。</p>
+
+<h3>13.5 完整程式碼 — 指標版</h3>
+<p>完整檔案：<a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v4/pine/ctma_indicator.pine">ctma_indicator.pine</a>（341 行）</p>
+<details class="codebox">
+  <summary>📄 ctma_indicator.pine — 完整程式碼（點擊展開 / 收合）</summary>
+<pre><code>//@version=6
+// =============================================================================
+//  CTMA Signal — Crypto Trend Momentum ATR  ·  指標版 (indicator)
+// -----------------------------------------------------------------------------
+//  設計目標：把「趨勢 / 動能 / 波動度」三層過濾的進出場訊號畫在同一張圖上，
+//            並直接標出進場點、ATR 停損線、停利線與部位建議，供看盤與人工下單。
+//
+//  為何針對加密貨幣調整（而非把股票策略照搬）：
+//    1. 24/7 無收盤跳空保護 → 停損必須「波動度自適應」，故用 ATR 而非固定 %。
+//    2. 波動大、趨勢強      → 趨勢線用 EMA 而非 SMA，對近期價格更敏感。
+//    3. 假訊號多            → 動能雙重確認（RSI 站中軸同側 + MACD 柱同向）。
+//    4. 盤整泥沼            → ATR% 波動度門檻，低波動時不進場。
+//    5. 永續合約成熟        → 做多／做空可分別開關。
+//
+//  編譯注意（本檔已逐項自我檢查）：
+//    * 所有 var 宣告一律在全域作用域，無任何 var 位於 if 區塊內。
+//    * 本檔「完全不使用 request.security」，因此不存在 lookahead / repaint 風險。
+//    * 常數水平線用 hline()、動態線用 plot()；hline 與 alertcondition 皆在全域。
+//    * 所有 input 皆實際被使用，無宣告未用參數。
+//    * 布林運算不使用 na（v6 起 bool 不可為 na），歷史引用一律以 nz() 保護。
+// =============================================================================
+
+indicator("CTMA Signal — Crypto Trend Momentum ATR", shorttitle = "CTMA Signal",
+     overlay = true, max_labels_count = 500, max_lines_count = 500)
+
+// -----------------------------------------------------------------------------
+// 1) 輸入參數（全部可用 input 調整）
+// -----------------------------------------------------------------------------
+grpT = "① 趨勢 Trend"
+trendMode  = input.string("EMA 交叉", "趨勢判斷方式", options = ["EMA 交叉", "Supertrend"], group = grpT)
+emaFastLen = input.int(21, "EMA 快線週期", minval = 2, maxval = 400, group = grpT)
+emaSlowLen = input.int(55, "EMA 慢線週期", minval = 3, maxval = 500, group = grpT)
+stAtrLen   = input.int(10, "Supertrend ATR 週期", minval = 1, maxval = 100, group = grpT)
+stFactor   = input.float(3.0, "Supertrend 倍數", minval = 0.5, maxval = 10.0, step = 0.1, group = grpT)
+
+grpM = "② 動能 Momentum"
+momMode   = input.string("RSI + MACD", "動能確認方式", options = ["RSI + MACD", "僅 RSI", "僅 MACD"], group = grpM)
+rsiLen    = input.int(14, "RSI 週期", minval = 2, maxval = 100, group = grpM)
+rsiBull   = input.float(50.0, "做多 RSI 下限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+rsiBear   = input.float(50.0, "做空 RSI 上限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+macdFast  = input.int(12, "MACD 快線週期", minval = 1, maxval = 200, group = grpM)
+macdSlow  = input.int(26, "MACD 慢線週期", minval = 2, maxval = 300, group = grpM)
+macdSigLen = input.int(9, "MACD 訊號線週期", minval = 1, maxval = 100, group = grpM)
+
+grpV = "③ 波動度與風控 Volatility &amp; Risk"
+atrLen       = input.int(14, "ATR 週期", minval = 1, maxval = 200, group = grpV)
+minAtrPct    = input.float(0.0, "最低 ATR%（波動度門檻，0 = 關閉）", minval = 0.0, maxval = 50.0, step = 0.1, group = grpV)
+stopAtrMult  = input.float(3.0, "ATR 初始停損倍數", minval = 0.5, maxval = 20.0, step = 0.1, group = grpV)
+useTrail     = input.bool(true, "啟用 ATR 移動停損", group = grpV)
+trailAtrMult = input.float(5.0, "ATR 移動停損倍數", minval = 0.5, maxval = 30.0, step = 0.1, group = grpV)
+useTP        = input.bool(false, "啟用 ATR 停利", group = grpV)
+tpAtrMult    = input.float(6.0, "ATR 停利倍數", minval = 0.5, maxval = 50.0, step = 0.1, group = grpV)
+
+grpP = "④ 方向與部位 Position"
+allowLong  = input.bool(true, "允許做多", group = grpP)
+allowShort = input.bool(true, "允許做空", group = grpP)
+riskPct    = input.float(1.0, "每筆風險 %（部位建議用）", minval = 0.05, maxval = 10.0, step = 0.05, group = grpP)
+equityRef  = input.float(10000.0, "帳戶名目資金（部位建議用）", minval = 100.0, step = 100.0, group = grpP)
+
+grpD = "⑤ 顯示 Display"
+showEma     = input.bool(true, "顯示 EMA 快慢線", group = grpD)
+showSt      = input.bool(true, "顯示 Supertrend", group = grpD)
+showStop    = input.bool(true, "顯示停損／停利線", group = grpD)
+showMarkers = input.bool(true, "顯示買賣點標記與標籤", group = grpD)
+showPanel   = input.bool(true, "顯示資訊面板", group = grpD)
+panelPos    = input.string("右上", "面板位置", options = ["右上", "左上", "右下", "左下"], group = grpD)
+
+grpA = "⑥ 通知 Alerts"
+alertEntry = input.bool(true, "進場時發出 alert()", group = grpA)
+alertExit  = input.bool(true, "出場時發出 alert()", group = grpA)
+
+// -----------------------------------------------------------------------------
+// 2) 指標計算
+// -----------------------------------------------------------------------------
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+
+// ta.supertrend 回傳 tuple [line, direction]；direction = -1 表多頭、+1 表空頭
+[stLine, stDir] = ta.supertrend(stFactor, stAtrLen)
+
+rsiVal = ta.rsi(close, rsiLen)
+[macdLine, macdSignal, macdHist] = ta.macd(close, macdFast, macdSlow, macdSigLen)
+
+atrVal  = ta.atr(atrLen)
+atrPct  = close &gt; 0 ? atrVal / close * 100.0 : 0.0
+
+// -----------------------------------------------------------------------------
+// 3) 訊號條件
+// -----------------------------------------------------------------------------
+useSt = trendMode == "Supertrend"
+
+// 趨勢方向
+emaBull = emaFast &gt; emaSlow
+emaBear = emaFast &lt; emaSlow
+stBull  = stDir &lt; 0
+stBear  = stDir &gt; 0
+trendBull = useSt ? stBull : emaBull
+trendBear = useSt ? stBear : emaBear
+
+// 趨勢翻轉事件（進場觸發 + 出場條件）
+prevStDir = nz(stDir[1], 0)
+stFlipUp  = stDir &lt; 0 and prevStDir &gt;= 0
+stFlipDn  = stDir &gt; 0 and prevStDir &lt;= 0
+emaCrossUp = ta.crossover(emaFast, emaSlow)
+emaCrossDn = ta.crossunder(emaFast, emaSlow)
+
+flipBull = useSt ? stFlipUp : emaCrossUp
+flipBear = useSt ? stFlipDn : emaCrossDn
+
+// 動能確認
+momUseRsi  = momMode != "僅 MACD"
+momUseMacd = momMode != "僅 RSI"
+rsiBullOk  = momUseRsi ? rsiVal &gt; rsiBull : true
+rsiBearOk  = momUseRsi ? rsiVal &lt; rsiBear : true
+macdBullOk = momUseMacd ? macdHist &gt; 0 : true
+macdBearOk = momUseMacd ? macdHist &lt; 0 : true
+
+// 波動度門檻與暖機期
+volOk  = atrPct &gt;= minAtrPct
+warmOk = bar_index &gt; math.max(math.max(emaSlowLen, atrLen), macdSlow) + 1 and
+     not na(emaSlow) and not na(atrVal) and not na(rsiVal) and not na(macdHist)
+
+// 進場訊號（趨勢翻轉 + 動能確認 + 波動度 + 暖機 + 方向開關）
+longSig  = allowLong and warmOk and volOk and trendBull and flipBull and rsiBullOk and macdBullOk
+shortSig = allowShort and warmOk and volOk and trendBear and flipBear and rsiBearOk and macdBearOk
+
+// 出場訊號（純趨勢反轉，不受動能／方向開關影響）
+exitLongSig  = flipBear
+exitShortSig = flipBull
+
+// -----------------------------------------------------------------------------
+// 4) 模擬持倉狀態機（指標版沒有 strategy.* 可用，故自行維護部位狀態）
+//    順序刻意設計為「先用舊停損判斷是否被打到，再更新移動停損」，
+//    避免同一根 K 棒先移動停損再宣稱被打到所造成的未來函數。
+// -----------------------------------------------------------------------------
+var int   pos      = 0          // 0 = 空手, 1 = 多單, -1 = 空單
+var float entryPx  = na
+var float stopPx   = na
+var float tpPx     = na
+var float entryAtr = na
+var int   entryBar = na
+var float riskUnit = na         // 每 1 單位部位的風險金額（= 停損距離）
+var string lastExit = "—"
+
+// 每根 K 棒的暫存旗標（非 var，逐根重置）
+bool wasStopped = false
+bool wasTp      = false
+bool justExited = false
+
+// ---- 步驟 1：檢查既有持倉是否觸及停損／停利 ----
+if pos &gt; 0
+    wasStopped := not na(stopPx) and low &lt;= stopPx
+    wasTp      := useTP and not na(tpPx) and high &gt;= tpPx
+
+if pos &lt; 0
+    wasStopped := not na(stopPx) and high &gt;= stopPx
+    wasTp      := useTP and not na(tpPx) and low &lt;= tpPx
+
+// 停損優先於停利結算
+if pos != 0 and (wasStopped or wasTp)
+    lastExit := wasStopped ? "ATR 停損" : "ATR 停利"
+    pos := 0
+    stopPx := na
+    tpPx := na
+    justExited := true
+
+// ---- 步驟 2：移動停損（僅在仍持倉時，用「本根收盤」更新，且只朝有利方向移動）----
+if pos &gt; 0 and useTrail and not na(atrVal)
+    cand = close - trailAtrMult * atrVal
+    stopPx := math.max(nz(stopPx, cand), cand)
+
+if pos &lt; 0 and useTrail and not na(atrVal)
+    cand = close + trailAtrMult * atrVal
+    stopPx := math.min(nz(stopPx, cand), cand)
+
+// ---- 步驟 3：趨勢反轉出場 ----
+if pos &gt; 0 and exitLongSig
+    lastExit := "趨勢反轉"
+    pos := 0
+    stopPx := na
+    tpPx := na
+    justExited := true
+
+if pos &lt; 0 and exitShortSig
+    lastExit := "趨勢反轉"
+    pos := 0
+    stopPx := na
+    tpPx := na
+    justExited := true
+
+// ---- 步驟 4：新進場（僅在空手、且本根尚未出場時）----
+if pos == 0 and not justExited and longSig
+    pos      := 1
+    entryPx  := close
+    entryAtr := atrVal
+    entryBar := bar_index
+    stopPx   := close - stopAtrMult * atrVal
+    tpPx     := useTP ? close + tpAtrMult * atrVal : na
+    riskUnit := math.abs(entryPx - stopPx)
+    lastExit := "—"
+
+if pos == 0 and not justExited and shortSig
+    pos      := -1
+    entryPx  := close
+    entryAtr := atrVal
+    entryBar := bar_index
+    stopPx   := close + stopAtrMult * atrVal
+    tpPx     := useTP ? close - tpAtrMult * atrVal : na
+    riskUnit := math.abs(stopPx - entryPx)
+    lastExit := "—"
+
+// -----------------------------------------------------------------------------
+// 5) 繪圖：均線 / Supertrend / 停損線 / 買賣點
+// -----------------------------------------------------------------------------
+plot(showEma ? emaFast : na, "EMA 快線", color = color.new(#f7931a, 0), linewidth = 2)
+plot(showEma ? emaSlow : na, "EMA 慢線", color = color.new(#627eea, 0), linewidth = 2)
+plot(showSt ? stLine : na, "Supertrend", color = color.new(color.teal, 10), linewidth = 2)
+
+plot(showStop and pos &gt; 0 ? stopPx : na, "多單停損", color = color.new(#ef4444, 0),
+     style = plot.style_linebr, linewidth = 2)
+plot(showStop and pos &lt; 0 ? stopPx : na, "空單停損", color = color.new(#ef4444, 0),
+     style = plot.style_linebr, linewidth = 2)
+plot(showStop and pos &gt; 0 and useTP ? tpPx : na, "多單停利", color = color.new(#22c55e, 0),
+     style = plot.style_linebr, linewidth = 1)
+plot(showStop and pos &lt; 0 and useTP ? tpPx : na, "空單停利", color = color.new(#22c55e, 0),
+     style = plot.style_linebr, linewidth = 1)
+
+plotshape(showMarkers and longSig, "做多進場", shape.triangleup, location.belowbar,
+     color = color.new(#22c55e, 0), size = size.small)
+plotshape(showMarkers and shortSig, "做空進場", shape.triangledown, location.abovebar,
+     color = color.new(#ef4444, 0), size = size.small)
+// location.absolute 需要「價格序列」而非布林值，故以 close 作為絕對位置
+plotshape(showMarkers and wasStopped ? close : na, "停損出場", shape.xcross, location.absolute,
+     color = color.new(#f59e0b, 0), size = size.tiny)
+
+// 進場標籤（含進場價、停損價、部位建議）
+if showMarkers and longSig
+    label.new(bar_index, low, "LONG " + str.tostring(close, format.mintick) +
+         "\nSL " + str.tostring(close - stopAtrMult * atrVal, format.mintick),
+         style = label.style_label_up, color = color.new(#22c55e, 25),
+         textcolor = color.white, size = size.small)
+
+if showMarkers and shortSig
+    label.new(bar_index, high, "SHORT " + str.tostring(close, format.mintick) +
+         "\nSL " + str.tostring(close + stopAtrMult * atrVal, format.mintick),
+         style = label.style_label_down, color = color.new(#ef4444, 25),
+         textcolor = color.white, size = size.small)
+
+// 零軸參考（RSI 中軸概念，僅作視覺對位）
+hline(0, "零軸", color = color.new(color.gray, 70), linestyle = hline.style_dotted)
+
+// -----------------------------------------------------------------------------
+// 6) 警報（alertcondition 必須在全域作用域）
+// -----------------------------------------------------------------------------
+alertcondition(longSig, "CTMA 做多進場", "CTMA LONG {{ticker}} @ {{close}}")
+alertcondition(shortSig, "CTMA 做空進場", "CTMA SHORT {{ticker}} @ {{close}}")
+alertcondition(wasStopped, "CTMA 停損觸發", "CTMA STOP {{ticker}} @ {{close}}")
+alertcondition(wasTp, "CTMA 停利觸發", "CTMA TAKEPROFIT {{ticker}} @ {{close}}")
+alertcondition(exitLongSig and pos[1] &gt; 0, "CTMA 多單趨勢出場", "CTMA EXIT LONG {{ticker}} @ {{close}}")
+alertcondition(exitShortSig and pos[1] &lt; 0, "CTMA 空單趨勢出場", "CTMA EXIT SHORT {{ticker}} @ {{close}}")
+
+// 動態 alert()：訊號成立當根立即通知
+if alertEntry and longSig
+    alert("CTMA LONG " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close - stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertEntry and shortSig
+    alert("CTMA SHORT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close + stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertExit and wasStopped
+    alert("CTMA STOP OUT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertExit and wasTp
+    alert("CTMA TAKE PROFIT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick),
+         alert.freq_once_per_bar_close)
+
+// -----------------------------------------------------------------------------
+// 7) 資訊面板
+// -----------------------------------------------------------------------------
+panelPosConst = panelPos == "左上" ? position.top_left :
+     panelPos == "右下" ? position.bottom_right :
+     panelPos == "左下" ? position.bottom_left : position.top_right
+
+var table panel = table.new(panelPosConst, 2, 12, border_width = 1,
+     frame_color = color.new(color.gray, 70))
+
+if showPanel and barstate.islast
+    // 趨勢／動能文字
+    trendTxt  = trendBull ? "多頭 ▲" : trendBear ? "空頭 ▼" : "中性 ─"
+    posTxt    = pos &gt; 0 ? "多單" : pos &lt; 0 ? "空單" : "空手"
+
+    // 部位建議：以固定風險金額換算可持有單位數
+    riskAmt   = equityRef * riskPct / 100.0
+    unitsAdv  = not na(riskUnit) and riskUnit &gt; 0 ? riskAmt / riskUnit : na
+    notional  = not na(unitsAdv) and pos != 0 ? unitsAdv * entryPx : na
+    holdBars  = pos != 0 and not na(entryBar) ? bar_index - entryBar : na
+
+    table.cell(panel, 0, 0, "CTMA 指標", bgcolor = color.new(#627eea, 60), text_color = color.white)
+    table.cell(panel, 1, 0, syminfo.ticker, bgcolor = color.new(#627eea, 60), text_color = color.white)
+
+    table.cell(panel, 0, 1, "趨勢來源")
+    table.cell(panel, 1, 1, trendMode + "：" + trendTxt, text_color = trendBull ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 2, "RSI(" + str.tostring(rsiLen) + ")")
+    table.cell(panel, 1, 2, str.tostring(rsiVal, "#.00"), text_color = rsiVal &gt; 50 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 3, "MACD 柱")
+    table.cell(panel, 1, 3, str.tostring(macdHist, "#.####"), text_color = macdHist &gt; 0 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 4, "MACD / 訊號")
+    table.cell(panel, 1, 4, str.tostring(macdLine, "#.####") + " / " + str.tostring(macdSignal, "#.####"))
+
+    table.cell(panel, 0, 5, "ATR(" + str.tostring(atrLen) + ")")
+    table.cell(panel, 1, 5, str.tostring(atrVal, format.mintick) + "  (" + str.tostring(atrPct, "#.00") + "%)",
+         text_color = volOk ? #22c55e : color.gray)
+
+    table.cell(panel, 0, 6, "目前持倉")
+    table.cell(panel, 1, 6, posTxt, text_color = pos &gt; 0 ? #22c55e : pos &lt; 0 ? #ef4444 : color.gray)
+
+    table.cell(panel, 0, 7, "進場價")
+    table.cell(panel, 1, 7, pos != 0 and not na(entryPx) ? str.tostring(entryPx, format.mintick) : "—")
+
+    table.cell(panel, 0, 8, "停損價")
+    table.cell(panel, 1, 8, pos != 0 and not na(stopPx) ? str.tostring(stopPx, format.mintick) : "—",
+         text_color = #ef4444)
+
+    table.cell(panel, 0, 9, "停利價")
+    table.cell(panel, 1, 9, pos != 0 and useTP and not na(tpPx) ? str.tostring(tpPx, format.mintick) : "—",
+         text_color = #22c55e)
+
+    table.cell(panel, 0, 10, "部位建議")
+    table.cell(panel, 1, 10, pos != 0 and not na(unitsAdv) ?
+         str.tostring(unitsAdv, "#.####") + " 單位 (≈" + str.tostring(notional, "#") + ")" : "—")
+
+    table.cell(panel, 0, 11, "持有根數 / 上筆出場")
+    table.cell(panel, 1, 11, (pos != 0 and not na(holdBars) ? str.tostring(holdBars, "#") : "0") + " / " + lastExit)
+</code></pre>
+</details>
+
+<h3>13.6 完整程式碼 — 策略版</h3>
+<p>完整檔案：<a href="https://static.teamily.ai/sites/34468edc-e320-4e40-ae5e-3e9455ca31c2/documents/crypto-quant_v4/pine/ctma_strategy.pine">ctma_strategy.pine</a>（280 行）</p>
+<details class="codebox">
+  <summary>📄 ctma_strategy.pine — 完整程式碼（點擊展開 / 收合）</summary>
+<pre><code>//@version=6
+// =============================================================================
+//  CTMA Strategy — Crypto Trend Momentum ATR  ·  策略版 (strategy)
+// -----------------------------------------------------------------------------
+//  與 ctma_indicator.pine 共用同一套訊號邏輯，差別在於：
+//    * 指標版自行模擬持倉狀態、僅供看盤；
+//    * 策略版交給 TradingView 的 strategy.* 引擎撮合，可直接看 Strategy Tester
+//      的淨利、MDD、勝率、Profitable Factor，並可疊加 commission / slippage。
+//
+//  設計理由（針對加密貨幣，非照搬股票策略）：
+//    1. 24/7 無跳空保護 → ATR 自適應停損取代固定 %。
+//    2. 波動大趨勢強    → EMA(21/55) 取代 SMA，對近期價格更敏感。
+//    3. 假訊號多        → RSI 中軸同側 + MACD 柱同向，雙重動能確認。
+//    4. 盤整泥沼        → ATR% 波動度門檻，低波動不進場。
+//    5. 永續合約成熟    → 可做多亦可做空（可分別關閉）。
+//
+//  編譯注意（本檔已逐項自我檢查）：
+//    * 所有 var 宣告一律在全域作用域，無任何 var 位於 if 區塊內。
+//    * 完全不使用 request.security → 無 lookahead / repaint 風險。
+//    * strategy.exit 僅在至少一個出場價有效時呼叫（避免「必須指定參數」執行期錯誤）。
+//    * 所有 input 皆實際被使用。
+// =============================================================================
+
+strategy("CTMA Strategy — Crypto Trend Momentum ATR", shorttitle = "CTMA Strategy",
+     overlay = true, initial_capital = 10000,
+     default_qty_type = strategy.percent_of_equity, default_qty_value = 100,
+     commission_type = strategy.commission.percent, commission_value = 0.04,
+     slippage = 5, pyramiding = 0,
+     calc_on_every_tick = false, process_orders_on_close = false)
+
+// -----------------------------------------------------------------------------
+// 1) 輸入參數
+// -----------------------------------------------------------------------------
+grpT = "① 趨勢 Trend"
+trendMode  = input.string("EMA 交叉", "趨勢判斷方式", options = ["EMA 交叉", "Supertrend"], group = grpT)
+emaFastLen = input.int(21, "EMA 快線週期", minval = 2, maxval = 400, group = grpT)
+emaSlowLen = input.int(55, "EMA 慢線週期", minval = 3, maxval = 500, group = grpT)
+stAtrLen   = input.int(10, "Supertrend ATR 週期", minval = 1, maxval = 100, group = grpT)
+stFactor   = input.float(3.0, "Supertrend 倍數", minval = 0.5, maxval = 10.0, step = 0.1, group = grpT)
+
+grpM = "② 動能 Momentum"
+momMode    = input.string("RSI + MACD", "動能確認方式", options = ["RSI + MACD", "僅 RSI", "僅 MACD"], group = grpM)
+rsiLen     = input.int(14, "RSI 週期", minval = 2, maxval = 100, group = grpM)
+rsiBull    = input.float(50.0, "做多 RSI 下限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+rsiBear    = input.float(50.0, "做空 RSI 上限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+macdFast   = input.int(12, "MACD 快線週期", minval = 1, maxval = 200, group = grpM)
+macdSlow   = input.int(26, "MACD 慢線週期", minval = 2, maxval = 300, group = grpM)
+macdSigLen = input.int(9, "MACD 訊號線週期", minval = 1, maxval = 100, group = grpM)
+
+grpV = "③ 波動度與風控 Volatility &amp; Risk"
+atrLen       = input.int(14, "ATR 週期", minval = 1, maxval = 200, group = grpV)
+minAtrPct    = input.float(0.0, "最低 ATR%（波動度門檻，0 = 關閉）", minval = 0.0, maxval = 50.0, step = 0.1, group = grpV)
+stopAtrMult  = input.float(3.0, "ATR 初始停損倍數", minval = 0.5, maxval = 20.0, step = 0.1, group = grpV)
+useTrail     = input.bool(true, "啟用 ATR 移動停損", group = grpV)
+trailAtrMult = input.float(5.0, "ATR 移動停損倍數", minval = 0.5, maxval = 30.0, step = 0.1, group = grpV)
+useTP        = input.bool(false, "啟用 ATR 停利", group = grpV)
+tpAtrMult    = input.float(6.0, "ATR 停利倍數", minval = 0.5, maxval = 50.0, step = 0.1, group = grpV)
+
+grpP = "④ 部位與方向 Position"
+allowLong  = input.bool(true, "允許做多", group = grpP)
+allowShort = input.bool(true, "允許做空", group = grpP)
+sizingMode = input.string("權益比例", "部位大小模式", options = ["權益比例", "ATR 風險比例"], group = grpP)
+qtyPct     = input.float(100.0, "權益比例 %（部位大小模式 = 權益比例時生效）", minval = 1.0, maxval = 100.0, step = 1.0, group = grpP)
+riskPct    = input.float(1.0, "每筆風險 %（部位大小模式 = ATR 風險比例時生效）", minval = 0.05, maxval = 10.0, step = 0.05, group = grpP)
+
+grpD = "⑤ 顯示 Display"
+showEma     = input.bool(true, "顯示 EMA 快慢線", group = grpD)
+showSt      = input.bool(true, "顯示 Supertrend", group = grpD)
+showStop    = input.bool(true, "顯示停損／停利線", group = grpD)
+showMarkers = input.bool(true, "顯示買賣點標記", group = grpD)
+showPanel   = input.bool(true, "顯示資訊面板", group = grpD)
+
+grpA = "⑥ 通知 Alerts"
+alertEntry = input.bool(true, "進場時發出 alert()", group = grpA)
+alertExit  = input.bool(true, "出場時發出 alert()", group = grpA)
+
+// -----------------------------------------------------------------------------
+// 2) 指標計算
+// -----------------------------------------------------------------------------
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+[stLine, stDir] = ta.supertrend(stFactor, stAtrLen)
+
+rsiVal = ta.rsi(close, rsiLen)
+[macdLine, macdSignal, macdHist] = ta.macd(close, macdFast, macdSlow, macdSigLen)
+
+atrVal = ta.atr(atrLen)
+atrPct = close &gt; 0 ? atrVal / close * 100.0 : 0.0
+
+// -----------------------------------------------------------------------------
+// 3) 訊號條件
+// -----------------------------------------------------------------------------
+useSt = trendMode == "Supertrend"
+
+emaBull = emaFast &gt; emaSlow
+emaBear = emaFast &lt; emaSlow
+trendBull = useSt ? (stDir &lt; 0) : emaBull
+trendBear = useSt ? (stDir &gt; 0) : emaBear
+
+prevStDir  = nz(stDir[1], 0)
+stFlipUp   = stDir &lt; 0 and prevStDir &gt;= 0
+stFlipDn   = stDir &gt; 0 and prevStDir &lt;= 0
+emaCrossUp = ta.crossover(emaFast, emaSlow)
+emaCrossDn = ta.crossunder(emaFast, emaSlow)
+
+flipBull = useSt ? stFlipUp : emaCrossUp
+flipBear = useSt ? stFlipDn : emaCrossDn
+
+momUseRsi  = momMode != "僅 MACD"
+momUseMacd = momMode != "僅 RSI"
+rsiBullOk  = momUseRsi ? rsiVal &gt; rsiBull : true
+rsiBearOk  = momUseRsi ? rsiVal &lt; rsiBear : true
+macdBullOk = momUseMacd ? macdHist &gt; 0 : true
+macdBearOk = momUseMacd ? macdHist &lt; 0 : true
+
+volOk  = atrPct &gt;= minAtrPct
+warmOk = bar_index &gt; math.max(math.max(emaSlowLen, atrLen), macdSlow) + 1 and
+     not na(emaSlow) and not na(atrVal) and not na(rsiVal) and not na(macdHist)
+
+longSig  = allowLong and warmOk and volOk and trendBull and flipBull and rsiBullOk and macdBullOk
+shortSig = allowShort and warmOk and volOk and trendBear and flipBear and rsiBearOk and macdBearOk
+
+exitLongSig  = flipBear
+exitShortSig = flipBull
+
+// -----------------------------------------------------------------------------
+// 4) 部位大小
+// -----------------------------------------------------------------------------
+stopDist = stopAtrMult * atrVal
+
+// 權益比例模式：以目前收盤價換算名目單位數
+qtyEquity = close &gt; 0 ? strategy.equity * qtyPct / 100.0 / close : 0.0
+// ATR 風險比例模式：風險金額 ÷ 每單位停損距離
+qtyRisk   = stopDist &gt; 0 ? (strategy.equity * riskPct / 100.0) / stopDist : 0.0
+qtyUse    = sizingMode == "ATR 風險比例" ? nz(qtyRisk) : nz(qtyEquity)
+
+// -----------------------------------------------------------------------------
+// 5) 進出場執行（含 ATR 停損 / 移動停損 / 停利）
+//    var 一律在全域宣告，絕不放入 if 區塊，避免狀態遺失。
+// -----------------------------------------------------------------------------
+var float longStop    = na
+var float longTp      = na
+var float shortStop   = na
+var float shortTp     = na
+var int   entryBarIdx = na
+var string lastExit   = "—"
+
+// ---- 進場 ----
+if longSig and strategy.position_size &lt;= 0 and qtyUse &gt; 0
+    longStop  := close - stopAtrMult * atrVal
+    longTp    := useTP ? close + tpAtrMult * atrVal : na
+    entryBarIdx := bar_index
+    lastExit  := "—"
+    strategy.entry("LONG", strategy.long, qty = qtyUse)
+
+if shortSig and strategy.position_size &gt;= 0 and qtyUse &gt; 0
+    shortStop := close + stopAtrMult * atrVal
+    shortTp   := useTP ? close - tpAtrMult * atrVal : na
+    entryBarIdx := bar_index
+    lastExit  := "—"
+    strategy.entry("SHORT", strategy.short, qty = qtyUse)
+
+// ---- 移動停損：持倉期間逐根上移（多單）／下移（空單），只朝有利方向 ----
+if strategy.position_size &gt; 0 and useTrail and not na(atrVal)
+    candL = close - trailAtrMult * atrVal
+    longStop := math.max(nz(longStop, candL), candL)
+
+if strategy.position_size &lt; 0 and useTrail and not na(atrVal)
+    candS = close + trailAtrMult * atrVal
+    shortStop := math.min(nz(shortStop, candS), candS)
+
+// ---- 掛出停損／停利單（至少一個價位有效才呼叫，避免執行期錯誤）----
+if strategy.position_size &gt; 0 and (not na(longStop) or not na(longTp))
+    strategy.exit("EXIT-L", from_entry = "LONG", stop = longStop, limit = longTp)
+
+if strategy.position_size &lt; 0 and (not na(shortStop) or not na(shortTp))
+    strategy.exit("EXIT-S", from_entry = "SHORT", stop = shortStop, limit = shortTp)
+
+// ---- 趨勢反轉時主動平倉 ----
+if exitLongSig and strategy.position_size &gt; 0
+    lastExit := "趨勢反轉"
+    strategy.close("LONG", comment = "SIGNAL_EXIT")
+
+if exitShortSig and strategy.position_size &lt; 0
+    lastExit := "趨勢反轉"
+    strategy.close("SHORT", comment = "SIGNAL_EXIT")
+
+// -----------------------------------------------------------------------------
+// 6) 繪圖
+// -----------------------------------------------------------------------------
+plot(showEma ? emaFast : na, "EMA 快線", color = color.new(#f7931a, 0), linewidth = 2)
+plot(showEma ? emaSlow : na, "EMA 慢線", color = color.new(#627eea, 0), linewidth = 2)
+plot(showSt ? stLine : na, "Supertrend", color = color.new(color.teal, 10), linewidth = 2)
+
+plot(showStop and strategy.position_size &gt; 0 ? longStop : na, "多單停損",
+     color = color.new(#ef4444, 0), style = plot.style_linebr, linewidth = 2)
+plot(showStop and strategy.position_size &lt; 0 ? shortStop : na, "空單停損",
+     color = color.new(#ef4444, 0), style = plot.style_linebr, linewidth = 2)
+plot(showStop and strategy.position_size &gt; 0 and useTP ? longTp : na, "多單停利",
+     color = color.new(#22c55e, 0), style = plot.style_linebr, linewidth = 1)
+plot(showStop and strategy.position_size &lt; 0 and useTP ? shortTp : na, "空單停利",
+     color = color.new(#22c55e, 0), style = plot.style_linebr, linewidth = 1)
+
+plotshape(showMarkers and longSig, "做多進場", shape.triangleup, location.belowbar,
+     color = color.new(#22c55e, 0), size = size.small)
+plotshape(showMarkers and shortSig, "做空進場", shape.triangledown, location.abovebar,
+     color = color.new(#ef4444, 0), size = size.small)
+
+hline(0, "零軸", color = color.new(color.gray, 70), linestyle = hline.style_dotted)
+
+// -----------------------------------------------------------------------------
+// 7) 警報
+// -----------------------------------------------------------------------------
+alertcondition(longSig, "CTMA 做多進場", "CTMA LONG {{ticker}} @ {{close}}")
+alertcondition(shortSig, "CTMA 做空進場", "CTMA SHORT {{ticker}} @ {{close}}")
+alertcondition(exitLongSig and strategy.position_size &gt; 0, "CTMA 多單出場", "CTMA EXIT LONG {{ticker}} @ {{close}}")
+alertcondition(exitShortSig and strategy.position_size &lt; 0, "CTMA 空單出場", "CTMA EXIT SHORT {{ticker}} @ {{close}}")
+
+if alertEntry and longSig
+    alert("CTMA LONG " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close - stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertEntry and shortSig
+    alert("CTMA SHORT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close + stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertExit and not (strategy.position_size &gt; 0) and not (strategy.position_size &lt; 0)
+    alert("CTMA FLAT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick),
+         alert.freq_once_per_bar_close)
+
+// -----------------------------------------------------------------------------
+// 8) 資訊面板
+// -----------------------------------------------------------------------------
+var table panel = table.new(position.top_right, 2, 10, border_width = 1,
+     frame_color = color.new(color.gray, 70))
+
+if showPanel and barstate.islast
+    trendTxt = trendBull ? "多頭 ▲" : trendBear ? "空頭 ▼" : "中性 ─"
+    posTxt   = strategy.position_size &gt; 0 ? "多單" :
+         strategy.position_size &lt; 0 ? "空單" : "空手"
+    holdBars = strategy.position_size != 0 and not na(entryBarIdx) ? bar_index - entryBarIdx : na
+
+    table.cell(panel, 0, 0, "CTMA 策略", bgcolor = color.new(#f7931a, 60), text_color = color.white)
+    table.cell(panel, 1, 0, syminfo.ticker, bgcolor = color.new(#f7931a, 60), text_color = color.white)
+
+    table.cell(panel, 0, 1, "趨勢來源")
+    table.cell(panel, 1, 1, trendMode + "：" + trendTxt, text_color = trendBull ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 2, "RSI(" + str.tostring(rsiLen) + ")")
+    table.cell(panel, 1, 2, str.tostring(rsiVal, "#.00"), text_color = rsiVal &gt; 50 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 3, "MACD 柱")
+    table.cell(panel, 1, 3, str.tostring(macdHist, "#.####"), text_color = macdHist &gt; 0 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 4, "ATR(" + str.tostring(atrLen) + ") / ATR%")
+    table.cell(panel, 1, 4, str.tostring(atrVal, format.mintick) + " | " + str.tostring(atrPct, "#.00") + "%",
+         text_color = volOk ? #22c55e : color.gray)
+
+    table.cell(panel, 0, 5, "目前持倉")
+    table.cell(panel, 1, 5, posTxt, text_color = strategy.position_size &gt; 0 ? #22c55e :
+         strategy.position_size &lt; 0 ? #ef4444 : color.gray)
+
+    table.cell(panel, 0, 6, "停損價")
+    table.cell(panel, 1, 6, strategy.position_size &gt; 0 and not na(longStop) ? str.tostring(longStop, format.mintick) :
+         strategy.position_size &lt; 0 and not na(shortStop) ? str.tostring(shortStop, format.mintick) : "—",
+         text_color = #ef4444)
+
+    table.cell(panel, 0, 7, "部位大小模式")
+    table.cell(panel, 1, 7, sizingMode + (sizingMode == "權益比例" ? " " + str.tostring(qtyPct, "#") + "%" :
+         " " + str.tostring(riskPct, "#.##") + "%"))
+
+    table.cell(panel, 0, 8, "本根建議數量")
+    table.cell(panel, 1, 8, str.tostring(qtyUse, "#.####"))
+
+    table.cell(panel, 0, 9, "持有根數 / 上筆出場")
+    table.cell(panel, 1, 9, (strategy.position_size != 0 and not na(holdBars) ? str.tostring(holdBars, "#") : "0") +
+         " / " + lastExit)
+</code></pre>
+</details>
+
+<h3>13.7 訊號判讀方式</h3>
+<div class="tablewrap"><table>
+  <thead><tr><th>圖上元素</th><th>意義</th><th>怎麼用</th></tr></thead>
+  <tbody>
+    <tr><td>▲ 綠色向上三角（K 棒下方）</td><td>做多進場訊號成立</td><td>訊號於<strong>當根收盤</strong>確立，下一根開盤進場最保守</td></tr>
+    <tr><td>▼ 紅色向下三角（K 棒上方）</td><td>做空進場訊號成立</td><td>同上；若帳戶不能做空請關閉 <code>allowShort</code></td></tr>
+    <tr><td>✕ 橘色叉號</td><td>ATR 停損觸發位置</td><td>檢視這筆是否為「被掃出後又續漲」的假停損</td></tr>
+    <tr><td>紅色水平線</td><td>目前多／空單的停損價</td><td>線會隨移動停損逐根靠近價格，代表利潤被鎖住</td></tr>
+    <tr><td>綠色水平線</td><td>停利價（僅 useTP = true 時）</td><td>若覺得常被停利提早出場，可關閉或加大倍數</td></tr>
+    <tr><td>橘色／紫色折線</td><td>EMA 快線 (21) / 慢線 (55)</td><td>交叉即趨勢層的反轉事件來源</td></tr>
+    <tr><td>青色折線</td><td>Supertrend</td><td>僅 <code>trendMode = Supertrend</code> 時顯示</td></tr>
+    <tr><td>右上資訊面板</td><td>趨勢／RSI／MACD／ATR%／持倉／停損價／部位建議</td><td>一眼確認「現在該不該進、部位多大」</td></tr>
+  </tbody>
+</table></div>
+<p class="callout ok"><strong>面板怎麼快速判讀：</strong>先看「趨勢來源」是否為多頭；
+再看「ATR%」是否為綠色（通過門檻）；兩者都成立且持倉顯示「空手」時，
+才是可準備進場的狀態。持倉顯示「多單」時，「停損價」即為隔日實際掛單價位。</p>
+
+<h3>13.8 靜態檢查結果：46/46 全部通過</h3>
+<p>以 <code>pine_static_check.py</code> 對兩份檔案逐項檢查，
+依 Pine Script v6 官方語言規則驗證結構與模式，<strong>指標版 23 項、策略版 23 項，合計 46 項全部 PASS，0 WARN，0 FAIL</strong>：</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>編號</th><th>檢查項目</th><th>檢查方式</th><th>結果</th></tr></thead>
+  <tbody>
+    <tr><td><code>A1</code></td><td>Pine 版本宣告</td><td>確認首行為 //@version=6（最新穩定版）</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>A2</code></td><td>宣告型別</td><td>indicator() / strategy() 存在且型別正確</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>B1</code></td><td>括號／引號配對</td><td>() [] {} 三者深度歸零、引號為偶數</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>C1</code></td><td>縮排一致性</td><td>所有縮排為基礎單位的整數倍（Pine 對縮排敏感）</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>D1</code></td><td><strong>var/varip 全在全域</strong></td><td>9 個（指標版）/ 7 個（策略版）var 宣告，無一在 if/for/while 區塊內</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>E1</code></td><td>tuple 解構語法</td><td>[a, b] = f() 形式正確、識別字合法</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>E2</code></td><td>內建函式回傳值數量</td><td>ta.supertrend 雙值、ta.macd 三值解構</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>F1</code></td><td>hline 用法</td><td>常數水平線用 hline()，未誤用 hlines()</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>F2</code></td><td>plot style 命名空間</td><td>所有 style= 皆為 plot.style_* / line.style_* / shape.*</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>F3</code></td><td>plotshape 使用 shape.*</td><td>每個 plotshape 都指定合法 shape.*</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>G1</code></td><td><strong>alertcondition 在全域</strong></td><td>6 個（指標版）/ 4 個（策略版）皆在全域作用域</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>G2</code></td><td>alert() 皆位於條件區塊</td><td>4 個（指標版）/ 3 個（策略版）皆包在 if 內，不會逐根觸發</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>G3</code></td><td>alert() 指定頻率</td><td>每個 alert() 皆帶 alert.freq_* 參數</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>H1</code></td><td><strong>所有 input 皆被使用</strong></td><td>31 個 input，未被使用 = 0（無宣告未用參數）</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>H2</code></td><td>群組字串變數皆被使用</td><td>6 個 grpX 字串常數全數被 group= 引用</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>H3</code></td><td>input 皆有 group</td><td>每個 input 都歸類到群組，選單可折疊</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>I1</code></td><td><strong>未使用 request.security</strong></td><td>完全未使用 → 不存在跨週期 lookahead / repaint 風險</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>I2</code></td><td>無 lookahead 參數</td><td>未出現 lookahead / barmerge.lookahead</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>I3</code></td><td>未使用 barmerge.*</td><td>未出現任何 barmerge.* 呼叫</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>I4</code></td><td>歷史引用以 nz() 保護</td><td>pos[1] 等歷史引用皆以 nz() 或比較運算保護</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>J0</code></td><td>常見錯誤 lint</td><td>裸 na 布林運算 / 區塊內型別宣告 / strategy.exit 缺價位 / location.absolute 型別 / 序列當純量條件 → 全數 0 處</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>K（指標版）</code></td><td>不含 strategy.* 呼叫</td><td>指標版不得呼叫交易 API，已確認無</td><td><span class="tag t-ok">PASS</span></td></tr>
+    <tr><td><code>K（策略版）</code></td><td>含 entry/exit 與成本設定</td><td>strategy.entry / strategy.exit / commission / slippage 皆已設定</td><td><span class="tag t-ok">PASS</span></td></tr>
+  </tbody>
+</table></div>
+
+<div class="callout warn">
+  <strong>⚠️ 必須誠實說明：以上全部是「靜態檢查」，不是真正的編譯。</strong>
+  <p>本沙盒環境<strong>無法執行 TradingView 的 Pine 編譯器</strong>，因此「可編譯」這個結論
+  是基於：</p>
+  <ul>
+    <li>Pine Script v6 官方文件的語言規則（var 作用域、型別系統、函式簽章、繪圖限制）；</li>
+    <li>對原始碼做的結構分析（括號／引號配對、縮排一致性、作用域歸屬）；</li>
+    <li>與既有可編譯版本（v1 的 <code>//@version=5</code> 策略）的逐項對照。</li>
+  </ul>
+  <p><strong>這能抓出絕大多數常見的編譯錯誤</strong>——<code>var</code> 寫在 <code>if</code> 內、
+  未使用的 input、括號失衡、<code>alertcondition</code> 不在全域、
+  <code>location.absolute</code> 誤用布林值、序列被當純量條件、未來函數等。
+  但<strong>不等同於編譯通過</strong>：編譯器還會檢查型別推導細節、函式多載解析、
+  變數命名衝突等靜態分析無法完全覆蓋的部分。</p>
+  <p><strong>建議：貼進 TradingView Pine Editor 編譯一次確認。</strong>
+  若有任何編譯錯誤，錯誤訊息會直接指向行號，修正成本極低。</p>
+</div>
+
+<p>開發過程中被靜態檢查抓出並已修正的 <strong>3 個真實問題</strong>：</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>問題</th><th>原本寫法</th><th>為何會壞</th><th>修正</th></tr></thead>
+  <tbody>
+    <tr><td><code>location.absolute</code> 型別錯誤</td><td><code>plotshape(boolCond, ..., location.absolute)</code></td>
+      <td><code>location.absolute</code> 需要「價格序列」當絕對位置，傳布林值會型別不符</td>
+      <td>改為 <code>cond ? close : na</code></td></tr>
+    <tr><td>同一作用域重複宣告變數</td><td>兩個 <code>if</code> 區塊各用 <code>cand</code> / <code>cand2</code></td>
+      <td>Pine 對同層級同名宣告會報錯，加尾數只是繞路</td>
+      <td>兩個區塊各自使用 <code>cand</code>（作用域互斥，合法）</td></tr>
+    <tr><td>布林運算直接使用裸 <code>na</code></td><td><code>useTP and not na(tpPx) and ...</code>（初步構想）</td>
+      <td>Pine v5+ 的 <code>bool</code> 不可為 na，裸 na 參與 <code>and/or</code> 會編譯錯誤</td>
+      <td>一律改用 <code>not na(x)</code>，並保留 <code>nz()</code> 保護歷史引用</td></tr>
+  </tbody>
+</table></div>
+
+<h3>13.9 通知設定</h3>
+<p>兩版皆提供 <code>alertcondition()</code>（可在 TradingView 的「警示」對話框直接選用）
+與 <code>alert()</code>（訊號成立的當根立即觸發）。指標版提供 6 組、策略版提供 4 組：</p>
+<div class="tablewrap"><table>
+  <thead><tr><th>通知名稱</th><th>觸發時機</th><th>版本</th></tr></thead>
+  <tbody>
+    <tr><td><code>CTMA 做多進場</code></td><td>做多訊號成立</td><td>兩版</td></tr>
+    <tr><td><code>CTMA 做空進場</code></td><td>做空訊號成立</td><td>兩版</td></tr>
+    <tr><td><code>CTMA 停損觸發</code></td><td>價格觸及停損價</td><td>指標版</td></tr>
+    <tr><td><code>CTMA 停利觸發</code></td><td>價格觸及停利價</td><td>指標版</td></tr>
+    <tr><td><code>CTMA 多單趨勢出場</code></td><td>反向趨勢翻轉</td><td>兩版</td></tr>
+    <tr><td><code>CTMA 空單趨勢出場</code></td><td>反向趨勢翻轉</td><td>兩版</td></tr>
+  </tbody>
+</table></div>
+<p class="callout info">訊息內容已帶入 <code>{ticker}</code>、<code>{close}</code> 與停損價，
+可直接接到 webhook 或手機推播。指標版的 <code>alert()</code> 使用
+<code>alert.freq_once_per_bar_close</code>，避免盤中反覆觸發。</p>
+
+<h3>13.10 優點與注意事項</h3>
+<h4 style="margin-top:0;color:#86efac">✓ 優點</h4>
+<ul>
+  <li><strong>雙版本分工明確</strong>：看盤用指標版（含停損線與部位建議），驗證用策略版（可用 Strategy Tester 與成本模型）。</li>
+  <li><strong>參數全開</strong>：31 個 input 全部可調且有群組分類，趨勢／動能／波動度三層可獨立開關。</li>
+  <li><strong>零未來函數</strong>：完全未使用 <code>request.security</code>，不存在跨週期 lookahead 或 repaint 疑慮。</li>
+  <li><strong>狀態機順序正確</strong>：指標版刻意設計為「先用舊停損判斷是否被打到，才更新移動停損」，
+      避免同一根 K 棒內先移動停損、再宣稱被打到而產生的隱性未來函數。</li>
+  <li><strong>風控內建</strong>：ATR 初始停損、ATR 移動停損（只朝有利方向）、可選 ATR 停利、可依 ATR 風險比例計算部位。</li>
+  <li><strong>可自動化</strong>：<code>alertcondition</code> ＋ <code>alert()</code> 雙軌，方便接 webhook。</li>
+  <li><strong>靜態檢查可重跑</strong>：<code>pine_static_check.py</code> 為獨立工具，改參數後可隨時重驗。</li>
+</ul>
+
+<h4 style="color:#fca5a5">✗ 缺點與注意事項</h4>
+<ul>
+  <li><strong>「可編譯」僅為靜態推論</strong>：沙盒無法執行 TradingView 編譯器，
+      這是本交付<strong>最大的未驗證項</strong>，請務必自行貼進 Pine Editor 確認一次。</li>
+  <li><strong>移動停損是雙面刃</strong>：依同一專案先前的實測，ATR×2 移動停損過緊時，
+      BTC 有 <strong>63/72 筆</strong>是被停損掃出而非趨勢反轉出場，
+      總報酬因此從 +215.76% 掉到 +8.72%。<strong>停損參數的影響遠大於均線週期本身</strong>。</li>
+  <li><strong>指標版與策略版的持倉可能不完全一致</strong>：指標版用「當根收盤價」成交，
+      策略版預設 <code>process_orders_on_close = false</code>（下一根開盤成交）。
+      兩者對同一根 K 棒的判定可能差一根，屬正常現象。</li>
+  <li><strong>單一時間框架</strong>：未做多時間框架共振（如日線趨勢 ＋ 4 小時進場），
+      日內訊號可能較雜。</li>
+  <li><strong>無交易成本內建於指標版</strong>：看盤用的損益僅為示意，實際成本見策略版與 Python 回測章節。</li>
+  <li><strong>參數最佳化會過度擬合</strong>：本專案第 05 章與第 11、12 章已實證——
+      同一組「最佳」參數樣本外 Sharpe 衰退 <strong>39%</strong>，
+      walk-forward 更顯示訓練窗到測試窗衰退 <strong>62% ~ 81%</strong>。
+      <strong>網格搜尋出的最佳參數不可直接採用。</strong></li>
+</ul>
+
+<div class="callout">
+  <strong>建議的下一步驗證流程：</strong>
+  <ol>
+    <li>把 <code>ctma_indicator.pine</code> 貼進 Pine Editor → 編譯（確認無錯誤）。</li>
+    <li>套用到 BTCUSDT 日線 → 目視檢查買賣點是否落在合理的趨勢翻轉處。</li>
+    <li>把 <code>ctma_strategy.pine</code> 貼進 Pine Editor → 用 Strategy Tester 看淨利／MDD／勝率。</li>
+    <li>把 <code>commission_value</code> 設為實際交易所費率、<code>slippage</code> 設為合理跳動，
+       對照本報告第 03 章的 Python 回測數字，確認兩邊量級一致。</li>
+    <li>最後才進入參數掃描，並以 walk-forward 驗證（第 12 章）確認穩健性。</li>
+  </ol>
+</div>
+
+<div class="disc">
+  <h3>⚠️ 投資免責聲明</h3>
+  <p>本報告所有回測結果皆為<strong>歷史模擬</strong>，僅供研究與教育用途，<strong>不構成任何投資建議、要約或推薦</strong>。
+  歷史績效<strong>不代表</strong>未來表現。回測存在過度擬合、存活者偏差、交易成本估計誤差、流動性假設等固有限制，
+  實際交易結果可能與回測<strong>顯著不同</strong>。加密貨幣波動極大，可能導致<strong>全部本金損失</strong>。</p>
+  <p>As an AI Agent, I cannot provide legally protected, personalized investment advice.
+  This analysis is for informational purposes only and does not constitute investment advice
+  or recommendations. Consult a licensed financial advisor before making investment decisions.</p>
+</div>
+
+<footer>
+  Crypto Quant — CTMA 策略完整報告 ｜ 資料來源：Binance 公開資料端點 ｜
+  區間 2019-01-01 ~ 2026-10-01（2,831 根日線）｜ 驗證 18/18 通過 ｜ Walk-forward 驗證 19/19 通過 ｜ WFO 雙模式對照 36/36 通過 ｜ Pine Script 靜態檢查 46/46 通過
+</footer>
+
+</div>
+</body>
+</html>

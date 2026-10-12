@@ -1,0 +1,340 @@
+//@version=6
+// =============================================================================
+//  CTMA Signal — Crypto Trend Momentum ATR  ·  指標版 (indicator)
+// -----------------------------------------------------------------------------
+//  設計目標：把「趨勢 / 動能 / 波動度」三層過濾的進出場訊號畫在同一張圖上，
+//            並直接標出進場點、ATR 停損線、停利線與部位建議，供看盤與人工下單。
+//
+//  為何針對加密貨幣調整（而非把股票策略照搬）：
+//    1. 24/7 無收盤跳空保護 → 停損必須「波動度自適應」，故用 ATR 而非固定 %。
+//    2. 波動大、趨勢強      → 趨勢線用 EMA 而非 SMA，對近期價格更敏感。
+//    3. 假訊號多            → 動能雙重確認（RSI 站中軸同側 + MACD 柱同向）。
+//    4. 盤整泥沼            → ATR% 波動度門檻，低波動時不進場。
+//    5. 永續合約成熟        → 做多／做空可分別開關。
+//
+//  編譯注意（本檔已逐項自我檢查）：
+//    * 所有 var 宣告一律在全域作用域，無任何 var 位於 if 區塊內。
+//    * 本檔「完全不使用 request.security」，因此不存在 lookahead / repaint 風險。
+//    * 常數水平線用 hline()、動態線用 plot()；hline 與 alertcondition 皆在全域。
+//    * 所有 input 皆實際被使用，無宣告未用參數。
+//    * 布林運算不使用 na（v6 起 bool 不可為 na），歷史引用一律以 nz() 保護。
+// =============================================================================
+
+indicator("CTMA Signal — Crypto Trend Momentum ATR", shorttitle = "CTMA Signal",
+     overlay = true, max_labels_count = 500, max_lines_count = 500)
+
+// -----------------------------------------------------------------------------
+// 1) 輸入參數（全部可用 input 調整）
+// -----------------------------------------------------------------------------
+grpT = "① 趨勢 Trend"
+trendMode  = input.string("EMA 交叉", "趨勢判斷方式", options = ["EMA 交叉", "Supertrend"], group = grpT)
+emaFastLen = input.int(21, "EMA 快線週期", minval = 2, maxval = 400, group = grpT)
+emaSlowLen = input.int(55, "EMA 慢線週期", minval = 3, maxval = 500, group = grpT)
+stAtrLen   = input.int(10, "Supertrend ATR 週期", minval = 1, maxval = 100, group = grpT)
+stFactor   = input.float(3.0, "Supertrend 倍數", minval = 0.5, maxval = 10.0, step = 0.1, group = grpT)
+
+grpM = "② 動能 Momentum"
+momMode   = input.string("RSI + MACD", "動能確認方式", options = ["RSI + MACD", "僅 RSI", "僅 MACD"], group = grpM)
+rsiLen    = input.int(14, "RSI 週期", minval = 2, maxval = 100, group = grpM)
+rsiBull   = input.float(50.0, "做多 RSI 下限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+rsiBear   = input.float(50.0, "做空 RSI 上限", minval = 0.0, maxval = 100.0, step = 1.0, group = grpM)
+macdFast  = input.int(12, "MACD 快線週期", minval = 1, maxval = 200, group = grpM)
+macdSlow  = input.int(26, "MACD 慢線週期", minval = 2, maxval = 300, group = grpM)
+macdSigLen = input.int(9, "MACD 訊號線週期", minval = 1, maxval = 100, group = grpM)
+
+grpV = "③ 波動度與風控 Volatility & Risk"
+atrLen       = input.int(14, "ATR 週期", minval = 1, maxval = 200, group = grpV)
+minAtrPct    = input.float(0.0, "最低 ATR%（波動度門檻，0 = 關閉）", minval = 0.0, maxval = 50.0, step = 0.1, group = grpV)
+stopAtrMult  = input.float(3.0, "ATR 初始停損倍數", minval = 0.5, maxval = 20.0, step = 0.1, group = grpV)
+useTrail     = input.bool(true, "啟用 ATR 移動停損", group = grpV)
+trailAtrMult = input.float(5.0, "ATR 移動停損倍數", minval = 0.5, maxval = 30.0, step = 0.1, group = grpV)
+useTP        = input.bool(false, "啟用 ATR 停利", group = grpV)
+tpAtrMult    = input.float(6.0, "ATR 停利倍數", minval = 0.5, maxval = 50.0, step = 0.1, group = grpV)
+
+grpP = "④ 方向與部位 Position"
+allowLong  = input.bool(true, "允許做多", group = grpP)
+allowShort = input.bool(true, "允許做空", group = grpP)
+riskPct    = input.float(1.0, "每筆風險 %（部位建議用）", minval = 0.05, maxval = 10.0, step = 0.05, group = grpP)
+equityRef  = input.float(10000.0, "帳戶名目資金（部位建議用）", minval = 100.0, step = 100.0, group = grpP)
+
+grpD = "⑤ 顯示 Display"
+showEma     = input.bool(true, "顯示 EMA 快慢線", group = grpD)
+showSt      = input.bool(true, "顯示 Supertrend", group = grpD)
+showStop    = input.bool(true, "顯示停損／停利線", group = grpD)
+showMarkers = input.bool(true, "顯示買賣點標記與標籤", group = grpD)
+showPanel   = input.bool(true, "顯示資訊面板", group = grpD)
+panelPos    = input.string("右上", "面板位置", options = ["右上", "左上", "右下", "左下"], group = grpD)
+
+grpA = "⑥ 通知 Alerts"
+alertEntry = input.bool(true, "進場時發出 alert()", group = grpA)
+alertExit  = input.bool(true, "出場時發出 alert()", group = grpA)
+
+// -----------------------------------------------------------------------------
+// 2) 指標計算
+// -----------------------------------------------------------------------------
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+
+// ta.supertrend 回傳 tuple [line, direction]；direction = -1 表多頭、+1 表空頭
+[stLine, stDir] = ta.supertrend(stFactor, stAtrLen)
+
+rsiVal = ta.rsi(close, rsiLen)
+[macdLine, macdSignal, macdHist] = ta.macd(close, macdFast, macdSlow, macdSigLen)
+
+atrVal  = ta.atr(atrLen)
+atrPct  = close > 0 ? atrVal / close * 100.0 : 0.0
+
+// -----------------------------------------------------------------------------
+// 3) 訊號條件
+// -----------------------------------------------------------------------------
+useSt = trendMode == "Supertrend"
+
+// 趨勢方向
+emaBull = emaFast > emaSlow
+emaBear = emaFast < emaSlow
+stBull  = stDir < 0
+stBear  = stDir > 0
+trendBull = useSt ? stBull : emaBull
+trendBear = useSt ? stBear : emaBear
+
+// 趨勢翻轉事件（進場觸發 + 出場條件）
+prevStDir = nz(stDir[1], 0)
+stFlipUp  = stDir < 0 and prevStDir >= 0
+stFlipDn  = stDir > 0 and prevStDir <= 0
+emaCrossUp = ta.crossover(emaFast, emaSlow)
+emaCrossDn = ta.crossunder(emaFast, emaSlow)
+
+flipBull = useSt ? stFlipUp : emaCrossUp
+flipBear = useSt ? stFlipDn : emaCrossDn
+
+// 動能確認
+momUseRsi  = momMode != "僅 MACD"
+momUseMacd = momMode != "僅 RSI"
+rsiBullOk  = momUseRsi ? rsiVal > rsiBull : true
+rsiBearOk  = momUseRsi ? rsiVal < rsiBear : true
+macdBullOk = momUseMacd ? macdHist > 0 : true
+macdBearOk = momUseMacd ? macdHist < 0 : true
+
+// 波動度門檻與暖機期
+volOk  = atrPct >= minAtrPct
+warmOk = bar_index > math.max(math.max(emaSlowLen, atrLen), macdSlow) + 1 and
+     not na(emaSlow) and not na(atrVal) and not na(rsiVal) and not na(macdHist)
+
+// 進場訊號（趨勢翻轉 + 動能確認 + 波動度 + 暖機 + 方向開關）
+longSig  = allowLong and warmOk and volOk and trendBull and flipBull and rsiBullOk and macdBullOk
+shortSig = allowShort and warmOk and volOk and trendBear and flipBear and rsiBearOk and macdBearOk
+
+// 出場訊號（純趨勢反轉，不受動能／方向開關影響）
+exitLongSig  = flipBear
+exitShortSig = flipBull
+
+// -----------------------------------------------------------------------------
+// 4) 模擬持倉狀態機（指標版沒有 strategy.* 可用，故自行維護部位狀態）
+//    順序刻意設計為「先用舊停損判斷是否被打到，再更新移動停損」，
+//    避免同一根 K 棒先移動停損再宣稱被打到所造成的未來函數。
+// -----------------------------------------------------------------------------
+var int   pos      = 0          // 0 = 空手, 1 = 多單, -1 = 空單
+var float entryPx  = na
+var float stopPx   = na
+var float tpPx     = na
+var float entryAtr = na
+var int   entryBar = na
+var float riskUnit = na         // 每 1 單位部位的風險金額（= 停損距離）
+var string lastExit = "—"
+
+// 每根 K 棒的暫存旗標（非 var，逐根重置）
+bool wasStopped = false
+bool wasTp      = false
+bool justExited = false
+
+// ---- 步驟 1：檢查既有持倉是否觸及停損／停利 ----
+if pos > 0
+    wasStopped := not na(stopPx) and low <= stopPx
+    wasTp      := useTP and not na(tpPx) and high >= tpPx
+
+if pos < 0
+    wasStopped := not na(stopPx) and high >= stopPx
+    wasTp      := useTP and not na(tpPx) and low <= tpPx
+
+// 停損優先於停利結算
+if pos != 0 and (wasStopped or wasTp)
+    lastExit := wasStopped ? "ATR 停損" : "ATR 停利"
+    pos := 0
+    stopPx := na
+    tpPx := na
+    justExited := true
+
+// ---- 步驟 2：移動停損（僅在仍持倉時，用「本根收盤」更新，且只朝有利方向移動）----
+if pos > 0 and useTrail and not na(atrVal)
+    cand = close - trailAtrMult * atrVal
+    stopPx := math.max(nz(stopPx, cand), cand)
+
+if pos < 0 and useTrail and not na(atrVal)
+    cand = close + trailAtrMult * atrVal
+    stopPx := math.min(nz(stopPx, cand), cand)
+
+// ---- 步驟 3：趨勢反轉出場 ----
+if pos > 0 and exitLongSig
+    lastExit := "趨勢反轉"
+    pos := 0
+    stopPx := na
+    tpPx := na
+    justExited := true
+
+if pos < 0 and exitShortSig
+    lastExit := "趨勢反轉"
+    pos := 0
+    stopPx := na
+    tpPx := na
+    justExited := true
+
+// ---- 步驟 4：新進場（僅在空手、且本根尚未出場時）----
+if pos == 0 and not justExited and longSig
+    pos      := 1
+    entryPx  := close
+    entryAtr := atrVal
+    entryBar := bar_index
+    stopPx   := close - stopAtrMult * atrVal
+    tpPx     := useTP ? close + tpAtrMult * atrVal : na
+    riskUnit := math.abs(entryPx - stopPx)
+    lastExit := "—"
+
+if pos == 0 and not justExited and shortSig
+    pos      := -1
+    entryPx  := close
+    entryAtr := atrVal
+    entryBar := bar_index
+    stopPx   := close + stopAtrMult * atrVal
+    tpPx     := useTP ? close - tpAtrMult * atrVal : na
+    riskUnit := math.abs(stopPx - entryPx)
+    lastExit := "—"
+
+// -----------------------------------------------------------------------------
+// 5) 繪圖：均線 / Supertrend / 停損線 / 買賣點
+// -----------------------------------------------------------------------------
+plot(showEma ? emaFast : na, "EMA 快線", color = color.new(#f7931a, 0), linewidth = 2)
+plot(showEma ? emaSlow : na, "EMA 慢線", color = color.new(#627eea, 0), linewidth = 2)
+plot(showSt ? stLine : na, "Supertrend", color = color.new(color.teal, 10), linewidth = 2)
+
+plot(showStop and pos > 0 ? stopPx : na, "多單停損", color = color.new(#ef4444, 0),
+     style = plot.style_linebr, linewidth = 2)
+plot(showStop and pos < 0 ? stopPx : na, "空單停損", color = color.new(#ef4444, 0),
+     style = plot.style_linebr, linewidth = 2)
+plot(showStop and pos > 0 and useTP ? tpPx : na, "多單停利", color = color.new(#22c55e, 0),
+     style = plot.style_linebr, linewidth = 1)
+plot(showStop and pos < 0 and useTP ? tpPx : na, "空單停利", color = color.new(#22c55e, 0),
+     style = plot.style_linebr, linewidth = 1)
+
+plotshape(showMarkers and longSig, "做多進場", shape.triangleup, location.belowbar,
+     color = color.new(#22c55e, 0), size = size.small)
+plotshape(showMarkers and shortSig, "做空進場", shape.triangledown, location.abovebar,
+     color = color.new(#ef4444, 0), size = size.small)
+// location.absolute 需要「價格序列」而非布林值，故以 close 作為絕對位置
+plotshape(showMarkers and wasStopped ? close : na, "停損出場", shape.xcross, location.absolute,
+     color = color.new(#f59e0b, 0), size = size.tiny)
+
+// 進場標籤（含進場價、停損價、部位建議）
+if showMarkers and longSig
+    label.new(bar_index, low, "LONG " + str.tostring(close, format.mintick) +
+         "\nSL " + str.tostring(close - stopAtrMult * atrVal, format.mintick),
+         style = label.style_label_up, color = color.new(#22c55e, 25),
+         textcolor = color.white, size = size.small)
+
+if showMarkers and shortSig
+    label.new(bar_index, high, "SHORT " + str.tostring(close, format.mintick) +
+         "\nSL " + str.tostring(close + stopAtrMult * atrVal, format.mintick),
+         style = label.style_label_down, color = color.new(#ef4444, 25),
+         textcolor = color.white, size = size.small)
+
+// 零軸參考（RSI 中軸概念，僅作視覺對位）
+hline(0, "零軸", color = color.new(color.gray, 70), linestyle = hline.style_dotted)
+
+// -----------------------------------------------------------------------------
+// 6) 警報（alertcondition 必須在全域作用域）
+// -----------------------------------------------------------------------------
+alertcondition(longSig, "CTMA 做多進場", "CTMA LONG {{ticker}} @ {{close}}")
+alertcondition(shortSig, "CTMA 做空進場", "CTMA SHORT {{ticker}} @ {{close}}")
+alertcondition(wasStopped, "CTMA 停損觸發", "CTMA STOP {{ticker}} @ {{close}}")
+alertcondition(wasTp, "CTMA 停利觸發", "CTMA TAKEPROFIT {{ticker}} @ {{close}}")
+alertcondition(exitLongSig and pos[1] > 0, "CTMA 多單趨勢出場", "CTMA EXIT LONG {{ticker}} @ {{close}}")
+alertcondition(exitShortSig and pos[1] < 0, "CTMA 空單趨勢出場", "CTMA EXIT SHORT {{ticker}} @ {{close}}")
+
+// 動態 alert()：訊號成立當根立即通知
+if alertEntry and longSig
+    alert("CTMA LONG " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close - stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertEntry and shortSig
+    alert("CTMA SHORT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick) +
+         " | SL " + str.tostring(close + stopAtrMult * atrVal, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertExit and wasStopped
+    alert("CTMA STOP OUT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick),
+         alert.freq_once_per_bar_close)
+
+if alertExit and wasTp
+    alert("CTMA TAKE PROFIT " + syminfo.ticker + " @ " + str.tostring(close, format.mintick),
+         alert.freq_once_per_bar_close)
+
+// -----------------------------------------------------------------------------
+// 7) 資訊面板
+// -----------------------------------------------------------------------------
+panelPosConst = panelPos == "左上" ? position.top_left :
+     panelPos == "右下" ? position.bottom_right :
+     panelPos == "左下" ? position.bottom_left : position.top_right
+
+var table panel = table.new(panelPosConst, 2, 12, border_width = 1,
+     frame_color = color.new(color.gray, 70))
+
+if showPanel and barstate.islast
+    // 趨勢／動能文字
+    trendTxt  = trendBull ? "多頭 ▲" : trendBear ? "空頭 ▼" : "中性 ─"
+    posTxt    = pos > 0 ? "多單" : pos < 0 ? "空單" : "空手"
+
+    // 部位建議：以固定風險金額換算可持有單位數
+    riskAmt   = equityRef * riskPct / 100.0
+    unitsAdv  = not na(riskUnit) and riskUnit > 0 ? riskAmt / riskUnit : na
+    notional  = not na(unitsAdv) and pos != 0 ? unitsAdv * entryPx : na
+    holdBars  = pos != 0 and not na(entryBar) ? bar_index - entryBar : na
+
+    table.cell(panel, 0, 0, "CTMA 指標", bgcolor = color.new(#627eea, 60), text_color = color.white)
+    table.cell(panel, 1, 0, syminfo.ticker, bgcolor = color.new(#627eea, 60), text_color = color.white)
+
+    table.cell(panel, 0, 1, "趨勢來源")
+    table.cell(panel, 1, 1, trendMode + "：" + trendTxt, text_color = trendBull ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 2, "RSI(" + str.tostring(rsiLen) + ")")
+    table.cell(panel, 1, 2, str.tostring(rsiVal, "#.00"), text_color = rsiVal > 50 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 3, "MACD 柱")
+    table.cell(panel, 1, 3, str.tostring(macdHist, "#.####"), text_color = macdHist > 0 ? #22c55e : #ef4444)
+
+    table.cell(panel, 0, 4, "MACD / 訊號")
+    table.cell(panel, 1, 4, str.tostring(macdLine, "#.####") + " / " + str.tostring(macdSignal, "#.####"))
+
+    table.cell(panel, 0, 5, "ATR(" + str.tostring(atrLen) + ")")
+    table.cell(panel, 1, 5, str.tostring(atrVal, format.mintick) + "  (" + str.tostring(atrPct, "#.00") + "%)",
+         text_color = volOk ? #22c55e : color.gray)
+
+    table.cell(panel, 0, 6, "目前持倉")
+    table.cell(panel, 1, 6, posTxt, text_color = pos > 0 ? #22c55e : pos < 0 ? #ef4444 : color.gray)
+
+    table.cell(panel, 0, 7, "進場價")
+    table.cell(panel, 1, 7, pos != 0 and not na(entryPx) ? str.tostring(entryPx, format.mintick) : "—")
+
+    table.cell(panel, 0, 8, "停損價")
+    table.cell(panel, 1, 8, pos != 0 and not na(stopPx) ? str.tostring(stopPx, format.mintick) : "—",
+         text_color = #ef4444)
+
+    table.cell(panel, 0, 9, "停利價")
+    table.cell(panel, 1, 9, pos != 0 and useTP and not na(tpPx) ? str.tostring(tpPx, format.mintick) : "—",
+         text_color = #22c55e)
+
+    table.cell(panel, 0, 10, "部位建議")
+    table.cell(panel, 1, 10, pos != 0 and not na(unitsAdv) ?
+         str.tostring(unitsAdv, "#.####") + " 單位 (≈" + str.tostring(notional, "#") + ")" : "—")
+
+    table.cell(panel, 0, 11, "持有根數 / 上筆出場")
+    table.cell(panel, 1, 11, (pos != 0 and not na(holdBars) ? str.tostring(holdBars, "#") : "0") + " / " + lastExit)
