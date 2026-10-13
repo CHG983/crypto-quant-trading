@@ -78,6 +78,22 @@ select{font:inherit;font-size:.83rem;background:var(--panel2);color:var(--tx);
 .cd{font-variant-numeric:tabular-nums;font-weight:700;color:var(--tx)}
 .grow{flex:1 1 auto;min-width:0}
 
+/* ---- 策略選擇列 ---- */
+.stratbar{
+  background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--pur);
+  border-radius:12px;padding:13px 15px;margin:12px 0 4px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+}
+.stratbar .ttl{font-size:.82rem;font-weight:700;color:var(--pur);white-space:nowrap}
+.stratbar select{min-width:230px;max-width:100%}
+.stratbar .sdesc{flex:1 1 260px;min-width:0;font-size:.8rem;color:var(--dim);line-height:1.5}
+.stratbar .sdesc b{color:var(--tx)}
+.stratbar .ssrc{font-size:.74rem;color:var(--dim2);display:block;margin-top:2px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin:12px 0}
+.pcell{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.pcell .pk{font-size:.7rem;color:var(--dim2);text-transform:uppercase;letter-spacing:.6px}
+.pcell .pv{font-size:.95rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
       padding:16px;min-width:0}
@@ -154,6 +170,7 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <h1>加密貨幣量化交易 · 即時儀表板</h1>
   <p>即時訊號 · 市場掃描 · 自動化監控 — <b>改由瀏覽器直接呼叫幣安公開 API</b>，
      策略邏輯（EMA 快慢線 + RSI/MACD 動能 + ATR 風控）在<strong>前端即時重算</strong>，
+     並可<b>切換多種策略</b>（CTMA 預設 / Supertrend 過濾 / 只做多 / WFO 網格參數組），
      不再使用內嵌的靜態快照。</p>
   <div class="meta">
     <span class="chip">資料來源 <b>Binance 公開 API</b></span>
@@ -181,12 +198,20 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <span class="lbl" id="lastUpdate">尚未更新</span>
 </div>
 
+<!-- ===== 策略選擇列 ===== -->
+<div class="stratbar">
+  <span class="ttl">⚙ 交易策略</span>
+  <select id="strategySel" aria-label="選擇交易策略"></select>
+  <span class="sdesc" id="strategyDesc">載入中…</span>
+</div>
+
 <div class="note info" id="fetchNote">
   <b>資料抓取狀態：</b><span id="fetchNoteText">正在連線幣安公開端點…</span>
 </div>
 
 <h2>1 · 即時訊號面板（瀏覽器直連）</h2>
 <p class="muted" id="liveMeta">載入中…</p>
+<div class="pgrid" id="paramGrid"></div>
 <div class="cards" id="liveCards">
   <div class="card"><div class="skel" style="width:40%;height:20px"></div>
     <div class="skel"></div><div class="skel" style="width:80%"></div>
@@ -284,7 +309,7 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <p style="margin-bottom:0">All content on this page (including real-time signals, ranking scans, monitored events, and parameters) is intended solely for research and educational purposes and does not constitute investment advice, an offer, or a recommendation. Signals are calculated based on historical prices and cannot predict future trends; past performance is not indicative of future results. Backtesting and signal systems are subject to inherent limitations—such as overfitting, survivorship bias, errors in estimating transaction costs, and liquidity assumptions—meaning actual trading results may differ significantly. Real-time data may be subject to delays, interruptions, or inaccuracies due to network, endpoint, or exchange issues and should not serve as the sole basis for trading decisions. Cryptocurrency markets are highly volatile and carry the risk of a total loss of principal. Users are responsible for making their own trading decisions and assuming all associated risks.</p>
 </div>
 
-<!-- built_by=build_dashboard_v6.py  built_at=2026-10-12T16:17:03Z  engine_sha256=95ab5f688257fb7b122ecd54db552667040b8c83a4d1c0f691391164c8747b6f -->
+<!-- built_by=build_dashboard_v6.py  built_at=2026-10-13T02:19:21Z  engine_sha256=83279fc8303fb3002f977befffc83cbd3374a46ed637670c6ff08c0fae53c13a -->
 <footer>
   資料來源：Binance 公開 API（<code>data-api.binance.vision</code>，免金鑰），由瀏覽器直接抓取。
   策略引擎 <code>live_engine.js</code> 內嵌於本頁（建置時比對 SHA-256 確保與受測版本逐字元相同）。
@@ -501,6 +526,87 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
     };
     if (over) for (var k in over) if (Object.prototype.hasOwnProperty.call(over, k)) p[k] = over[k];
     return p;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 策略預設（STRATEGY_PRESETS）
+   * ------------------------------------------------------------------ *
+   * 每一個預設都對應專案中「真實存在」的策略或參數組，來源標註於 source 欄位：
+   *
+   *   ctma_default     crypto_quant/strategy.py  StrategyParams 的預設值
+   *   ctma_supertrend  同上，但 use_supertrend=True（strategy.py 的 Supertrend 過濾分支）
+   *   ctma_long_only   同上，但 allow_short=False（只做多）
+   *   wfo_9_34         crypto_quant/walkforward.py  DEFAULT_GRID 的網格組合
+   *   wfo_13_55        同上
+   *   wfo_21_89        同上
+   *
+   * 這些不是憑空發明的策略：前三個是 strategy.py 的參數開關，後三個是
+   * walkforward.py / optimize.py 實際跑過的網格點。
+   * ------------------------------------------------------------------ */
+
+  var STRATEGY_PRESETS = [
+    {
+      id: 'ctma_default',
+      name: 'CTMA 預設（EMA 21/55）',
+      short: 'CTMA 預設',
+      desc: 'EMA 21/55 交叉 + RSI(14) 站中軸同側 + MACD 柱方向一致 + ATR% ≥ 0.5% 過濾；3×ATR 停損、6×ATR 停利。',
+      source: 'crypto_quant/strategy.py · StrategyParams 預設值',
+      params: {}
+    },
+    {
+      id: 'ctma_supertrend',
+      name: 'CTMA + Supertrend 過濾（EMA 21/55）',
+      short: 'CTMA + Supertrend',
+      desc: '在 CTMA 預設之上，額外要求 Supertrend(10, 3.0) 方向與交叉方向一致，過濾逆勢交叉。',
+      source: 'crypto_quant/strategy.py · use_supertrend=True 分支',
+      params: { use_supertrend: true, st_len: 10, st_mult: 3.0 }
+    },
+    {
+      id: 'ctma_long_only',
+      name: 'CTMA 只做多（EMA 21/55）',
+      short: 'CTMA 只做多',
+      desc: '與 CTMA 預設相同，但關閉做空（allow_short=False），只保留多頭進場訊號。',
+      source: 'crypto_quant/strategy.py · allow_short=False',
+      params: { allow_short: false }
+    },
+    {
+      id: 'wfo_9_34',
+      name: 'WFO 網格 9/34（ATR 停損 1.5×）',
+      short: 'WFO 9/34',
+      desc: 'walk-forward 網格中的一組：EMA 快 9 / 慢 34，ATR 停損 1.5×、移動停損 5×、停利 6×。',
+      source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=9, ema_slow=34, atr_stop=1.5)',
+      params: { ema_fast: 9, ema_slow: 34, atr_stop_mult: 1.5, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    },
+    {
+      id: 'wfo_13_55',
+      name: 'WFO 網格 13/55（ATR 停損 2.0×）',
+      short: 'WFO 13/55',
+      desc: 'walk-forward 網格中的一組：EMA 快 13 / 慢 55，ATR 停損 2.0×、移動停損 5×、停利 6×。',
+      source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=13, ema_slow=55, atr_stop=2.0)',
+      params: { ema_fast: 13, ema_slow: 55, atr_stop_mult: 2.0, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    },
+    {
+      id: 'wfo_21_89',
+      name: 'WFO 網格 21/89（ATR 停損 3.0×）',
+      short: 'WFO 21/89',
+      desc: 'walk-forward 網格中的一組：EMA 快 21 / 慢 89，ATR 停損 3.0×、移動停損 5×、停利 6×。',
+      source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=21, ema_slow=89, atr_stop=3.0)',
+      params: { ema_fast: 21, ema_slow: 89, atr_stop_mult: 3.0, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    }
+  ];
+
+  var DEFAULT_PRESET_ID = 'ctma_default';
+
+  function getPreset(id) {
+    for (var i = 0; i < STRATEGY_PRESETS.length; i++) {
+      if (STRATEGY_PRESETS[i].id === id) return STRATEGY_PRESETS[i];
+    }
+    return STRATEGY_PRESETS[0];
+  }
+
+  /** 依預設 id 取得「已與預設值合併」的完整參數物件。 */
+  function paramsForPreset(id) {
+    return defaultParams(getPreset(id).params);
   }
 
   /* ------------------------------------------------------------------ *
@@ -859,11 +965,14 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
     // 掃描
     rowOf: rowOf, buildRankings: buildRankings,
     topSymbolsByVolume: topSymbolsByVolume, isStablecoin: isStablecoin,
+    // 策略預設
+    STRATEGY_PRESETS: STRATEGY_PRESETS, DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
+    getPreset: getPreset, paramsForPreset: paramsForPreset,
     // 常數 / 工具
     defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
-    VERSION: '1.0.0'
+    VERSION: '1.1.0'
   };
 });
 
@@ -885,8 +994,12 @@ const state = {
   busy: false,
   lastOk: null,
   lastErr: null,
-  proxyMode: false
+  proxyMode: false,
+  presetId: CTMA.DEFAULT_PRESET_ID
 };
+
+/* ---- 目前選用策略的參數（每次計算都重新取，確保切換後立即生效） ---- */
+function activeParams(){ return CTMA.paramsForPreset(state.presetId); }
 
 function $(id){ return document.getElementById(id); }
 
@@ -928,6 +1041,36 @@ function setNote(kind, html){
   const n = $('fetchNote');
   n.className = 'note' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : kind === 'info' ? ' info' : '');
   $('fetchNoteText').innerHTML = html;
+}
+
+/* ---- 策略選擇器 ---- */
+function initStrategySelector(){
+  const sel = $('strategySel');
+  sel.innerHTML = CTMA.STRATEGY_PRESETS.map(p =>
+    '<option value="' + esc(p.id) + '"' + (p.id === state.presetId ? ' selected' : '') + '>'
+    + esc(p.name) + '</option>').join('');
+  renderStrategyInfo();
+}
+
+function renderStrategyInfo(){
+  const p = CTMA.getPreset(state.presetId);
+  const pr = activeParams();
+  $('strategyDesc').innerHTML = '<b>' + esc(p.name) + '</b> — ' + esc(p.desc)
+    + '<span class="ssrc">來源：' + esc(p.source) + '</span>';
+  const cells = [
+    ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
+    ['RSI 週期', pr.rsi_len],
+    ['MACD', pr.macd_fast + '/' + pr.macd_slow + '/' + pr.macd_signal],
+    ['ATR 週期', pr.atr_len],
+    ['ATR 停損', pr.atr_stop_mult + '×'],
+    ['ATR 移動停損', pr.atr_trail_mult + '×'],
+    ['ATR 停利', pr.atr_tp_mult + '×'],
+    ['ATR% 門檻', pr.min_atr_pct + '%'],
+    ['Supertrend 過濾', pr.use_supertrend ? ('開（' + pr.st_len + ', ' + pr.st_mult + '）') : '關'],
+    ['允許做空', pr.allow_short ? '是' : '否']
+  ];
+  $('paramGrid').innerHTML = cells.map(([k,v]) =>
+    '<div class="pcell"><div class="pk">' + esc(k) + '</div><div class="pv">' + esc(v) + '</div></div>').join('');
 }
 
 /* ---- HTTP：直連優先，失敗則嘗試本機代理 ---- */
@@ -1155,7 +1298,7 @@ async function refreshAll(){
       try {
         const bars = await fetchKlines(sym, '1d', KLINE_LIMIT);
         const a = CTMA.analyzeBars(bars, sym, {
-          interval: '1d', nowMs: Date.now(), serverTimeMs
+          interval: '1d', nowMs: Date.now(), serverTimeMs, params: activeParams()
         });
         liveResults.push({symbol: sym, analysis: a});
       } catch(e){
@@ -1170,7 +1313,7 @@ async function refreshAll(){
       const top = CTMA.topSymbolsByVolume(tickers, SCAN_TOP_N);
       const res = await mapLimit(top.map(t => t.symbol), SCAN_CONCURRENCY, async (sym) => {
         const bars = await fetchKlines(sym, '1d', KLINE_LIMIT);
-        return CTMA.analyzeBars(bars, sym, {interval:'1d', nowMs: Date.now(), serverTimeMs});
+        return CTMA.analyzeBars(bars, sym, {interval:'1d', nowMs: Date.now(), serverTimeMs, params: activeParams()});
       });
       const ok = [];
       res.forEach((r, i) => {
@@ -1186,6 +1329,7 @@ async function refreshAll(){
 
     if (liveResults.length) renderLive(liveResults, serverTimeMs, '1d');
     if (rankings) renderScan(rankings, null);
+    renderStrategyInfo();
 
     // 暴露結構化結果供自動化驗證讀取（不影響畫面）
     window.__CTMA_DASH__.lastLive = liveResults.map(x => {
@@ -1279,8 +1423,16 @@ $('intervalSel').addEventListener('change', (e) => {
   state.intervalMs = Number(e.target.value) * 1000;
   restartTimers();
 });
+$('strategySel').addEventListener('change', (e) => {
+  state.presetId = e.target.value;
+  renderStrategyInfo();
+  // 切換策略後立即以新策略重算；自動刷新計時器不動，之後每輪都套用新策略
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
+});
 
 /* ---- 啟動 ---- */
+initStrategySelector();
 renderHistory();
 restartTimers();
 refreshAll();
@@ -1290,6 +1442,9 @@ window.__CTMA_DASH__ = {
   state,
   refresh: refreshAll,
   engineVersion: CTMA.VERSION,
+  presets: CTMA.STRATEGY_PRESETS,
+  setPreset: (id) => { state.presetId = id; $('strategySel').value = id; renderStrategyInfo(); },
+  activeParams: activeParams,
   lastPayload: () => ({
     lastOk: state.lastOk ? state.lastOk.toISOString() : null,
     liveCards: document.querySelectorAll('#liveCards .card').length,

@@ -207,6 +207,87 @@
   }
 
   /* ------------------------------------------------------------------ *
+   * 策略預設（STRATEGY_PRESETS）
+   * ------------------------------------------------------------------ *
+   * 每一個預設都對應專案中「真實存在」的策略或參數組，來源標註於 source 欄位：
+   *
+   *   ctma_default     crypto_quant/strategy.py  StrategyParams 的預設值
+   *   ctma_supertrend  同上，但 use_supertrend=True（strategy.py 的 Supertrend 過濾分支）
+   *   ctma_long_only   同上，但 allow_short=False（只做多）
+   *   wfo_9_34         crypto_quant/walkforward.py  DEFAULT_GRID 的網格組合
+   *   wfo_13_55        同上
+   *   wfo_21_89        同上
+   *
+   * 這些不是憑空發明的策略：前三個是 strategy.py 的參數開關，後三個是
+   * walkforward.py / optimize.py 實際跑過的網格點。
+   * ------------------------------------------------------------------ */
+
+  var STRATEGY_PRESETS = [
+    {
+      id: 'ctma_default',
+      name: 'CTMA 預設（EMA 21/55）',
+      short: 'CTMA 預設',
+      desc: 'EMA 21/55 交叉 + RSI(14) 站中軸同側 + MACD 柱方向一致 + ATR% ≥ 0.5% 過濾；3×ATR 停損、6×ATR 停利。',
+      source: 'crypto_quant/strategy.py · StrategyParams 預設值',
+      params: {}
+    },
+    {
+      id: 'ctma_supertrend',
+      name: 'CTMA + Supertrend 過濾（EMA 21/55）',
+      short: 'CTMA + Supertrend',
+      desc: '在 CTMA 預設之上，額外要求 Supertrend(10, 3.0) 方向與交叉方向一致，過濾逆勢交叉。',
+      source: 'crypto_quant/strategy.py · use_supertrend=True 分支',
+      params: { use_supertrend: true, st_len: 10, st_mult: 3.0 }
+    },
+    {
+      id: 'ctma_long_only',
+      name: 'CTMA 只做多（EMA 21/55）',
+      short: 'CTMA 只做多',
+      desc: '與 CTMA 預設相同，但關閉做空（allow_short=False），只保留多頭進場訊號。',
+      source: 'crypto_quant/strategy.py · allow_short=False',
+      params: { allow_short: false }
+    },
+    {
+      id: 'wfo_9_34',
+      name: 'WFO 網格 9/34（ATR 停損 1.5×）',
+      short: 'WFO 9/34',
+      desc: 'walk-forward 網格中的一組：EMA 快 9 / 慢 34，ATR 停損 1.5×、移動停損 5×、停利 6×。',
+      source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=9, ema_slow=34, atr_stop=1.5)',
+      params: { ema_fast: 9, ema_slow: 34, atr_stop_mult: 1.5, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    },
+    {
+      id: 'wfo_13_55',
+      name: 'WFO 網格 13/55（ATR 停損 2.0×）',
+      short: 'WFO 13/55',
+      desc: 'walk-forward 網格中的一組：EMA 快 13 / 慢 55，ATR 停損 2.0×、移動停損 5×、停利 6×。',
+      source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=13, ema_slow=55, atr_stop=2.0)',
+      params: { ema_fast: 13, ema_slow: 55, atr_stop_mult: 2.0, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    },
+    {
+      id: 'wfo_21_89',
+      name: 'WFO 網格 21/89（ATR 停損 3.0×）',
+      short: 'WFO 21/89',
+      desc: 'walk-forward 網格中的一組：EMA 快 21 / 慢 89，ATR 停損 3.0×、移動停損 5×、停利 6×。',
+      source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=21, ema_slow=89, atr_stop=3.0)',
+      params: { ema_fast: 21, ema_slow: 89, atr_stop_mult: 3.0, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    }
+  ];
+
+  var DEFAULT_PRESET_ID = 'ctma_default';
+
+  function getPreset(id) {
+    for (var i = 0; i < STRATEGY_PRESETS.length; i++) {
+      if (STRATEGY_PRESETS[i].id === id) return STRATEGY_PRESETS[i];
+    }
+    return STRATEGY_PRESETS[0];
+  }
+
+  /** 依預設 id 取得「已與預設值合併」的完整參數物件。 */
+  function paramsForPreset(id) {
+    return defaultParams(getPreset(id).params);
+  }
+
+  /* ------------------------------------------------------------------ *
    * 指標與訊號
    * ------------------------------------------------------------------ */
 
@@ -562,10 +643,13 @@
     // 掃描
     rowOf: rowOf, buildRankings: buildRankings,
     topSymbolsByVolume: topSymbolsByVolume, isStablecoin: isStablecoin,
+    // 策略預設
+    STRATEGY_PRESETS: STRATEGY_PRESETS, DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
+    getPreset: getPreset, paramsForPreset: paramsForPreset,
     // 常數 / 工具
     defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
-    VERSION: '1.0.0'
+    VERSION: '1.1.0'
   };
 });

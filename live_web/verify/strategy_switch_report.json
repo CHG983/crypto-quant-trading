@@ -1,0 +1,444 @@
+{
+  "generated_at_utc": "2026-10-13T02:20:16.388872+00:00",
+  "url": "http://127.0.0.1:8788/dashboard.html",
+  "total_checks": 19,
+  "passed_checks": 19,
+  "failed_checks": 0,
+  "status": "ALL PASS",
+  "checks": [
+    {
+      "check": "桌面：refreshAll 完成",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "桌面：真的對幣安發出請求",
+      "ok": true,
+      "detail": "requests=30"
+    },
+    {
+      "check": "桌面：即時訊號卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "桌面：市場掃描有資料列",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "桌面：策略選擇器存在",
+      "ok": true,
+      "detail": "options=6"
+    },
+    {
+      "check": "桌面：預設策略為 ctma_default",
+      "ok": true,
+      "detail": "selected=ctma_default"
+    },
+    {
+      "check": "桌面：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "桌面：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "切換 ctma_default → wfo_9_34：數值改變",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "切換 wfo_9_34 → ctma_long_only：數值改變",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "切換後參數面板跟著變（EMA 週期）",
+      "ok": true,
+      "detail": "default=['21 / 55'] wfo=['9 / 34']"
+    },
+    {
+      "check": "切換後策略說明含來源標註",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "切換策略後自動刷新仍運作（時間戳前進）",
+      "ok": true,
+      "detail": "最後更新 2026-10-13 02:20:09 UTC → 最後更新 2026-10-13 02:20:11 UTC"
+    },
+    {
+      "check": "切換策略後仍持續抓取（請求數增加）",
+      "ok": true,
+      "detail": "120 → 150"
+    },
+    {
+      "check": "免責聲明存在（中英文）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "手機：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "手機：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "手機：策略選擇器可用",
+      "ok": true,
+      "detail": "options=6"
+    },
+    {
+      "check": "手機：即時資料有載入",
+      "ok": true,
+      "detail": "cards=3"
+    }
+  ],
+  "strategy_switch_diff": {
+    "wfo_9_34": [
+      {
+        "symbol": "BTCUSDT",
+        "price_default": "81,850.000000",
+        "price_new": "81,850.000000",
+        "strength_default": "64.2 (強)",
+        "strength_new": "44.9 (弱)",
+        "ema_default": "83,092.8974 / 79,605.2830",
+        "ema_new": "83,291.5457 / 81,879.8588",
+        "stop_default": "75,540.512413 (−7.71%)",
+        "stop_new": "78,695.256207 (−3.85%)"
+      },
+      {
+        "symbol": "ETHUSDT",
+        "price_default": "2,447.170000",
+        "price_new": "2,447.170000",
+        "strength_default": "42.9 (弱)",
+        "strength_new": "54.8 (中)",
+        "ema_default": "2,586.0226 / 2,482.0327",
+        "ema_new": "2,548.7742 / 2,560.3740",
+        "stop_default": "2,183.441236 (−10.78%)",
+        "stop_new": "2,579.034382 (−5.39%)"
+      },
+      {
+        "symbol": "SOLUSDT",
+        "price_default": "105.760000",
+        "price_new": "105.760000",
+        "strength_default": "49.5 (中)",
+        "strength_new": "21.5 (極弱)",
+        "ema_default": "113.3798 / 106.3722",
+        "ema_new": "112.2031 / 111.1351",
+        "stop_default": "90.928076 (−14.02%)",
+        "stop_new": "98.344038 (−7.01%)"
+      }
+    ],
+    "ctma_long_only": [
+      {
+        "symbol": "BTCUSDT",
+        "price_default": "81,850.000000",
+        "price_new": "81,850.000000",
+        "strength_default": "64.2 (強)",
+        "strength_new": "64.2 (強)",
+        "ema_default": "83,092.8974 / 79,605.2830",
+        "ema_new": "83,092.8974 / 79,605.2830",
+        "stop_default": "75,540.512413 (−7.71%)",
+        "stop_new": "75,540.512413 (−7.71%)"
+      },
+      {
+        "symbol": "ETHUSDT",
+        "price_default": "2,447.170000",
+        "price_new": "2,447.170000",
+        "strength_default": "42.9 (弱)",
+        "strength_new": "42.9 (弱)",
+        "ema_default": "2,586.0226 / 2,482.0327",
+        "ema_new": "2,586.0226 / 2,482.0327",
+        "stop_default": "2,183.441236 (−10.78%)",
+        "stop_new": "2,183.441236 (−10.78%)"
+      },
+      {
+        "symbol": "SOLUSDT",
+        "price_default": "105.760000",
+        "price_new": "105.760000",
+        "strength_default": "49.5 (中)",
+        "strength_new": "49.5 (中)",
+        "ema_default": "113.3798 / 106.3722",
+        "ema_new": "113.3798 / 106.3722",
+        "stop_default": "90.928076 (−14.02%)",
+        "stop_new": "90.928076 (−14.02%)"
+      }
+    ]
+  },
+  "snapshots": {
+    "ctma_default": {
+      "selected": "ctma_default",
+      "params": [
+        {
+          "k": "EMA 快 / 慢",
+          "v": "21 / 55"
+        },
+        {
+          "k": "RSI 週期",
+          "v": "14"
+        },
+        {
+          "k": "MACD",
+          "v": "12/26/9"
+        },
+        {
+          "k": "ATR 週期",
+          "v": "14"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "3×"
+        },
+        {
+          "k": "ATR 移動停損",
+          "v": "5×"
+        },
+        {
+          "k": "ATR 停利",
+          "v": "6×"
+        },
+        {
+          "k": "ATR% 門檻",
+          "v": "0.5%"
+        },
+        {
+          "k": "Supertrend 過濾",
+          "v": "關"
+        },
+        {
+          "k": "允許做空",
+          "v": "是"
+        }
+      ],
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "64.2 (強)",
+          "ema": "83,092.8974 / 79,605.2830",
+          "emaGap": "4.261% (1.658 ATR)",
+          "rsi": "47.16 / -577.161572",
+          "atrPct": "2.570%",
+          "stop": "75,540.512413 (−7.71%)",
+          "tp": "94,468.975173 (+15.42%)"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "HOLD",
+          "strength": "42.9 (弱)",
+          "ema": "2,586.0226 / 2,482.0327",
+          "emaGap": "4.249% (1.183 ATR)",
+          "rsi": "37.63 / -35.696224",
+          "atrPct": "3.592%",
+          "stop": "2,183.441236 (−10.78%)",
+          "tp": "2,974.627527 (+21.55%)"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "HOLD",
+          "strength": "49.5 (中)",
+          "ema": "113.3798 / 106.3722",
+          "emaGap": "6.626% (1.417 ATR)",
+          "rsi": "38.89 / -2.161835",
+          "atrPct": "4.675%",
+          "stop": "90.928076 (−14.02%)",
+          "tp": "135.423848 (+28.05%)"
+        }
+      ]
+    },
+    "wfo_9_34": {
+      "selected": "wfo_9_34",
+      "params": [
+        {
+          "k": "EMA 快 / 慢",
+          "v": "9 / 34"
+        },
+        {
+          "k": "RSI 週期",
+          "v": "14"
+        },
+        {
+          "k": "MACD",
+          "v": "12/26/9"
+        },
+        {
+          "k": "ATR 週期",
+          "v": "14"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "1.5×"
+        },
+        {
+          "k": "ATR 移動停損",
+          "v": "5×"
+        },
+        {
+          "k": "ATR 停利",
+          "v": "6×"
+        },
+        {
+          "k": "ATR% 門檻",
+          "v": "0.5%"
+        },
+        {
+          "k": "Supertrend 過濾",
+          "v": "關"
+        },
+        {
+          "k": "允許做空",
+          "v": "是"
+        }
+      ],
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "44.9 (弱)",
+          "ema": "83,291.5457 / 81,879.8588",
+          "emaGap": "1.725% (0.671 ATR)",
+          "rsi": "47.16 / -577.161572",
+          "atrPct": "2.570%",
+          "stop": "78,695.256207 (−3.85%)",
+          "tp": "94,468.975173 (+15.42%)"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "BEAR_CROSS",
+          "strength": "54.8 (中)",
+          "ema": "2,548.7742 / 2,560.3740",
+          "emaGap": "-0.474% (-0.132 ATR)",
+          "rsi": "37.63 / -35.696224",
+          "atrPct": "3.592%",
+          "stop": "2,579.034382 (−5.39%)",
+          "tp": "1,919.712473 (+21.55%)"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "HOLD",
+          "strength": "21.5 (極弱)",
+          "ema": "112.2031 / 111.1351",
+          "emaGap": "1.010% (0.216 ATR)",
+          "rsi": "38.89 / -2.161835",
+          "atrPct": "4.675%",
+          "stop": "98.344038 (−7.01%)",
+          "tp": "135.423848 (+28.05%)"
+        }
+      ]
+    },
+    "ctma_long_only": {
+      "selected": "ctma_long_only",
+      "params": [
+        {
+          "k": "EMA 快 / 慢",
+          "v": "21 / 55"
+        },
+        {
+          "k": "RSI 週期",
+          "v": "14"
+        },
+        {
+          "k": "MACD",
+          "v": "12/26/9"
+        },
+        {
+          "k": "ATR 週期",
+          "v": "14"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "3×"
+        },
+        {
+          "k": "ATR 移動停損",
+          "v": "5×"
+        },
+        {
+          "k": "ATR 停利",
+          "v": "6×"
+        },
+        {
+          "k": "ATR% 門檻",
+          "v": "0.5%"
+        },
+        {
+          "k": "Supertrend 過濾",
+          "v": "關"
+        },
+        {
+          "k": "允許做空",
+          "v": "否"
+        }
+      ],
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "64.2 (強)",
+          "ema": "83,092.8974 / 79,605.2830",
+          "emaGap": "4.261% (1.658 ATR)",
+          "rsi": "47.16 / -577.161572",
+          "atrPct": "2.570%",
+          "stop": "75,540.512413 (−7.71%)",
+          "tp": "94,468.975173 (+15.42%)"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "HOLD",
+          "strength": "42.9 (弱)",
+          "ema": "2,586.0226 / 2,482.0327",
+          "emaGap": "4.249% (1.183 ATR)",
+          "rsi": "37.63 / -35.696224",
+          "atrPct": "3.592%",
+          "stop": "2,183.441236 (−10.78%)",
+          "tp": "2,974.627527 (+21.55%)"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "HOLD",
+          "strength": "49.5 (中)",
+          "ema": "113.3798 / 106.3722",
+          "emaGap": "6.626% (1.417 ATR)",
+          "rsi": "38.89 / -2.161835",
+          "atrPct": "4.675%",
+          "stop": "90.928076 (−14.02%)",
+          "tp": "135.423848 (+28.05%)"
+        }
+      ]
+    }
+  },
+  "overflow_desktop": {
+    "docScrollWidth": 1280,
+    "docClientWidth": 1280,
+    "innerWidth": 1280,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overflow_mobile": {
+    "docScrollWidth": 390,
+    "docClientWidth": 390,
+    "innerWidth": 390,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  }
+}
