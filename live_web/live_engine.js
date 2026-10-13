@@ -282,9 +282,87 @@
     return STRATEGY_PRESETS[0];
   }
 
-  /** 依預設 id 取得「已與預設值合併」的完整參數物件。 */
-  function paramsForPreset(id) {
-    return defaultParams(getPreset(id).params);
+  /** 依預設 id 取得「已與預設值合併」的完整參數物件；可再疊加使用者自訂覆寫。 */
+  function paramsForPreset(id, overrides) {
+    var base = defaultParams(getPreset(id).params);
+    if (overrides) {
+      for (var k in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, k)) base[k] = overrides[k];
+      }
+    }
+    return base;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 可自訂參數的規格（供前端產生輸入控制項與驗證）
+   * ------------------------------------------------------------------ *
+   * 每個 spec 的預設值一律取自 defaultParams()（即 StrategyParams），
+   * 不另外硬編一組數字，避免與 Python 端預設值不一致。
+   * ------------------------------------------------------------------ */
+  var PARAM_SPECS = [
+    { key: 'ema_fast',       label: 'EMA 快線週期',    type: 'int',   min: 2,   max: 500,  step: 1,   group: 'trend' },
+    { key: 'ema_slow',       label: 'EMA 慢線週期',    type: 'int',   min: 3,   max: 1000, step: 1,   group: 'trend' },
+    { key: 'rsi_len',        label: 'RSI 週期',        type: 'int',   min: 2,   max: 100,  step: 1,   group: 'momentum' },
+    { key: 'atr_len',        label: 'ATR 週期',        type: 'int',   min: 2,   max: 100,  step: 1,   group: 'risk' },
+    { key: 'atr_stop_mult',  label: 'ATR 停損倍數',    type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'risk' },
+    { key: 'atr_trail_mult', label: 'ATR 移動停損倍數', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'risk' },
+    { key: 'atr_tp_mult',    label: 'ATR 停利倍數',    type: 'float', min: 0.1, max: 50,   step: 0.1, group: 'risk' },
+    { key: 'min_atr_pct',    label: 'ATR% 門檻',       type: 'float', min: 0,   max: 20,   step: 0.1, group: 'risk' },
+    { key: 'st_len',         label: 'Supertrend 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'supertrend' },
+    { key: 'st_mult',        label: 'Supertrend 倍數', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'supertrend' },
+    { key: 'allow_short',    label: '允許做空',        type: 'bool',  group: 'direction' },
+    { key: 'use_supertrend', label: 'Supertrend 過濾', type: 'bool',  group: 'supertrend' }
+  ];
+
+  /**
+   * 驗證使用者自訂參數。
+   * 回傳 { ok, errors:[{key,msg}], params }；params 為「已合併」的完整參數物件，
+   * 呼叫端應以 ok 決定是否採用（不合法時仍回傳合併結果，方便除錯）。
+   */
+  function validateParams(overrides, base) {
+    var errors = [];
+    var merged = defaultParams(base || {});
+    if (overrides) {
+      for (var k in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, k)) merged[k] = overrides[k];
+      }
+    }
+
+    for (var i = 0; i < PARAM_SPECS.length; i++) {
+      var s = PARAM_SPECS[i];
+      if (!Object.prototype.hasOwnProperty.call(merged, s.key)) continue;
+      var v = merged[s.key];
+      if (s.type === 'bool') {
+        if (typeof v !== 'boolean') errors.push({ key: s.key, msg: s.label + ' 必須為布林值' });
+        continue;
+      }
+      var num = Number(v);
+      if (!Number.isFinite(num)) {
+        errors.push({ key: s.key, msg: s.label + ' 必須為數字（目前為空或非數字）' });
+        continue;
+      }
+      if (s.type === 'int' && Math.floor(num) !== num) {
+        errors.push({ key: s.key, msg: s.label + ' 必須為正整數（目前 ' + num + '）' });
+        continue;
+      }
+      if (num < s.min || num > s.max) {
+        errors.push({
+          key: s.key,
+          msg: s.label + ' 必須介於 ' + s.min + ' 與 ' + s.max + ' 之間（目前 ' + num + '）'
+        });
+      }
+    }
+
+    // 跨欄位檢查：EMA 快線必須小於慢線
+    var ef = Number(merged.ema_fast), es = Number(merged.ema_slow);
+    if (Number.isFinite(ef) && Number.isFinite(es) && ef >= es) {
+      errors.push({
+        key: 'ema_fast',
+        msg: 'EMA 快線週期（' + merged.ema_fast + '）必須小於慢線週期（' + merged.ema_slow + '）'
+      });
+    }
+
+    return { ok: errors.length === 0, errors: errors, params: merged };
   }
 
   /* ------------------------------------------------------------------ *
@@ -646,10 +724,12 @@
     // 策略預設
     STRATEGY_PRESETS: STRATEGY_PRESETS, DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
     getPreset: getPreset, paramsForPreset: paramsForPreset,
+    // 可自訂參數
+    PARAM_SPECS: PARAM_SPECS, validateParams: validateParams,
     // 常數 / 工具
     defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
-    VERSION: '1.1.0'
+    VERSION: '1.2.0'
   };
 });

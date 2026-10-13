@@ -94,6 +94,45 @@ select{font:inherit;font-size:.83rem;background:var(--panel2);color:var(--tx);
 .pcell .pk{font-size:.7rem;color:var(--dim2);text-transform:uppercase;letter-spacing:.6px}
 .pcell .pv{font-size:.95rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
 
+/* ---- 自訂參數編輯器 ---- */
+.custbar{
+  background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);
+  border-radius:12px;padding:13px 15px;margin:10px 0 4px;
+}
+.custbar .chead{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
+.custbar .cttl{font-size:.82rem;font-weight:700;color:var(--warn);white-space:nowrap}
+.custbar .cstate{font-size:.76rem;color:var(--dim2)}
+.custbar .cstate b{color:var(--tx)}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.cfield{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}
+.cfield.bad{border-color:var(--short);box-shadow:0 0 0 1px var(--short) inset}
+.cfield .cl{font-size:.7rem;color:var(--dim2);display:block;margin-bottom:4px;white-space:nowrap;
+            overflow:hidden;text-overflow:ellipsis}
+.cfield input[type=number]{
+  font:inherit;font-size:.9rem;font-weight:700;width:100%;box-sizing:border-box;
+  background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:7px;
+  padding:5px 7px;font-variant-numeric:tabular-nums;
+}
+.cfield input[type=number]:focus{outline:none;border-color:var(--pur)}
+.cfield .cdef{font-size:.66rem;color:var(--dim2);margin-top:3px;display:block}
+.cfield.chk{display:flex;align-items:center;gap:8px}
+.cfield.chk input{width:16px;height:16px;accent-color:var(--pur);flex:0 0 auto}
+.cfield.chk .cl{margin:0;font-size:.78rem;color:var(--tx);white-space:normal}
+.cbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;align-items:center}
+.cbtns button{
+  font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;border-radius:8px;
+  padding:7px 14px;border:1px solid var(--line);background:var(--panel2);color:var(--tx);
+}
+.cbtns button.primary{background:var(--pur);border-color:var(--pur);color:#fff}
+.cbtns button:disabled{opacity:.5;cursor:not-allowed}
+.cbtns .cmsg{font-size:.78rem;flex:1 1 200px;min-width:0}
+.cbtns .cmsg.ok{color:var(--long)}
+.cbtns .cmsg.err{color:var(--short)}
+.cerr{list-style:none;margin:9px 0 0;padding:9px 11px;border-radius:9px;
+      background:rgba(220,80,80,.10);border:1px solid var(--short);font-size:.78rem;color:var(--tx)}
+.cerr li{margin:2px 0}
+.cerr li::before{content:'⚠ ';color:var(--short)}
+
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
       padding:16px;min-width:0}
@@ -171,6 +210,7 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <p>即時訊號 · 市場掃描 · 自動化監控 — <b>改由瀏覽器直接呼叫幣安公開 API</b>，
      策略邏輯（EMA 快慢線 + RSI/MACD 動能 + ATR 風控）在<strong>前端即時重算</strong>，
      並可<b>切換多種策略</b>（CTMA 預設 / Supertrend 過濾 / 只做多 / WFO 網格參數組），
+     並可<b>自訂 EMA 週期與 ATR 倍數</b>（含即時驗證與重設），
      不再使用內嵌的靜態快照。</p>
   <div class="meta">
     <span class="chip">資料來源 <b>Binance 公開 API</b></span>
@@ -203,6 +243,21 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <span class="ttl">⚙ 交易策略</span>
   <select id="strategySel" aria-label="選擇交易策略"></select>
   <span class="sdesc" id="strategyDesc">載入中…</span>
+</div>
+
+<!-- ===== 自訂參數編輯器 ===== -->
+<div class="custbar">
+  <div class="chead">
+    <span class="cttl">🎛 自訂參數</span>
+    <span class="cstate" id="custState">載入中…</span>
+  </div>
+  <div class="cgrid" id="custGrid"></div>
+  <ul class="cerr" id="custErrors" style="display:none"></ul>
+  <div class="cbtns">
+    <button type="button" class="primary" id="applyParams">套用</button>
+    <button type="button" id="resetParams">重設為預設</button>
+    <span class="cmsg" id="custMsg"></span>
+  </div>
 </div>
 
 <div class="note info" id="fetchNote">
@@ -262,6 +317,10 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
 在<b>瀏覽器端</b>用 <code>fetch()</code> 直接呼叫幣安 <code>/api/v3/klines</code> 與
 <code>/api/v3/ticker/24hr</code>，取得 K 線後<b>即時重算</b> EMA / RSI / MACD / ATR / Supertrend
 與訊號、強度、停損停利。每 30 秒（可調）自動重算一次，並顯示最後更新時間與倒數。</p>
+<p><b>自訂參數：</b>可直接調整 EMA 快／慢線週期、RSI 與 ATR 週期、ATR 停損／移動停損／停利倍數、
+ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertrend 過濾」開關。
+按「套用」後立即以新參數重算全部區塊；不合法（如快線 ≥ 慢線、非正整數、超出範圍）會標紅並拒絕套用。
+「重設為預設」會回到該策略的原始參數（來源同上方「來源」欄）。自訂參數會被自動刷新沿用。</p>
 <p><b>CORS：</b><code>data-api.binance.vision</code> 回應
 <code>access-control-allow-origin: *</code>，因此<b>不需要任何代理</b>即可直連。
 若您的環境（公司網路、代理、地區限制）擋掉跨域請求，頁面會顯示明確錯誤，
@@ -309,7 +368,7 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <p style="margin-bottom:0">All content on this page (including real-time signals, ranking scans, monitored events, and parameters) is intended solely for research and educational purposes and does not constitute investment advice, an offer, or a recommendation. Signals are calculated based on historical prices and cannot predict future trends; past performance is not indicative of future results. Backtesting and signal systems are subject to inherent limitations—such as overfitting, survivorship bias, errors in estimating transaction costs, and liquidity assumptions—meaning actual trading results may differ significantly. Real-time data may be subject to delays, interruptions, or inaccuracies due to network, endpoint, or exchange issues and should not serve as the sole basis for trading decisions. Cryptocurrency markets are highly volatile and carry the risk of a total loss of principal. Users are responsible for making their own trading decisions and assuming all associated risks.</p>
 </div>
 
-<!-- built_by=build_dashboard_v6.py  built_at=2026-10-13T02:19:21Z  engine_sha256=83279fc8303fb3002f977befffc83cbd3374a46ed637670c6ff08c0fae53c13a -->
+<!-- built_by=build_dashboard_v6.py  built_at=2026-10-13T02:34:11Z  engine_sha256=a75cb5533e7e8b0781fccd386a29f2bea69274a1233285d1a4936e015fbfbc28 -->
 <footer>
   資料來源：Binance 公開 API（<code>data-api.binance.vision</code>，免金鑰），由瀏覽器直接抓取。
   策略引擎 <code>live_engine.js</code> 內嵌於本頁（建置時比對 SHA-256 確保與受測版本逐字元相同）。
@@ -604,9 +663,87 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
     return STRATEGY_PRESETS[0];
   }
 
-  /** 依預設 id 取得「已與預設值合併」的完整參數物件。 */
-  function paramsForPreset(id) {
-    return defaultParams(getPreset(id).params);
+  /** 依預設 id 取得「已與預設值合併」的完整參數物件；可再疊加使用者自訂覆寫。 */
+  function paramsForPreset(id, overrides) {
+    var base = defaultParams(getPreset(id).params);
+    if (overrides) {
+      for (var k in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, k)) base[k] = overrides[k];
+      }
+    }
+    return base;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 可自訂參數的規格（供前端產生輸入控制項與驗證）
+   * ------------------------------------------------------------------ *
+   * 每個 spec 的預設值一律取自 defaultParams()（即 StrategyParams），
+   * 不另外硬編一組數字，避免與 Python 端預設值不一致。
+   * ------------------------------------------------------------------ */
+  var PARAM_SPECS = [
+    { key: 'ema_fast',       label: 'EMA 快線週期',    type: 'int',   min: 2,   max: 500,  step: 1,   group: 'trend' },
+    { key: 'ema_slow',       label: 'EMA 慢線週期',    type: 'int',   min: 3,   max: 1000, step: 1,   group: 'trend' },
+    { key: 'rsi_len',        label: 'RSI 週期',        type: 'int',   min: 2,   max: 100,  step: 1,   group: 'momentum' },
+    { key: 'atr_len',        label: 'ATR 週期',        type: 'int',   min: 2,   max: 100,  step: 1,   group: 'risk' },
+    { key: 'atr_stop_mult',  label: 'ATR 停損倍數',    type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'risk' },
+    { key: 'atr_trail_mult', label: 'ATR 移動停損倍數', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'risk' },
+    { key: 'atr_tp_mult',    label: 'ATR 停利倍數',    type: 'float', min: 0.1, max: 50,   step: 0.1, group: 'risk' },
+    { key: 'min_atr_pct',    label: 'ATR% 門檻',       type: 'float', min: 0,   max: 20,   step: 0.1, group: 'risk' },
+    { key: 'st_len',         label: 'Supertrend 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'supertrend' },
+    { key: 'st_mult',        label: 'Supertrend 倍數', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'supertrend' },
+    { key: 'allow_short',    label: '允許做空',        type: 'bool',  group: 'direction' },
+    { key: 'use_supertrend', label: 'Supertrend 過濾', type: 'bool',  group: 'supertrend' }
+  ];
+
+  /**
+   * 驗證使用者自訂參數。
+   * 回傳 { ok, errors:[{key,msg}], params }；params 為「已合併」的完整參數物件，
+   * 呼叫端應以 ok 決定是否採用（不合法時仍回傳合併結果，方便除錯）。
+   */
+  function validateParams(overrides, base) {
+    var errors = [];
+    var merged = defaultParams(base || {});
+    if (overrides) {
+      for (var k in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, k)) merged[k] = overrides[k];
+      }
+    }
+
+    for (var i = 0; i < PARAM_SPECS.length; i++) {
+      var s = PARAM_SPECS[i];
+      if (!Object.prototype.hasOwnProperty.call(merged, s.key)) continue;
+      var v = merged[s.key];
+      if (s.type === 'bool') {
+        if (typeof v !== 'boolean') errors.push({ key: s.key, msg: s.label + ' 必須為布林值' });
+        continue;
+      }
+      var num = Number(v);
+      if (!Number.isFinite(num)) {
+        errors.push({ key: s.key, msg: s.label + ' 必須為數字（目前為空或非數字）' });
+        continue;
+      }
+      if (s.type === 'int' && Math.floor(num) !== num) {
+        errors.push({ key: s.key, msg: s.label + ' 必須為正整數（目前 ' + num + '）' });
+        continue;
+      }
+      if (num < s.min || num > s.max) {
+        errors.push({
+          key: s.key,
+          msg: s.label + ' 必須介於 ' + s.min + ' 與 ' + s.max + ' 之間（目前 ' + num + '）'
+        });
+      }
+    }
+
+    // 跨欄位檢查：EMA 快線必須小於慢線
+    var ef = Number(merged.ema_fast), es = Number(merged.ema_slow);
+    if (Number.isFinite(ef) && Number.isFinite(es) && ef >= es) {
+      errors.push({
+        key: 'ema_fast',
+        msg: 'EMA 快線週期（' + merged.ema_fast + '）必須小於慢線週期（' + merged.ema_slow + '）'
+      });
+    }
+
+    return { ok: errors.length === 0, errors: errors, params: merged };
   }
 
   /* ------------------------------------------------------------------ *
@@ -968,11 +1105,13 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
     // 策略預設
     STRATEGY_PRESETS: STRATEGY_PRESETS, DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
     getPreset: getPreset, paramsForPreset: paramsForPreset,
+    // 可自訂參數
+    PARAM_SPECS: PARAM_SPECS, validateParams: validateParams,
     // 常數 / 工具
     defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
-    VERSION: '1.1.0'
+    VERSION: '1.2.0'
   };
 });
 
@@ -995,11 +1134,28 @@ const state = {
   lastOk: null,
   lastErr: null,
   proxyMode: false,
-  presetId: CTMA.DEFAULT_PRESET_ID
+  presetId: CTMA.DEFAULT_PRESET_ID,
+  // 使用者自訂參數覆寫（僅存「與預設不同」的鍵）；null 表示未自訂
+  custom: null
 };
 
-/* ---- 目前選用策略的參數（每次計算都重新取，確保切換後立即生效） ---- */
-function activeParams(){ return CTMA.paramsForPreset(state.presetId); }
+/* ---- 目前生效的參數 ----
+ * 每次計算都重新取，確保切換策略／套用自訂後立即生效，且自動刷新沿用同一組。
+ * 自訂值以「該策略的預設」為底再疊加，因此切換策略時自訂值仍會套用。 */
+function activeParams(){ return CTMA.paramsForPreset(state.presetId, state.custom); }
+
+/* ---- 該策略的原始預設參數（供「重設為預設」與差異比對） ---- */
+function presetDefaults(){ return CTMA.paramsForPreset(state.presetId); }
+
+/* ---- 目前是否處於自訂狀態（與該策略預設有差異） ---- */
+function isCustomized(){
+  if (!state.custom) return false;
+  const d = presetDefaults();
+  for (const k in state.custom){
+    if (state.custom[k] !== d[k]) return true;
+  }
+  return false;
+}
 
 function $(id){ return document.getElementById(id); }
 
@@ -1055,7 +1211,9 @@ function initStrategySelector(){
 function renderStrategyInfo(){
   const p = CTMA.getPreset(state.presetId);
   const pr = activeParams();
-  $('strategyDesc').innerHTML = '<b>' + esc(p.name) + '</b> — ' + esc(p.desc)
+  const custBadge = isCustomized()
+    ? ' <span class="badge b-warn">自訂參數</span>' : '';
+  $('strategyDesc').innerHTML = '<b>' + esc(p.name) + '</b>' + custBadge + ' — ' + esc(p.desc)
     + '<span class="ssrc">來源：' + esc(p.source) + '</span>';
   const cells = [
     ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
@@ -1071,6 +1229,98 @@ function renderStrategyInfo(){
   ];
   $('paramGrid').innerHTML = cells.map(([k,v]) =>
     '<div class="pcell"><div class="pk">' + esc(k) + '</div><div class="pv">' + esc(v) + '</div></div>').join('');
+  updateCustomState();
+}
+
+/* ---- 自訂參數編輯器 ---- */
+function renderCustomEditor(){
+  const pr = activeParams();
+  const def = presetDefaults();
+  $('custGrid').innerHTML = CTMA.PARAM_SPECS.map(s => {
+    const v = pr[s.key];
+    if (s.type === 'bool'){
+      return '<label class="cfield chk" data-field="' + esc(s.key) + '">'
+        + '<input type="checkbox" data-key="' + esc(s.key) + '"' + (v ? ' checked' : '') + '>'
+        + '<span class="cl">' + esc(s.label) + '</span></label>';
+    }
+    return '<div class="cfield" data-field="' + esc(s.key) + '">'
+      + '<label class="cl" for="p_' + esc(s.key) + '">' + esc(s.label) + '</label>'
+      + '<input type="number" id="p_' + esc(s.key) + '" data-key="' + esc(s.key) + '"'
+      + ' value="' + esc(v) + '" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '">'
+      + '<span class="cdef">預設 ' + esc(def[s.key]) + ' · 範圍 ' + s.min + '–' + s.max + '</span>'
+      + '</div>';
+  }).join('');
+  updateCustomState();
+}
+
+function readEditorValues(){
+  const out = {};
+  CTMA.PARAM_SPECS.forEach(s => {
+    // 只取 input 本身（外層 wrapper 用 data-field，避免 querySelector 命中 wrapper）
+    const el = document.querySelector('#custGrid input[data-key="' + s.key + '"]');
+    if (!el) return;
+    if (s.type === 'bool') out[s.key] = !!el.checked;
+    else { const raw = String(el.value).trim(); out[s.key] = raw === '' ? NaN : Number(raw); }
+  });
+  return out;
+}
+
+function updateCustomState(){
+  const pr = activeParams();
+  $('custState').innerHTML = isCustomized()
+    ? '目前為 <b>自訂參數</b>（已套用）· 生效值 EMA ' + pr.ema_fast + '/' + pr.ema_slow
+      + ' · ATR 停損 ' + pr.atr_stop_mult + '×'
+    : '目前為 <b>' + esc(CTMA.getPreset(state.presetId).short) + ' 的原始預設</b>（未自訂）';
+}
+
+function showCustomErrors(errors){
+  const ul = $('custErrors');
+  document.querySelectorAll('#custGrid .cfield').forEach(f => f.classList.remove('bad'));
+  if (!errors || !errors.length){ ul.style.display = 'none'; ul.innerHTML = ''; return; }
+  ul.style.display = '';
+  ul.innerHTML = errors.map(e => '<li>' + esc(e.msg) + '</li>').join('');
+  errors.forEach(e => {
+    const f = document.querySelector('#custGrid [data-field="' + e.key + '"]');
+    if (f) f.classList.add('bad');
+  });
+}
+
+function setCustomMsg(kind, text){
+  const m = $('custMsg');
+  m.className = 'cmsg' + (kind ? ' ' + kind : '');
+  m.textContent = text || '';
+}
+
+function applyCustomParams(){
+  const vals = readEditorValues();
+  const res = CTMA.validateParams(vals, presetDefaults());
+  if (!res.ok){
+    showCustomErrors(res.errors);
+    setCustomMsg('err', '參數不合法，未套用（' + res.errors.length + ' 項）');
+    return false;
+  }
+  showCustomErrors(null);
+  const def = presetDefaults();
+  const diff = {};
+  let n = 0;
+  for (const k in vals){ if (vals[k] !== def[k]){ diff[k] = vals[k]; n++; } }
+  state.custom = n ? diff : null;
+  setCustomMsg('ok', n ? ('已套用 ' + n + ' 項自訂參數，重新計算中…') : '與預設相同，已回到預設');
+  renderStrategyInfo();
+  renderCustomEditor();
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
+  return true;
+}
+
+function resetCustomParams(){
+  state.custom = null;
+  showCustomErrors(null);
+  setCustomMsg('ok', '已重設為「' + CTMA.getPreset(state.presetId).short + '」的原始預設，重新計算中…');
+  renderStrategyInfo();
+  renderCustomEditor();
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
 }
 
 /* ---- HTTP：直連優先，失敗則嘗試本機代理 ---- */
@@ -1425,14 +1675,26 @@ $('intervalSel').addEventListener('change', (e) => {
 });
 $('strategySel').addEventListener('change', (e) => {
   state.presetId = e.target.value;
+  // 切換策略時保留自訂值（以新策略的預設為底再疊加），並重繪編輯器
   renderStrategyInfo();
+  renderCustomEditor();
+  setCustomMsg('', '');
   // 切換策略後立即以新策略重算；自動刷新計時器不動，之後每輪都套用新策略
   state.nextAt = Date.now() + state.intervalMs;
   refreshAll();
 });
+$('applyParams').addEventListener('click', () => { applyCustomParams(); });
+$('resetParams').addEventListener('click', () => { resetCustomParams(); });
+// 輸入框按 Enter 即套用
+$('custGrid').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT'){
+    e.preventDefault(); applyCustomParams();
+  }
+});
 
 /* ---- 啟動 ---- */
 initStrategySelector();
+renderCustomEditor();
 renderHistory();
 restartTimers();
 refreshAll();
@@ -1443,8 +1705,22 @@ window.__CTMA_DASH__ = {
   refresh: refreshAll,
   engineVersion: CTMA.VERSION,
   presets: CTMA.STRATEGY_PRESETS,
-  setPreset: (id) => { state.presetId = id; $('strategySel').value = id; renderStrategyInfo(); },
+  paramSpecs: CTMA.PARAM_SPECS,
+  setPreset: (id) => { state.presetId = id; $('strategySel').value = id; renderStrategyInfo(); renderCustomEditor(); },
   activeParams: activeParams,
+  presetDefaults: presetDefaults,
+  isCustomized: isCustomized,
+  // 供自動化驗證：直接設定輸入框值並套用
+  setField: (key, value) => {
+    const el = document.querySelector('#custGrid input[data-key="' + key + '"]');
+    if (!el) return false;
+    if (el.type === 'checkbox') el.checked = !!value; else el.value = value;
+    return true;
+  },
+  applyCustom: () => applyCustomParams(),
+  resetCustom: () => resetCustomParams(),
+  customErrors: () => Array.from(document.querySelectorAll('#custErrors li')).map(li => li.textContent),
+  customMsg: () => $('custMsg').textContent,
   lastPayload: () => ({
     lastOk: state.lastOk ? state.lastOk.toISOString() : null,
     liveCards: document.querySelectorAll('#liveCards .card').length,

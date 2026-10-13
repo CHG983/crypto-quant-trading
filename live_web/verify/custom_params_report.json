@@ -1,0 +1,521 @@
+{
+  "generated_at_utc": "2026-10-13T02:34:44.018912+00:00",
+  "url": "http://127.0.0.1:8787/dashboard.html",
+  "total_checks": 42,
+  "passed_checks": 42,
+  "failed_checks": 0,
+  "status": "ALL PASS",
+  "checks": [
+    {
+      "check": "桌面：refreshAll 完成",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "桌面：真的對幣安發出請求",
+      "ok": true,
+      "detail": "requests=30"
+    },
+    {
+      "check": "桌面：即時訊號卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "桌面：市場掃描有資料列",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "桌面：自訂參數編輯器存在",
+      "ok": true,
+      "detail": "fields=12"
+    },
+    {
+      "check": "桌面：預設策略為 ctma_default",
+      "ok": true,
+      "detail": "selected=ctma_default"
+    },
+    {
+      "check": "桌面：初始未自訂",
+      "ok": true,
+      "detail": "isCustomized=False"
+    },
+    {
+      "check": "桌面：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "桌面：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "桌面：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0"
+    },
+    {
+      "check": "套用 9/34 + ATR 1.5：數值確實改變",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "套用後：生效參數 ema_fast=9",
+      "ok": true,
+      "detail": "activeParams.ema_fast=9"
+    },
+    {
+      "check": "套用後：生效參數 ema_slow=34",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "套用後：生效參數 atr_stop_mult=1.5",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "套用後：標記為自訂",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "套用後：參數面板顯示 9 / 34",
+      "ok": true,
+      "detail": "params=['9 / 34']"
+    },
+    {
+      "check": "套用後：狀態列顯示自訂",
+      "ok": true,
+      "detail": "目前為 自訂參數（已套用）· 生效值 EMA 9/34 · ATR 停損 1.5×"
+    },
+    {
+      "check": "套用後：無錯誤訊息",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "不合法（快線 60 > 慢線 34）：顯示錯誤訊息",
+      "ok": true,
+      "detail": "errors=['EMA 快線週期（60）必須小於慢線週期（34）']"
+    },
+    {
+      "check": "不合法：錯誤訊息含「必須小於」",
+      "ok": true,
+      "detail": "['EMA 快線週期（60）必須小於慢線週期（34）']"
+    },
+    {
+      "check": "不合法：數值未被套用（生效 ema_fast 仍為 9）",
+      "ok": true,
+      "detail": "activeParams.ema_fast=9"
+    },
+    {
+      "check": "不合法：提示文字說明未套用",
+      "ok": true,
+      "detail": "參數不合法，未套用（1 項）"
+    },
+    {
+      "check": "不合法（ATR 倍數 -1）：被擋下",
+      "ok": true,
+      "detail": "errors=['ATR 停損倍數 必須介於 0.1 與 20 之間（目前 -1）']"
+    },
+    {
+      "check": "不合法（ATR -1）：生效值仍為 1.5",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "重設為預設：回到未自訂",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "重設為預設：ema_fast 回到 21",
+      "ok": true,
+      "detail": "activeParams.ema_fast=21"
+    },
+    {
+      "check": "重設為預設：ema_slow 回到 55",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "重設為預設：atr_stop_mult 回到 3.0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "重設為預設：錯誤訊息已清除",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "重設為預設：數值回到基準",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "自動刷新仍運作（時間戳前進）",
+      "ok": true,
+      "detail": "最後更新 2026-10-13 02:34:30 UTC → 最後更新 2026-10-13 02:34:33 UTC"
+    },
+    {
+      "check": "自動刷新仍持續抓取（請求數增加）",
+      "ok": true,
+      "detail": "120 → 150"
+    },
+    {
+      "check": "刷新後自訂參數仍沿用（ema_fast 仍為 9）",
+      "ok": true,
+      "detail": "activeParams.ema_fast=9"
+    },
+    {
+      "check": "刷新後仍標記為自訂",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "刷新後倒數計時有值",
+      "ok": true,
+      "detail": "countdown=29 秒"
+    },
+    {
+      "check": "免責聲明存在（中英文）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "手機：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "手機：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "手機：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0"
+    },
+    {
+      "check": "手機：自訂參數編輯器可用",
+      "ok": true,
+      "detail": "fields=12"
+    },
+    {
+      "check": "手機：即時資料有載入",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "手機：套用自訂參數成功（ema_fast=9）",
+      "ok": true,
+      "detail": "activeParams.ema_fast=9"
+    }
+  ],
+  "baseline": {
+    "cards": [
+      {
+        "symbol": "BTCUSDT",
+        "price": "81,850.000000",
+        "signal": "HOLD",
+        "strength": "64.2 (強)",
+        "ema": "83,092.8974 / 79,605.2830",
+        "emaGap": "4.261% (1.658 ATR)",
+        "rsi": "47.16 / -577.161572",
+        "atrPct": "2.570%",
+        "stop": "75,540.512413 (−7.71%)",
+        "tp": "94,468.975173 (+15.42%)"
+      },
+      {
+        "symbol": "ETHUSDT",
+        "price": "2,447.170000",
+        "signal": "HOLD",
+        "strength": "42.9 (弱)",
+        "ema": "2,586.0226 / 2,482.0327",
+        "emaGap": "4.249% (1.183 ATR)",
+        "rsi": "37.63 / -35.696224",
+        "atrPct": "3.592%",
+        "stop": "2,183.441236 (−10.78%)",
+        "tp": "2,974.627527 (+21.55%)"
+      },
+      {
+        "symbol": "SOLUSDT",
+        "price": "105.760000",
+        "signal": "HOLD",
+        "strength": "49.5 (中)",
+        "ema": "113.3798 / 106.3722",
+        "emaGap": "6.626% (1.417 ATR)",
+        "rsi": "38.89 / -2.161835",
+        "atrPct": "4.675%",
+        "stop": "90.928076 (−14.02%)",
+        "tp": "135.423848 (+28.05%)"
+      }
+    ],
+    "params": [
+      {
+        "k": "EMA 快 / 慢",
+        "v": "21 / 55"
+      },
+      {
+        "k": "RSI 週期",
+        "v": "14"
+      },
+      {
+        "k": "MACD",
+        "v": "12/26/9"
+      },
+      {
+        "k": "ATR 週期",
+        "v": "14"
+      },
+      {
+        "k": "ATR 停損",
+        "v": "3×"
+      },
+      {
+        "k": "ATR 移動停損",
+        "v": "5×"
+      },
+      {
+        "k": "ATR 停利",
+        "v": "6×"
+      },
+      {
+        "k": "ATR% 門檻",
+        "v": "0.5%"
+      },
+      {
+        "k": "Supertrend 過濾",
+        "v": "關"
+      },
+      {
+        "k": "允許做空",
+        "v": "是"
+      }
+    ],
+    "activeParams": {
+      "ema_fast": 21,
+      "ema_slow": 55,
+      "rsi_len": 14,
+      "rsi_long_min": 50,
+      "rsi_short_max": 50,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "atr_len": 14,
+      "atr_stop_mult": 3,
+      "atr_trail_mult": 5,
+      "atr_tp_mult": 6,
+      "min_atr_pct": 0.5,
+      "allow_short": true,
+      "use_supertrend": false,
+      "st_len": 10,
+      "st_mult": 3,
+      "near_trigger_pct": 0.5
+    }
+  },
+  "applied_9_34_atr1_5": {
+    "cards": [
+      {
+        "symbol": "BTCUSDT",
+        "price": "81,850.000000",
+        "signal": "HOLD",
+        "strength": "44.9 (弱)",
+        "ema": "83,291.5457 / 81,879.8588",
+        "emaGap": "1.725% (0.671 ATR)",
+        "rsi": "47.16 / -577.161572",
+        "atrPct": "2.570%",
+        "stop": "78,695.256207 (−3.85%)",
+        "tp": "94,468.975173 (+15.42%)"
+      },
+      {
+        "symbol": "ETHUSDT",
+        "price": "2,447.170000",
+        "signal": "BEAR_CROSS",
+        "strength": "54.8 (中)",
+        "ema": "2,548.7742 / 2,560.3740",
+        "emaGap": "-0.474% (-0.132 ATR)",
+        "rsi": "37.63 / -35.696224",
+        "atrPct": "3.592%",
+        "stop": "2,579.034382 (−5.39%)",
+        "tp": "1,919.712473 (+21.55%)"
+      },
+      {
+        "symbol": "SOLUSDT",
+        "price": "105.760000",
+        "signal": "HOLD",
+        "strength": "21.5 (極弱)",
+        "ema": "112.2031 / 111.1351",
+        "emaGap": "1.010% (0.216 ATR)",
+        "rsi": "38.89 / -2.161835",
+        "atrPct": "4.675%",
+        "stop": "98.344038 (−7.01%)",
+        "tp": "135.423848 (+28.05%)"
+      }
+    ],
+    "params": [
+      {
+        "k": "EMA 快 / 慢",
+        "v": "9 / 34"
+      },
+      {
+        "k": "RSI 週期",
+        "v": "14"
+      },
+      {
+        "k": "MACD",
+        "v": "12/26/9"
+      },
+      {
+        "k": "ATR 週期",
+        "v": "14"
+      },
+      {
+        "k": "ATR 停損",
+        "v": "1.5×"
+      },
+      {
+        "k": "ATR 移動停損",
+        "v": "5×"
+      },
+      {
+        "k": "ATR 停利",
+        "v": "6×"
+      },
+      {
+        "k": "ATR% 門檻",
+        "v": "0.5%"
+      },
+      {
+        "k": "Supertrend 過濾",
+        "v": "關"
+      },
+      {
+        "k": "允許做空",
+        "v": "是"
+      }
+    ],
+    "activeParams": {
+      "ema_fast": 9,
+      "ema_slow": 34,
+      "rsi_len": 14,
+      "rsi_long_min": 50,
+      "rsi_short_max": 50,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "atr_len": 14,
+      "atr_stop_mult": 1.5,
+      "atr_trail_mult": 5,
+      "atr_tp_mult": 6,
+      "min_atr_pct": 0.5,
+      "allow_short": true,
+      "use_supertrend": false,
+      "st_len": 10,
+      "st_mult": 3,
+      "near_trigger_pct": 0.5
+    }
+  },
+  "invalid_rejected": {
+    "errors": [
+      "EMA 快線週期（60）必須小於慢線週期（34）"
+    ],
+    "msg": "參數不合法，未套用（1 項）",
+    "activeParams": {
+      "ema_fast": 9,
+      "ema_slow": 34,
+      "rsi_len": 14,
+      "rsi_long_min": 50,
+      "rsi_short_max": 50,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "atr_len": 14,
+      "atr_stop_mult": 1.5,
+      "atr_trail_mult": 5,
+      "atr_tp_mult": 6,
+      "min_atr_pct": 0.5,
+      "allow_short": true,
+      "use_supertrend": false,
+      "st_len": 10,
+      "st_mult": 3,
+      "near_trigger_pct": 0.5
+    }
+  },
+  "after_reset": {
+    "activeParams": {
+      "ema_fast": 21,
+      "ema_slow": 55,
+      "rsi_len": 14,
+      "rsi_long_min": 50,
+      "rsi_short_max": 50,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "atr_len": 14,
+      "atr_stop_mult": 3,
+      "atr_trail_mult": 5,
+      "atr_tp_mult": 6,
+      "min_atr_pct": 0.5,
+      "allow_short": true,
+      "use_supertrend": false,
+      "st_len": 10,
+      "st_mult": 3,
+      "near_trigger_pct": 0.5
+    },
+    "isCustomized": false
+  },
+  "after_refresh": {
+    "activeParams": {
+      "ema_fast": 9,
+      "ema_slow": 34,
+      "rsi_len": 14,
+      "rsi_long_min": 50,
+      "rsi_short_max": 50,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "atr_len": 14,
+      "atr_stop_mult": 1.5,
+      "atr_trail_mult": 5,
+      "atr_tp_mult": 6,
+      "min_atr_pct": 0.5,
+      "allow_short": true,
+      "use_supertrend": false,
+      "st_len": 10,
+      "st_mult": 3,
+      "near_trigger_pct": 0.5
+    },
+    "isCustomized": true,
+    "lastUpdate": "最後更新 2026-10-13 02:34:33 UTC"
+  },
+  "overflow_desktop": {
+    "docScrollWidth": 1280,
+    "docClientWidth": 1280,
+    "innerWidth": 1280,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overflow_mobile": {
+    "docScrollWidth": 390,
+    "docClientWidth": 390,
+    "innerWidth": 390,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overlap_desktop": {
+    "count": 0,
+    "samples": []
+  },
+  "overlap_mobile": {
+    "count": 0,
+    "samples": []
+  }
+}
