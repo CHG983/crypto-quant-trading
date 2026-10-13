@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-13T02:34:44.018912+00:00",
+  "generated_at_utc": "2026-10-13T03:28:08.480321+00:00",
   "url": "http://127.0.0.1:8787/dashboard.html",
   "total_checks": 42,
   "passed_checks": 42,
@@ -159,7 +159,7 @@
     {
       "check": "自動刷新仍運作（時間戳前進）",
       "ok": true,
-      "detail": "最後更新 2026-10-13 02:34:30 UTC → 最後更新 2026-10-13 02:34:33 UTC"
+      "detail": "最後更新 2026-10-13 03:27:56 UTC → 最後更新 2026-10-13 03:27:58 UTC"
     },
     {
       "check": "自動刷新仍持續抓取（請求數增加）",
@@ -299,6 +299,7 @@
       }
     ],
     "activeParams": {
+      "kind": "ctma",
       "ema_fast": 21,
       "ema_slow": 55,
       "rsi_len": 14,
@@ -316,7 +317,19 @@
       "use_supertrend": false,
       "st_len": 10,
       "st_mult": 3,
-      "near_trigger_pct": 0.5
+      "near_trigger_pct": 0.5,
+      "bb_len": 20,
+      "bb_mult": 2,
+      "bb_rsi_len": 14,
+      "bb_rsi_oversold": 30,
+      "bb_rsi_overbought": 70,
+      "kc_ema_len": 20,
+      "kc_atr_len": 10,
+      "kc_mult": 2,
+      "dr_target_vol": 2,
+      "dr_max_lev": 3,
+      "dr_min_lev": 0.5,
+      "dr_atr_len": 14
     }
   },
   "applied_9_34_atr1_5": {
@@ -401,6 +414,7 @@
       }
     ],
     "activeParams": {
+      "kind": "ctma",
       "ema_fast": 9,
       "ema_slow": 34,
       "rsi_len": 14,
@@ -418,7 +432,19 @@
       "use_supertrend": false,
       "st_len": 10,
       "st_mult": 3,
-      "near_trigger_pct": 0.5
+      "near_trigger_pct": 0.5,
+      "bb_len": 20,
+      "bb_mult": 2,
+      "bb_rsi_len": 14,
+      "bb_rsi_oversold": 30,
+      "bb_rsi_overbought": 70,
+      "kc_ema_len": 20,
+      "kc_atr_len": 10,
+      "kc_mult": 2,
+      "dr_target_vol": 2,
+      "dr_max_lev": 3,
+      "dr_min_lev": 0.5,
+      "dr_atr_len": 14
     }
   },
   "invalid_rejected": {
@@ -427,6 +453,7 @@
     ],
     "msg": "參數不合法，未套用（1 項）",
     "activeParams": {
+      "kind": "ctma",
       "ema_fast": 9,
       "ema_slow": 34,
       "rsi_len": 14,
@@ -444,11 +471,24 @@
       "use_supertrend": false,
       "st_len": 10,
       "st_mult": 3,
-      "near_trigger_pct": 0.5
+      "near_trigger_pct": 0.5,
+      "bb_len": 20,
+      "bb_mult": 2,
+      "bb_rsi_len": 14,
+      "bb_rsi_oversold": 30,
+      "bb_rsi_overbought": 70,
+      "kc_ema_len": 20,
+      "kc_atr_len": 10,
+      "kc_mult": 2,
+      "dr_target_vol": 2,
+      "dr_max_lev": 3,
+      "dr_min_lev": 0.5,
+      "dr_atr_len": 14
     }
   },
   "after_reset": {
     "activeParams": {
+      "kind": "ctma",
       "ema_fast": 21,
       "ema_slow": 55,
       "rsi_len": 14,
@@ -466,12 +506,25 @@
       "use_supertrend": false,
       "st_len": 10,
       "st_mult": 3,
-      "near_trigger_pct": 0.5
+      "near_trigger_pct": 0.5,
+      "bb_len": 20,
+      "bb_mult": 2,
+      "bb_rsi_len": 14,
+      "bb_rsi_oversold": 30,
+      "bb_rsi_overbought": 70,
+      "kc_ema_len": 20,
+      "kc_atr_len": 10,
+      "kc_mult": 2,
+      "dr_target_vol": 2,
+      "dr_max_lev": 3,
+      "dr_min_lev": 0.5,
+      "dr_atr_len": 14
     },
     "isCustomized": false
   },
   "after_refresh": {
     "activeParams": {
+      "kind": "ctma",
       "ema_fast": 9,
       "ema_slow": 34,
       "rsi_len": 14,
@@ -489,10 +542,22 @@
       "use_supertrend": false,
       "st_len": 10,
       "st_mult": 3,
-      "near_trigger_pct": 0.5
+      "near_trigger_pct": 0.5,
+      "bb_len": 20,
+      "bb_mult": 2,
+      "bb_rsi_len": 14,
+      "bb_rsi_oversold": 30,
+      "bb_rsi_overbought": 70,
+      "kc_ema_len": 20,
+      "kc_atr_len": 10,
+      "kc_mult": 2,
+      "dr_target_vol": 2,
+      "dr_max_lev": 3,
+      "dr_min_lev": 0.5,
+      "dr_atr_len": 14
     },
     "isCustomized": true,
-    "lastUpdate": "最後更新 2026-10-13 02:34:33 UTC"
+    "lastUpdate": "最後更新 2026-10-13 03:27:58 UTC"
   },
   "overflow_desktop": {
     "docScrollWidth": 1280,

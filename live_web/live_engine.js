@@ -98,6 +98,24 @@
     return out;
   }
 
+  /** 滾動母體標準差（布林通道用；與 TradingView ta.stdev 的母體定義一致）。 */
+  function rollingStd(values, length) {
+    var n = values.length, out = new Array(n).fill(NaN);
+    for (var i = 0; i < n; i++) {
+      if (i < length - 1) continue;
+      var s = 0, ok = true;
+      for (var j = i - length + 1; j <= i; j++) {
+        if (!isNum(values[j])) { ok = false; break; }
+        s += values[j];
+      }
+      if (!ok) continue;
+      var mean = s / length, acc = 0;
+      for (var k = i - length + 1; k <= i; k++) acc += (values[k] - mean) * (values[k] - mean);
+      out[i] = Math.sqrt(acc / length);
+    }
+    return out;
+  }
+
   /* ------------------------------------------------------------------ *
    * 動能指標
    * ------------------------------------------------------------------ */
@@ -193,6 +211,7 @@
 
   function defaultParams(over) {
     var p = {
+      kind: 'ctma',
       ema_fast: 21, ema_slow: 55,
       rsi_len: 14, rsi_long_min: 50.0, rsi_short_max: 50.0,
       macd_fast: 12, macd_slow: 26, macd_signal: 9,
@@ -200,7 +219,14 @@
       min_atr_pct: 0.5,
       allow_short: true,
       use_supertrend: false, st_len: 10, st_mult: 3.0,
-      near_trigger_pct: 0.5
+      near_trigger_pct: 0.5,
+      // --- 布林通道反轉（BB Mean Reversion）---
+      bb_len: 20, bb_mult: 2.0,
+      bb_rsi_len: 14, bb_rsi_oversold: 30.0, bb_rsi_overbought: 70.0,
+      // --- 卡爾特通道（Keltner Channels）---
+      kc_ema_len: 20, kc_atr_len: 10, kc_mult: 2.0,
+      // --- 動態風險敞口（動態槓桿比例）---
+      dr_target_vol: 2.0, dr_max_lev: 3.0, dr_min_lev: 0.5, dr_atr_len: 14
     };
     if (over) for (var k in over) if (Object.prototype.hasOwnProperty.call(over, k)) p[k] = over[k];
     return p;
@@ -225,6 +251,7 @@
   var STRATEGY_PRESETS = [
     {
       id: 'ctma_default',
+      kind: 'ctma',
       name: 'CTMA 預設（EMA 21/55）',
       short: 'CTMA 預設',
       desc: 'EMA 21/55 交叉 + RSI(14) 站中軸同側 + MACD 柱方向一致 + ATR% ≥ 0.5% 過濾；3×ATR 停損、6×ATR 停利。',
@@ -233,6 +260,7 @@
     },
     {
       id: 'ctma_supertrend',
+      kind: 'ctma',
       name: 'CTMA + Supertrend 過濾（EMA 21/55）',
       short: 'CTMA + Supertrend',
       desc: '在 CTMA 預設之上，額外要求 Supertrend(10, 3.0) 方向與交叉方向一致，過濾逆勢交叉。',
@@ -241,6 +269,7 @@
     },
     {
       id: 'ctma_long_only',
+      kind: 'ctma',
       name: 'CTMA 只做多（EMA 21/55）',
       short: 'CTMA 只做多',
       desc: '與 CTMA 預設相同，但關閉做空（allow_short=False），只保留多頭進場訊號。',
@@ -249,6 +278,7 @@
     },
     {
       id: 'wfo_9_34',
+      kind: 'ctma',
       name: 'WFO 網格 9/34（ATR 停損 1.5×）',
       short: 'WFO 9/34',
       desc: 'walk-forward 網格中的一組：EMA 快 9 / 慢 34，ATR 停損 1.5×、移動停損 5×、停利 6×。',
@@ -257,6 +287,7 @@
     },
     {
       id: 'wfo_13_55',
+      kind: 'ctma',
       name: 'WFO 網格 13/55（ATR 停損 2.0×）',
       short: 'WFO 13/55',
       desc: 'walk-forward 網格中的一組：EMA 快 13 / 慢 55，ATR 停損 2.0×、移動停損 5×、停利 6×。',
@@ -265,11 +296,39 @@
     },
     {
       id: 'wfo_21_89',
+      kind: 'ctma',
       name: 'WFO 網格 21/89（ATR 停損 3.0×）',
       short: 'WFO 21/89',
       desc: 'walk-forward 網格中的一組：EMA 快 21 / 慢 89，ATR 停損 3.0×、移動停損 5×、停利 6×。',
       source: 'crypto_quant/walkforward.py · DEFAULT_GRID (ema_fast=21, ema_slow=89, atr_stop=3.0)',
       params: { ema_fast: 21, ema_slow: 89, atr_stop_mult: 3.0, atr_trail_mult: 5.0, atr_tp_mult: 6.0 }
+    },
+    {
+      id: 'bb_reversion',
+      kind: 'bb',
+      name: '布林通道反轉（BB Mean Reversion）',
+      short: '布林反轉',
+      desc: '中軌 = SMA(close, 20)，上下軌 = 中軌 ± 2.0×母體標準差。價格觸及／跌破下軌視為超賣反轉做多，觸及／突破上軌視為超買反轉做空；再以 RSI(14) < 30（做多）／> 70（做空）過濾。停損停利沿用 ATR 倍數。',
+      source: '標準布林通道定義（Bollinger 1980s）· SMA ± N×σ；本專案未內建此策略，為本次新增，公式與參數於頁面明列',
+      params: { kind: 'bb', bb_len: 20, bb_mult: 2.0, bb_rsi_len: 14, bb_rsi_oversold: 30.0, bb_rsi_overbought: 70.0 }
+    },
+    {
+      id: 'keltner',
+      kind: 'keltner',
+      name: '卡爾特通道（Keltner Channels）',
+      short: '卡爾特通道',
+      desc: '中軌 = EMA(close, 20)，上下軌 = 中軌 ± 2.0×ATR(10)。收盤突破上軌做多、跌破下軌做空；趨勢方向以收盤相對中軌位置判定。停損停利沿用 ATR 倍數。',
+      source: '標準卡爾特通道定義（Keltner 1960 / Raschke 修正版）· EMA ± N×ATR；本專案未內建此策略，為本次新增，公式與參數於頁面明列',
+      params: { kind: 'keltner', kc_ema_len: 20, kc_atr_len: 10, kc_mult: 2.0 }
+    },
+    {
+      id: 'dyn_risk',
+      kind: 'dynrisk',
+      name: '動態風險敞口（動態槓桿比例）',
+      short: '動態風險敞口',
+      desc: '方向沿用 CTMA（EMA 21/55 交叉 + RSI/MACD 動能 + ATR% 過濾）；再依波動度動態調整建議槓桿：槓桿 = clamp(目標波動度 ÷ 實際波動度(ATR%), 最小槓桿, 最大槓桿)。波動越高、槓桿越低；部位比例 = 槓桿 ÷ 最大槓桿。',
+      source: '波動度目標法（volatility targeting）· 方向沿用 crypto_quant/strategy.py；槓桿上限沿用 backtest.py BacktestConfig.max_leverage=3.0；本策略為本次新增，公式與參數於頁面明列',
+      params: { kind: 'dynrisk', dr_target_vol: 2.0, dr_max_lev: 3.0, dr_min_lev: 0.5, dr_atr_len: 14 }
     }
   ];
 
@@ -293,6 +352,21 @@
     return base;
   }
 
+  /** 各策略種類對應的參數群組（決定參數編輯器顯示哪些欄位）。 */
+  var KIND_GROUPS = {
+    ctma: ['trend', 'momentum', 'risk', 'supertrend', 'direction'],
+    bb: ['bollinger', 'risk', 'direction'],
+    keltner: ['keltner', 'risk', 'direction'],
+    dynrisk: ['trend', 'momentum', 'risk', 'direction', 'dynrisk']
+  };
+
+  /** 依預設 id 篩選出該策略相關的參數規格（供參數編輯器使用）。 */
+  function specsForPreset(id) {
+    var kind = getPreset(id).kind || 'ctma';
+    var gs = KIND_GROUPS[kind] || KIND_GROUPS.ctma;
+    return PARAM_SPECS.filter(function (s) { return gs.indexOf(s.group) >= 0; });
+  }
+
   /* ------------------------------------------------------------------ *
    * 可自訂參數的規格（供前端產生輸入控制項與驗證）
    * ------------------------------------------------------------------ *
@@ -311,7 +385,22 @@
     { key: 'st_len',         label: 'Supertrend 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'supertrend' },
     { key: 'st_mult',        label: 'Supertrend 倍數', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'supertrend' },
     { key: 'allow_short',    label: '允許做空',        type: 'bool',  group: 'direction' },
-    { key: 'use_supertrend', label: 'Supertrend 過濾', type: 'bool',  group: 'supertrend' }
+    { key: 'use_supertrend', label: 'Supertrend 過濾', type: 'bool',  group: 'supertrend' },
+    // --- 布林通道反轉 ---
+    { key: 'bb_len',            label: '布林週期',        type: 'int',   min: 2,   max: 200,  step: 1,   group: 'bollinger' },
+    { key: 'bb_mult',           label: '布林標準差倍數',  type: 'float', min: 0.1, max: 10,   step: 0.1, group: 'bollinger' },
+    { key: 'bb_rsi_len',        label: '布林 RSI 週期',    type: 'int',   min: 2,   max: 100,  step: 1,   group: 'bollinger' },
+    { key: 'bb_rsi_oversold',   label: 'RSI 超賣門檻',     type: 'float', min: 0,   max: 100,  step: 1,   group: 'bollinger' },
+    { key: 'bb_rsi_overbought', label: 'RSI 超買門檻',     type: 'float', min: 0,   max: 100,  step: 1,   group: 'bollinger' },
+    // --- 卡爾特通道 ---
+    { key: 'kc_ema_len',        label: '卡爾特 EMA 週期',  type: 'int',   min: 2,   max: 200,  step: 1,   group: 'keltner' },
+    { key: 'kc_atr_len',        label: '卡爾特 ATR 週期',  type: 'int',   min: 2,   max: 100,  step: 1,   group: 'keltner' },
+    { key: 'kc_mult',           label: '卡爾特 ATR 倍數',  type: 'float', min: 0.1, max: 10,   step: 0.1, group: 'keltner' },
+    // --- 動態風險敞口 ---
+    { key: 'dr_target_vol',     label: '目標波動度 (ATR%)', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
+    { key: 'dr_max_lev',        label: '最大槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
+    { key: 'dr_min_lev',        label: '最小槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
+    { key: 'dr_atr_len',        label: '動態風險 ATR 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'dynrisk' }
   ];
 
   /**
@@ -362,6 +451,24 @@
       });
     }
 
+    // 跨欄位檢查：布林 RSI 超賣必須小於超買
+    var os = Number(merged.bb_rsi_oversold), ob = Number(merged.bb_rsi_overbought);
+    if (Number.isFinite(os) && Number.isFinite(ob) && os >= ob) {
+      errors.push({
+        key: 'bb_rsi_oversold',
+        msg: 'RSI 超賣門檻（' + merged.bb_rsi_oversold + '）必須小於超買門檻（' + merged.bb_rsi_overbought + '）'
+      });
+    }
+
+    // 跨欄位檢查：動態風險最小槓桿必須小於等於最大槓桿
+    var mn = Number(merged.dr_min_lev), mx = Number(merged.dr_max_lev);
+    if (Number.isFinite(mn) && Number.isFinite(mx) && mn > mx) {
+      errors.push({
+        key: 'dr_min_lev',
+        msg: '最小槓桿（' + merged.dr_min_lev + '）必須小於等於最大槓桿（' + merged.dr_max_lev + '）'
+      });
+    }
+
     return { ok: errors.length === 0, errors: errors, params: merged };
   }
 
@@ -384,6 +491,22 @@
     out.atr_pct = out.atr.map(function (v, i) { return v / close[i] * 100; });
     var stRes = supertrend(high, low, close, p.st_len, p.st_mult);
     out.supertrend = stRes.st; out.st_dir = stRes.dir;
+    // --- 布林通道（SMA 中軌 ± N×母體標準差）---
+    var bbMid = sma(close, p.bb_len);
+    var bbStd = rollingStd(close, p.bb_len);
+    out.bb_mid = bbMid; out.bb_std = bbStd;
+    out.bb_upper = bbMid.map(function (v, i) { return isNum(v) && isNum(bbStd[i]) ? v + p.bb_mult * bbStd[i] : NaN; });
+    out.bb_lower = bbMid.map(function (v, i) { return isNum(v) && isNum(bbStd[i]) ? v - p.bb_mult * bbStd[i] : NaN; });
+    out.bb_rsi = rsi(close, p.bb_rsi_len);
+    // --- 卡爾特通道（EMA 中軌 ± N×ATR）---
+    var kcMid = ema(close, p.kc_ema_len);
+    var kcAtr = atr(high, low, close, p.kc_atr_len);
+    out.kc_mid = kcMid; out.kc_atr = kcAtr;
+    out.kc_upper = kcMid.map(function (v, i) { return isNum(v) && isNum(kcAtr[i]) ? v + p.kc_mult * kcAtr[i] : NaN; });
+    out.kc_lower = kcMid.map(function (v, i) { return isNum(v) && isNum(kcAtr[i]) ? v - p.kc_mult * kcAtr[i] : NaN; });
+    // --- 動態風險敞口用的 ATR ---
+    out.dr_atr = atr(high, low, close, p.dr_atr_len);
+    out.dr_atr_pct = out.dr_atr.map(function (v, i) { return v / close[i] * 100; });
     out.close = close; out.high = high; out.low = low;
     return out;
   }
@@ -427,6 +550,142 @@
       long_entry_ok: longOk, short_entry_ok: shortOk, signal: signal,
       bars: bars, params: p
     };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 新增策略：布林通道反轉（BB Mean Reversion）
+   * ------------------------------------------------------------------ *
+   * 公式（標準定義，頁面明列）：
+   *   中軌 = SMA(close, bb_len)
+   *   上軌 = 中軌 + bb_mult × σ(close, bb_len)   （σ 為母體標準差）
+   *   下軌 = 中軌 − bb_mult × σ(close, bb_len)
+   *   做多（反轉）：close ≤ 下軌 且 RSI(bb_rsi_len) < bb_rsi_oversold
+   *   做空（反轉）：close ≥ 上軌 且 RSI(bb_rsi_len) > bb_rsi_overbought
+   * ------------------------------------------------------------------ */
+  function generateSignalsBB(bars, p) {
+    var ind = addIndicators(bars, p);
+    var n = bars.length;
+    var bull = new Array(n).fill(false), bear = new Array(n).fill(false);
+    var longOk = new Array(n).fill(false), shortOk = new Array(n).fill(false);
+    var signal = new Array(n).fill(0);
+
+    for (var i = 0; i < n; i++) {
+      var c = ind.close[i], lo = ind.bb_lower[i], up = ind.bb_upper[i], rv = ind.bb_rsi[i];
+      if (!isNum(c) || !isNum(lo) || !isNum(up)) continue;
+      var touchLow = c <= lo;
+      var touchHigh = c >= up;
+      bull[i] = touchLow; bear[i] = touchHigh;
+      longOk[i] = touchLow && isNum(rv) && rv < p.bb_rsi_oversold;
+      shortOk[i] = touchHigh && isNum(rv) && rv > p.bb_rsi_overbought && !!p.allow_short;
+      signal[i] = touchLow ? 1 : (touchHigh ? -1 : 0);
+    }
+    return {
+      ind: ind, bull: bull, bear: bear,
+      long_entry_ok: longOk, short_entry_ok: shortOk, signal: signal,
+      bars: bars, params: p
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 新增策略：卡爾特通道（Keltner Channels）
+   * ------------------------------------------------------------------ *
+   * 公式（標準定義，頁面明列）：
+   *   中軌 = EMA(close, kc_ema_len)
+   *   上軌 = 中軌 + kc_mult × ATR(kc_atr_len)
+   *   下軌 = 中軌 − kc_mult × ATR(kc_atr_len)
+   *   做多：close > 上軌（突破）
+   *   做空：close < 下軌（跌破）
+   *   趨勢方向：close 相對中軌位置（通道方向判定）
+   * ------------------------------------------------------------------ */
+  function generateSignalsKeltner(bars, p) {
+    var ind = addIndicators(bars, p);
+    var n = bars.length;
+    var bull = new Array(n).fill(false), bear = new Array(n).fill(false);
+    var longOk = new Array(n).fill(false), shortOk = new Array(n).fill(false);
+    var signal = new Array(n).fill(0);
+
+    for (var i = 0; i < n; i++) {
+      var c = ind.close[i], lo = ind.kc_lower[i], up = ind.kc_upper[i], mid = ind.kc_mid[i];
+      if (!isNum(c) || !isNum(lo) || !isNum(up) || !isNum(mid)) continue;
+      var brkUp = c > up, brkDn = c < lo;
+      bull[i] = brkUp; bear[i] = brkDn;
+      longOk[i] = brkUp && c > mid;
+      shortOk[i] = brkDn && c < mid && !!p.allow_short;
+      signal[i] = brkUp ? 1 : (brkDn ? -1 : 0);
+    }
+    return {
+      ind: ind, bull: bull, bear: bear,
+      long_entry_ok: longOk, short_entry_ok: shortOk, signal: signal,
+      bars: bars, params: p
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 新增策略：動態風險敞口（動態槓桿比例）
+   * ------------------------------------------------------------------ *
+   * 方向沿用 CTMA（EMA 交叉 + RSI/MACD 動能 + ATR% 過濾）；
+   * 槓桿依波動度動態調整（波動度目標法）：
+   *   實際波動度 = ATR(dr_atr_len) / close × 100  （即 ATR%）
+   *   建議槓桿 = clamp(目標波動度 ÷ 實際波動度, dr_min_lev, dr_max_lev)
+   *   部位比例 = 建議槓桿 ÷ dr_max_lev
+   * 波動越高 → 槓桿越低。
+   * ------------------------------------------------------------------ */
+  function generateSignalsDynRisk(bars, p) {
+    return generateSignals(bars, p);
+  }
+
+  /** 依策略種類分派至對應的訊號產生器。 */
+  function generateSignalsFor(bars, p) {
+    var kind = p.kind || 'ctma';
+    if (kind === 'bb') return generateSignalsBB(bars, p);
+    if (kind === 'keltner') return generateSignalsKeltner(bars, p);
+    if (kind === 'dynrisk') return generateSignalsDynRisk(bars, p);
+    return generateSignals(bars, p);
+  }
+
+  /** 依波動度計算建議槓桿（動態風險敞口策略）。 */
+  function dynamicLeverage(atrPct, p) {
+    if (!isNum(atrPct) || atrPct <= 0) return null;
+    var raw = p.dr_target_vol / atrPct;
+    var lev = Math.max(p.dr_min_lev, Math.min(p.dr_max_lev, raw));
+    return {
+      leverage: round(lev, 2),
+      raw_leverage: round(raw, 2),
+      position_pct: round(lev / p.dr_max_lev * 100, 1),
+      realized_vol_pct: round(atrPct, 4),
+      target_vol_pct: p.dr_target_vol,
+      capped: raw > p.dr_max_lev ? 'max' : (raw < p.dr_min_lev ? 'min' : null)
+    };
+  }
+
+  /**
+   * 策略專屬指標（供卡片與掃描表的「策略指標」欄使用）：
+   *   bb       → 布林 %B = (close − 下軌) ÷ (上軌 − 下軌) × 100
+   *   keltner  → 卡爾特 %B = 同上，改用卡爾特上下軌
+   *   dynrisk  → 建議槓桿
+   *   ctma     → ATR（絕對值）
+   * 回傳 { key, label, value, text }
+   */
+  function metricFor(kind, row, p, trend) {
+    if (kind === 'bb') {
+      var lo = row.bb_lower, up = row.bb_upper, c = row.close;
+      var b = (isNum(lo) && isNum(up) && isNum(c) && up > lo) ? (c - lo) / (up - lo) * 100 : null;
+      return { key: 'bb_pctb', label: '布林 %B', value: isNum(b) ? round(b, 2) : null,
+               text: isNum(b) ? round(b, 2).toFixed(2) + '%' : '—' };
+    }
+    if (kind === 'keltner') {
+      var klo = row.kc_lower, kup = row.kc_upper, kc = row.close;
+      var kb = (isNum(klo) && isNum(kup) && isNum(kc) && kup > klo) ? (kc - klo) / (kup - klo) * 100 : null;
+      return { key: 'kc_pctb', label: '卡爾特 %B', value: isNum(kb) ? round(kb, 2) : null,
+               text: isNum(kb) ? round(kb, 2).toFixed(2) + '%' : '—' };
+    }
+    if (kind === 'dynrisk') {
+      var lv = dynamicLeverage(row.dr_atr_pct, p);
+      return { key: 'leverage', label: '建議槓桿', value: lv ? lv.leverage : null,
+               text: lv ? lv.leverage.toFixed(2) + '×' : '—' };
+    }
+    return { key: 'atr', label: 'ATR（絕對）', value: isNum(row.atr) ? round(row.atr, 8) : null,
+             text: isNum(row.atr) ? String(round(row.atr, 8)) : '—' };
   }
 
   /* ------------------------------------------------------------------ *
@@ -485,17 +744,32 @@
       ema_fast: ind.ema_fast[i], ema_slow: ind.ema_slow[i],
       rsi: ind.rsi[i], macd: ind.macd[i], macd_signal: ind.macd_signal[i],
       macd_hist: ind.macd_hist[i], atr: ind.atr[i], atr_pct: ind.atr_pct[i],
-      st_dir: ind.st_dir[i], supertrend: ind.supertrend[i]
+      st_dir: ind.st_dir[i], supertrend: ind.supertrend[i],
+      bb_mid: ind.bb_mid[i], bb_upper: ind.bb_upper[i], bb_lower: ind.bb_lower[i],
+      bb_rsi: ind.bb_rsi[i],
+      kc_mid: ind.kc_mid[i], kc_upper: ind.kc_upper[i], kc_lower: ind.kc_lower[i],
+      dr_atr: ind.dr_atr[i], dr_atr_pct: ind.dr_atr_pct[i]
     };
   }
 
   function analyzeFrame(bars, p) {
-    var sig = generateSignals(bars, p);
+    var sig = generateSignalsFor(bars, p);
     var i = bars.length - 1;
     var row = rowAt(sig, i);
 
     var ef = row.ema_fast, es = row.ema_slow, close = row.close;
-    var trend = (isNum(ef) && isNum(es)) ? (ef > es ? 1 : (ef < es ? -1 : 0)) : 0;
+    var kind = p.kind || 'ctma';
+    // 趨勢方向依策略種類判定（頁面明列）：
+    //   ctma / dynrisk：EMA 快線 vs 慢線
+    //   bb / keltner：收盤相對中軌位置（通道方向）
+    var trend;
+    if (kind === 'bb') {
+      trend = (isNum(close) && isNum(row.bb_mid)) ? (close > row.bb_mid ? 1 : (close < row.bb_mid ? -1 : 0)) : 0;
+    } else if (kind === 'keltner') {
+      trend = (isNum(close) && isNum(row.kc_mid)) ? (close > row.kc_mid ? 1 : (close < row.kc_mid ? -1 : 0)) : 0;
+    } else {
+      trend = (isNum(ef) && isNum(es)) ? (ef > es ? 1 : (ef < es ? -1 : 0)) : 0;
+    }
 
     var strength = computeStrength(row, trend, p);
     var bullAgo = barsSince(sig.bull, i), bearAgo = barsSince(sig.bear, i);
@@ -530,6 +804,18 @@
       atr_pct: isNum(row.atr_pct) ? round(row.atr_pct, 4) : null,
       st_dir: isNum(row.st_dir) ? row.st_dir : null,
       supertrend: isNum(row.supertrend) ? round(row.supertrend, 8) : null,
+      // --- 策略專屬欄位（依 kind 顯示）---
+      bb_mid: isNum(row.bb_mid) ? round(row.bb_mid, 8) : null,
+      bb_upper: isNum(row.bb_upper) ? round(row.bb_upper, 8) : null,
+      bb_lower: isNum(row.bb_lower) ? round(row.bb_lower, 8) : null,
+      bb_rsi: isNum(row.bb_rsi) ? round(row.bb_rsi, 2) : null,
+      kc_mid: isNum(row.kc_mid) ? round(row.kc_mid, 8) : null,
+      kc_upper: isNum(row.kc_upper) ? round(row.kc_upper, 8) : null,
+      kc_lower: isNum(row.kc_lower) ? round(row.kc_lower, 8) : null,
+      dr_atr_pct: isNum(row.dr_atr_pct) ? round(row.dr_atr_pct, 4) : null,
+      leverage: (kind === 'dynrisk') ? dynamicLeverage(row.dr_atr_pct, p) : null,
+      strategy_kind: kind,
+      strategy_metric: metricFor(kind, row, p, trend),
       signal: sig.signal[i],
       signal_label: SIGNAL_LABELS[sig.signal[i]],
       long_entry_ok: !!sig.long_entry_ok[i],
@@ -599,6 +885,7 @@
 
     return {
       symbol: symbol, interval: interval, source: source,
+      params_kind: (p.kind || 'ctma'),
       fetched_at_utc: new Date(nowMs).toISOString(),
       binance_server_time_utc: serverTimeMs ? new Date(serverTimeMs).toISOString() : null,
       clock_offset_seconds: serverTimeMs ? round((nowMs - serverTimeMs) / 1000, 3) : null,
@@ -681,6 +968,10 @@
       stop: lv.stop === undefined ? null : lv.stop,
       take_profit: lv.take_profit === undefined ? null : lv.take_profit,
       rr_ratio: lv.rr_ratio === undefined ? null : lv.rr_ratio,
+      leverage: c.leverage || null,
+      metric_label: c.strategy_metric ? c.strategy_metric.label : null,
+      metric_text: c.strategy_metric ? c.strategy_metric.text : null,
+      strategy_kind: c.strategy_kind || null,
       trend_int: c.trend,
       data_delay_seconds: r.data_delay_seconds,
       bar_is_in_progress: r.bar_is_in_progress
@@ -715,8 +1006,13 @@
     // 指標
     ema: ema, sma: sma, rsi: rsi, macd: macd, atr: atr, supertrend: supertrend,
     trueRange: trueRange, ewmAlpha: ewmAlpha, addIndicators: addIndicators,
+    rollingStd: rollingStd,
     // 訊號
-    generateSignals: generateSignals, analyzeFrame: analyzeFrame,
+    generateSignals: generateSignals, generateSignalsFor: generateSignalsFor,
+    generateSignalsBB: generateSignalsBB, generateSignalsKeltner: generateSignalsKeltner,
+    generateSignalsDynRisk: generateSignalsDynRisk, dynamicLeverage: dynamicLeverage,
+    metricFor: metricFor,
+    analyzeFrame: analyzeFrame,
     analyzeBars: analyzeBars, computeStrength: computeStrength,
     // 掃描
     rowOf: rowOf, buildRankings: buildRankings,
@@ -724,12 +1020,13 @@
     // 策略預設
     STRATEGY_PRESETS: STRATEGY_PRESETS, DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
     getPreset: getPreset, paramsForPreset: paramsForPreset,
+    specsForPreset: specsForPreset, KIND_GROUPS: KIND_GROUPS,
     // 可自訂參數
     PARAM_SPECS: PARAM_SPECS, validateParams: validateParams,
     // 常數 / 工具
     defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
-    VERSION: '1.2.0'
+    VERSION: '1.3.0'
   };
 });

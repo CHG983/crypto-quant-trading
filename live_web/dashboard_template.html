@@ -128,6 +128,16 @@ select{font:inherit;font-size:.83rem;background:var(--panel2);color:var(--tx);
 .cbtns .cmsg{font-size:.78rem;flex:1 1 200px;min-width:0}
 .cbtns .cmsg.ok{color:var(--long)}
 .cbtns .cmsg.err{color:var(--short)}
+.lev{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:10px 0 0;
+     padding:10px 13px;border-radius:10px;background:rgba(120,110,240,.10);
+     border:1px solid var(--pur);border-left:4px solid var(--pur)}
+.lev .lt{font-size:.78rem;font-weight:700;color:var(--pur);white-space:nowrap}
+.lev .lv{font-size:1.5rem;font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums;line-height:1}
+.lev .ls{font-size:.74rem;color:var(--dim2)}
+.lev .ls b{color:var(--tx)}
+.levchip{padding:2px 7px;border-radius:999px;font-size:.72rem;font-weight:700;
+         background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
+.levchip.cap{background:rgba(230,170,60,.16);border-color:var(--warn);color:var(--warn)}
 .cerr{list-style:none;margin:9px 0 0;padding:9px 11px;border-radius:9px;
       background:rgba(220,80,80,.10);border:1px solid var(--short);font-size:.78rem;color:var(--tx)}
 .cerr li{margin:2px 0}
@@ -209,7 +219,8 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <h1>加密貨幣量化交易 · 即時儀表板</h1>
   <p>即時訊號 · 市場掃描 · 自動化監控 — <b>改由瀏覽器直接呼叫幣安公開 API</b>，
      策略邏輯（EMA 快慢線 + RSI/MACD 動能 + ATR 風控）在<strong>前端即時重算</strong>，
-     並可<b>切換多種策略</b>（CTMA 預設 / Supertrend 過濾 / 只做多 / WFO 網格參數組），
+     並可<b>切換多種策略</b>（CTMA 預設 / Supertrend 過濾 / 只做多 / WFO 網格參數組
+     / 布林通道反轉 / 卡爾特通道 / 動態風險敞口），
      並可<b>自訂 EMA 週期與 ATR 倍數</b>（含即時驗證與重設），
      不再使用內嵌的靜態快照。</p>
   <div class="meta">
@@ -278,6 +289,7 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
     <div class="skel"></div><div class="skel" style="width:80%"></div>
     <div class="skel" style="width:60%"></div></div>
 </div>
+<div id="liveLeverage"></div>
 
 <h2>2 · 市場掃描排行（瀏覽器直連）</h2>
 <p class="muted" id="scanMeta">載入中…</p>
@@ -285,7 +297,7 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
 <div class="tablewrap"><table>
   <thead><tr>
     <th>標的</th><th>趨勢</th><th>強度</th><th>價格</th>
-    <th>EMA 差距</th><th>RSI</th><th>ATR%</th><th>建議停損</th><th>訊號</th>
+    <th id="thStrat">EMA 差距</th><th>RSI</th><th>ATR%</th><th>建議停損</th><th>訊號</th>
   </tr></thead>
   <tbody id="scanBody"><tr><td colspan="9" class="muted">載入中…</td></tr></tbody>
 </table></div>
@@ -415,8 +427,9 @@ function presetDefaults(){ return CTMA.paramsForPreset(state.presetId); }
 function isCustomized(){
   if (!state.custom) return false;
   const d = presetDefaults();
-  for (const k in state.custom){
-    if (state.custom[k] !== d[k]) return true;
+  const keys = CTMA.specsForPreset(state.presetId).map(s => s.key);
+  for (const k of keys){
+    if (Object.prototype.hasOwnProperty.call(state.custom, k) && state.custom[k] !== d[k]) return true;
   }
   return false;
 }
@@ -479,18 +492,52 @@ function renderStrategyInfo(){
     ? ' <span class="badge b-warn">自訂參數</span>' : '';
   $('strategyDesc').innerHTML = '<b>' + esc(p.name) + '</b>' + custBadge + ' — ' + esc(p.desc)
     + '<span class="ssrc">來源：' + esc(p.source) + '</span>';
-  const cells = [
-    ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
-    ['RSI 週期', pr.rsi_len],
-    ['MACD', pr.macd_fast + '/' + pr.macd_slow + '/' + pr.macd_signal],
-    ['ATR 週期', pr.atr_len],
-    ['ATR 停損', pr.atr_stop_mult + '×'],
-    ['ATR 移動停損', pr.atr_trail_mult + '×'],
-    ['ATR 停利', pr.atr_tp_mult + '×'],
-    ['ATR% 門檻', pr.min_atr_pct + '%'],
-    ['Supertrend 過濾', pr.use_supertrend ? ('開（' + pr.st_len + ', ' + pr.st_mult + '）') : '關'],
-    ['允許做空', pr.allow_short ? '是' : '否']
-  ];
+  const kind = p.kind || 'ctma';
+  let cells;
+  if (kind === 'bb') {
+    cells = [
+      ['布林週期', pr.bb_len],
+      ['標準差倍數', pr.bb_mult + '×'],
+      ['布林 RSI 週期', pr.bb_rsi_len],
+      ['RSI 超賣 / 超買', pr.bb_rsi_oversold + ' / ' + pr.bb_rsi_overbought],
+      ['ATR 停損', pr.atr_stop_mult + '×'],
+      ['ATR 停利', pr.atr_tp_mult + '×'],
+      ['允許做空', pr.allow_short ? '是' : '否']
+    ];
+  } else if (kind === 'keltner') {
+    cells = [
+      ['卡爾特 EMA 週期', pr.kc_ema_len],
+      ['卡爾特 ATR 週期', pr.kc_atr_len],
+      ['卡爾特 ATR 倍數', pr.kc_mult + '×'],
+      ['ATR 停損', pr.atr_stop_mult + '×'],
+      ['ATR 停利', pr.atr_tp_mult + '×'],
+      ['允許做空', pr.allow_short ? '是' : '否']
+    ];
+  } else if (kind === 'dynrisk') {
+    cells = [
+      ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
+      ['RSI 週期', pr.rsi_len],
+      ['ATR 週期', pr.atr_len],
+      ['目標波動度', pr.dr_target_vol + '%'],
+      ['最大 / 最小槓桿', pr.dr_max_lev + '× / ' + pr.dr_min_lev + '×'],
+      ['動態風險 ATR', pr.dr_atr_len],
+      ['ATR 停損', pr.atr_stop_mult + '×'],
+      ['允許做空', pr.allow_short ? '是' : '否']
+    ];
+  } else {
+    cells = [
+      ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
+      ['RSI 週期', pr.rsi_len],
+      ['MACD', pr.macd_fast + '/' + pr.macd_slow + '/' + pr.macd_signal],
+      ['ATR 週期', pr.atr_len],
+      ['ATR 停損', pr.atr_stop_mult + '×'],
+      ['ATR 移動停損', pr.atr_trail_mult + '×'],
+      ['ATR 停利', pr.atr_tp_mult + '×'],
+      ['ATR% 門檻', pr.min_atr_pct + '%'],
+      ['Supertrend 過濾', pr.use_supertrend ? ('開（' + pr.st_len + ', ' + pr.st_mult + '）') : '關'],
+      ['允許做空', pr.allow_short ? '是' : '否']
+    ];
+  }
   $('paramGrid').innerHTML = cells.map(([k,v]) =>
     '<div class="pcell"><div class="pk">' + esc(k) + '</div><div class="pv">' + esc(v) + '</div></div>').join('');
   updateCustomState();
@@ -500,7 +547,7 @@ function renderStrategyInfo(){
 function renderCustomEditor(){
   const pr = activeParams();
   const def = presetDefaults();
-  $('custGrid').innerHTML = CTMA.PARAM_SPECS.map(s => {
+  $('custGrid').innerHTML = CTMA.specsForPreset(state.presetId).map(s => {
     const v = pr[s.key];
     if (s.type === 'bool'){
       return '<label class="cfield chk" data-field="' + esc(s.key) + '">'
@@ -519,7 +566,7 @@ function renderCustomEditor(){
 
 function readEditorValues(){
   const out = {};
-  CTMA.PARAM_SPECS.forEach(s => {
+  CTMA.specsForPreset(state.presetId).forEach(s => {
     // 只取 input 本身（外層 wrapper 用 data-field，避免 querySelector 命中 wrapper）
     const el = document.querySelector('#custGrid input[data-key="' + s.key + '"]');
     if (!el) return;
@@ -531,10 +578,15 @@ function readEditorValues(){
 
 function updateCustomState(){
   const pr = activeParams();
+  const kind = CTMA.getPreset(state.presetId).kind || 'ctma';
+  let eff;
+  if (kind === 'bb') eff = '布林 ' + pr.bb_len + ' / ' + pr.bb_mult + '×σ · RSI ' + pr.bb_rsi_oversold + '/' + pr.bb_rsi_overbought;
+  else if (kind === 'keltner') eff = '卡爾特 EMA ' + pr.kc_ema_len + ' · ATR ' + pr.kc_atr_len + ' × ' + pr.kc_mult;
+  else if (kind === 'dynrisk') eff = 'EMA ' + pr.ema_fast + '/' + pr.ema_slow + ' · 目標波動 ' + pr.dr_target_vol + '% · 槓桿 ' + pr.dr_min_lev + '–' + pr.dr_max_lev + '×';
+  else eff = 'EMA ' + pr.ema_fast + '/' + pr.ema_slow + ' · ATR 停損 ' + pr.atr_stop_mult + '×';
   $('custState').innerHTML = isCustomized()
-    ? '目前為 <b>自訂參數</b>（已套用）· 生效值 EMA ' + pr.ema_fast + '/' + pr.ema_slow
-      + ' · ATR 停損 ' + pr.atr_stop_mult + '×'
-    : '目前為 <b>' + esc(CTMA.getPreset(state.presetId).short) + ' 的原始預設</b>（未自訂）';
+    ? '目前為 <b>自訂參數</b>（已套用）· 生效值 ' + esc(eff)
+    : '目前為 <b>' + esc(CTMA.getPreset(state.presetId).short) + ' 的原始預設</b>（未自訂）· 生效值 ' + esc(eff);
 }
 
 function showCustomErrors(errors){
@@ -679,6 +731,20 @@ function renderLive(list, serverTimeMs, intervalLabel){
       + '<div class="row"><span>RSI / MACD 柱</span><b>' + fmtNum(c.rsi, 2) + ' / ' + fmtNum(c.macd_hist, 6) + '</b></div>'
       + '<div class="row"><span>ATR%</span><b>' + fmtPct(c.atr_pct, 3) + '</b></div>'
       + '<div class="row"><span>Supertrend</span><b>' + (c.st_dir === 1 ? '多頭' : c.st_dir === -1 ? '空頭' : '—') + '</b></div>'
+      + (c.strategy_kind === 'bb'
+          ? '<div class="row"><span>布林上 / 中 / 下軌</span><b>' + fmtNum(c.bb_upper, 4) + ' / ' + fmtNum(c.bb_mid, 4) + ' / ' + fmtNum(c.bb_lower, 4) + '</b></div>'
+            + '<div class="row"><span>布林 %B</span><b>' + (c.strategy_metric ? esc(c.strategy_metric.text) : '—') + '</b></div>'
+            + '<div class="row"><span>布林 RSI</span><b>' + fmtNum(c.bb_rsi, 2) + '</b></div>'
+          : '')
+      + (c.strategy_kind === 'keltner'
+          ? '<div class="row"><span>卡爾特上 / 中 / 下軌</span><b>' + fmtNum(c.kc_upper, 4) + ' / ' + fmtNum(c.kc_mid, 4) + ' / ' + fmtNum(c.kc_lower, 4) + '</b></div>'
+            + '<div class="row"><span>卡爾特 %B</span><b>' + (c.strategy_metric ? esc(c.strategy_metric.text) : '—') + '</b></div>'
+          : '')
+      + (c.strategy_kind === 'dynrisk' && c.leverage
+          ? '<div class="row"><span>建議槓桿</span><b>' + fmtNum(c.leverage.leverage, 2) + '×</b></div>'
+            + '<div class="row"><span>部位比例</span><b>' + fmtPct(c.leverage.position_pct, 1) + '</b></div>'
+            + '<div class="row"><span>實際波動度</span><b>' + fmtPct(c.leverage.realized_vol_pct, 2) + '</b></div>'
+          : '')
       + (lv ? '<div class="hr"></div>'
           + '<div class="row"><span>建議停損</span><b>' + fmtNum(lv.stop, 6)
           +   ' (−' + fmtPct(lv.risk_pct, 2) + ')</b></div>'
@@ -698,6 +764,30 @@ function renderLive(list, serverTimeMs, intervalLabel){
       + '<div class="row"><span>狀態</span><b>' + badge + '</b></div>'
       + '</div>';
   }).join('');
+
+  // 動態風險敞口：額外顯示建議槓桿／部位比例面板
+  const levEl = $('liveLeverage');
+  const kind0 = list.length ? list[0].analysis.params_kind : null;
+  if (kind0 === 'dynrisk' && list.length){
+    const pr = activeParams();
+    const chips = list.map(x => {
+      const c = x.analysis.confirmed || x.analysis.provisional;
+      const lv = c.leverage;
+      if (!lv) return '';
+      const cap = lv.capped ? ' <span class="levchip cap">' + (lv.capped === 'max' ? '已達上限' : '已達下限') + '</span>' : '';
+      return '<span class="ls"><b>' + esc(x.symbol) + '</b> ' + lv.leverage.toFixed(2) + '× · 部位 '
+        + lv.position_pct.toFixed(1) + '% · 實際波動 ' + lv.realized_vol_pct.toFixed(2) + '%' + cap + '</span>';
+    }).join('');
+    const first = (list[0].analysis.confirmed || list[0].analysis.provisional).leverage;
+    levEl.innerHTML = '<div class="lev">'
+      + '<span class="lt">⚖ 動態風險敞口</span>'
+      + '<span class="lv">' + (first ? first.leverage.toFixed(2) + '×' : '—') + '</span>'
+      + '<span class="ls">目標波動度 <b>' + pr.dr_target_vol + '%</b> · 槓桿範圍 <b>'
+      + pr.dr_min_lev + '–' + pr.dr_max_lev + '×</b>（波動越高、槓桿越低）</span>'
+      + chips + '</div>';
+  } else {
+    levEl.innerHTML = '';
+  }
 }
 
 function renderScan(rankings, listMeta){
@@ -720,6 +810,9 @@ function renderScan(rankings, listMeta){
     + '</div><div class="s">' + esc(sub) + '</div></div>').join('');
 
   const rows = s.all_rows.slice().sort((a,b) => b.strength - a.strength);
+  const kind = (s.all_rows[0] && s.all_rows[0].strategy_kind) || 'ctma';
+  const metricLabel = (s.all_rows[0] && s.all_rows[0].metric_label) || 'EMA 差距';
+  $('thStrat').textContent = metricLabel;
   $('scanBody').innerHTML = rows.length
     ? rows.map(r =>
       '<tr>'
@@ -727,7 +820,7 @@ function renderScan(rankings, listMeta){
       + '<td>' + trendBadge(r.trend) + '</td>'
       + '<td class="num" style="color:' + strengthColor(r.strength) + '">' + fmtNum(r.strength, 1) + '</td>'
       + '<td class="num">' + fmtNum(r.price, 6) + '</td>'
-      + '<td class="num">' + fmtPct(r.ema_gap_pct, 3) + '</td>'
+      + '<td class="num">' + (r.metric_text !== null && r.metric_text !== undefined ? esc(r.metric_text) : fmtPct(r.ema_gap_pct, 3)) + '</td>'
       + '<td class="num">' + fmtNum(r.rsi, 2) + '</td>'
       + '<td class="num">' + fmtPct(r.atr_pct, 3) + '</td>'
       + '<td class="num">' + (r.stop === null ? '—' : fmtNum(r.stop, 6)) + '</td>'
@@ -858,6 +951,11 @@ async function refreshAll(){
         stop_mult: x.analysis.levels ? x.analysis.levels.stop_mult : null,
         risk_pct: x.analysis.levels ? x.analysis.levels.risk_pct : null,
         trend: c.trend, strength: c.strength.total,
+        leverage: c.leverage ? c.leverage.leverage : null,
+        leverage_position_pct: c.leverage ? c.leverage.position_pct : null,
+        metric_label: c.strategy_metric ? c.strategy_metric.label : null,
+        metric_text: c.strategy_metric ? c.strategy_metric.text : null,
+        strategy_kind: c.strategy_kind || null,
         bar_is_in_progress: x.analysis.bar_is_in_progress,
         // 即時（未收盤那根）——每次刷新都應反映當下市價
         live_price: pv.price,
@@ -974,6 +1072,9 @@ window.__CTMA_DASH__ = {
   activeParams: activeParams,
   presetDefaults: presetDefaults,
   isCustomized: isCustomized,
+  specsForPreset: (id) => CTMA.specsForPreset(id || state.presetId),
+  strategyKind: () => CTMA.getPreset(state.presetId).kind || 'ctma',
+  metricFor: CTMA.metricFor,
   // 供自動化驗證：直接設定輸入框值並套用
   setField: (key, value) => {
     const el = document.querySelector('#custGrid input[data-key="' + key + '"]');
@@ -989,6 +1090,9 @@ window.__CTMA_DASH__ = {
     lastOk: state.lastOk ? state.lastOk.toISOString() : null,
     liveCards: document.querySelectorAll('#liveCards .card').length,
     scanRows: document.querySelectorAll('#scanBody tr').length,
+    strategyKind: CTMA.getPreset(state.presetId).kind || 'ctma',
+    metricHeader: ($('thStrat') || {}).textContent || '',
+    leveragePanel: ($('liveLeverage') || {}).textContent || '',
     firstCardText: (document.querySelector('#liveCards .card') || {}).textContent || ''
   })
 };

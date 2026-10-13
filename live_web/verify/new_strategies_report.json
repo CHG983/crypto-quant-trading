@@ -1,0 +1,634 @@
+{
+  "generated_at_utc": "2026-10-13T03:23:16.874673+00:00",
+  "url": "http://127.0.0.1:8787/dashboard.html",
+  "total_checks": 49,
+  "passed_checks": 49,
+  "failed_checks": 0,
+  "status": "ALL PASS",
+  "checks": [
+    {
+      "check": "桌面：refreshAll 完成",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "桌面：引擎版本為 1.3.0",
+      "ok": true,
+      "detail": "version=1.3.0"
+    },
+    {
+      "check": "桌面：策略選擇器含 9 個選項",
+      "ok": true,
+      "detail": "options=9"
+    },
+    {
+      "check": "桌面：預設策略為 ctma_default",
+      "ok": true,
+      "detail": "selected=ctma_default"
+    },
+    {
+      "check": "桌面：真的對幣安發出請求",
+      "ok": true,
+      "detail": "requests=30"
+    },
+    {
+      "check": "桌面：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "桌面：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "桌面：免責聲明存在（中英文）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "bb_reversion：選擇器已切換",
+      "ok": true,
+      "detail": "selected=bb_reversion"
+    },
+    {
+      "check": "bb_reversion：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "bb_reversion：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "bb_reversion：狀態正常",
+      "ok": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "check": "keltner：選擇器已切換",
+      "ok": true,
+      "detail": "selected=keltner"
+    },
+    {
+      "check": "keltner：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "keltner：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "keltner：狀態正常",
+      "ok": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "check": "dyn_risk：選擇器已切換",
+      "ok": true,
+      "detail": "selected=dyn_risk"
+    },
+    {
+      "check": "dyn_risk：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "dyn_risk：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "dyn_risk：狀態正常",
+      "ok": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "check": "bb_reversion：數值與 ctma_default 不同",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "keltner：數值與 ctma_default 不同",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "dyn_risk：數值與 ctma_default 不同",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "bb_reversion：策略指標欄為「布林 %B」",
+      "ok": true,
+      "detail": "布林 %B"
+    },
+    {
+      "check": "keltner：策略指標欄為「卡爾特 %B」",
+      "ok": true,
+      "detail": "卡爾特 %B"
+    },
+    {
+      "check": "dyn_risk：策略指標欄為「建議槓桿」",
+      "ok": true,
+      "detail": "建議槓桿"
+    },
+    {
+      "check": "bb_reversion：參數面板顯示布林週期",
+      "ok": true,
+      "detail": "cells=['布林週期', '標準差倍數', '布林 RSI 週期', 'RSI 超賣 / 超買', 'ATR 停損', 'ATR 停利', '允許做空']"
+    },
+    {
+      "check": "keltner：參數面板顯示卡爾特 EMA 週期",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "dyn_risk：參數面板顯示目標波動度",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "bb_reversion：編輯器含 bb_len 欄位",
+      "ok": true,
+      "detail": "['atr_len', 'atr_stop_mult', 'atr_trail_mult', 'atr_tp_mult', 'min_atr_pct', 'allow_short', 'bb_len', 'bb_mult', 'bb_rsi_len', 'bb_rsi_oversold', 'bb_rsi_overbought']"
+    },
+    {
+      "check": "keltner：編輯器含 kc_mult 欄位",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "dyn_risk：編輯器含 dr_target_vol 欄位",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "dyn_risk：每檔標的都有建議槓桿",
+      "ok": true,
+      "detail": "[('BTCUSDT', 2.5695, 0.78), ('ETHUSDT', 3.5923, 0.56), ('SOLUSDT', 4.6747, 0.5)]"
+    },
+    {
+      "check": "dyn_risk：槓桿與波動度呈反向關係（波動越高、槓桿越低）",
+      "ok": true,
+      "detail": "[('BTCUSDT', 2.5695, 0.78), ('ETHUSDT', 3.5923, 0.56), ('SOLUSDT', 4.6747, 0.5)]"
+    },
+    {
+      "check": "dyn_risk：槓桿面板已顯示",
+      "ok": true,
+      "detail": "⚖ 動態風險敞口0.78×目標波動度 2% · 槓桿範圍 0.5–3×（波動越高、槓桿越低）BTCUSDT 0.78× · 部位 25.9% · 實際波動 2."
+    },
+    {
+      "check": "dyn_risk：調整目標波動度後槓桿確實改變",
+      "ok": true,
+      "detail": "[0.78, 0.56, 0.5] → [0.5, 0.5, 0.5]"
+    },
+    {
+      "check": "dyn_risk：目標波動度調低後槓桿下降",
+      "ok": true,
+      "detail": "[0.78, 0.56, 0.5] → [0.5, 0.5, 0.5]"
+    },
+    {
+      "check": "切換策略後：自動刷新仍運作（時間戳前進）",
+      "ok": true,
+      "detail": "最後更新 2026-10-13 03:22:57 UTC → 最後更新 2026-10-13 03:23:01 UTC"
+    },
+    {
+      "check": "切換策略後：仍持續抓取（請求數增加）",
+      "ok": true,
+      "detail": "180 → 210"
+    },
+    {
+      "check": "切換策略後：自訂參數仍沿用（dr_target_vol=1.0）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "桌面：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "桌面：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "桌面：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0"
+    },
+    {
+      "check": "手機：策略選擇器可用（9 選項）",
+      "ok": true,
+      "detail": "options=9"
+    },
+    {
+      "check": "手機：可切換至 bb_reversion",
+      "ok": true,
+      "detail": "selected=bb_reversion"
+    },
+    {
+      "check": "手機：即時資料有載入",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "手機：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "手機：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "手機：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0"
+    }
+  ],
+  "snapshots": {
+    "ctma_default": {
+      "selected": "ctma_default",
+      "metricHeader": "ATR（絕對）",
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "64.2 (強)",
+          "stop": "75,540.512413 (−7.71%)",
+          "lev": null,
+          "pos": null
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "HOLD",
+          "strength": "42.9 (弱)",
+          "stop": "2,183.441236 (−10.78%)",
+          "lev": null,
+          "pos": null
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "HOLD",
+          "strength": "49.5 (中)",
+          "stop": "90.928076 (−14.02%)",
+          "lev": null,
+          "pos": null
+        }
+      ],
+      "paramCells": [
+        {
+          "k": "EMA 快 / 慢",
+          "v": "21 / 55"
+        },
+        {
+          "k": "RSI 週期",
+          "v": "14"
+        },
+        {
+          "k": "MACD",
+          "v": "12/26/9"
+        },
+        {
+          "k": "ATR 週期",
+          "v": "14"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "3×"
+        },
+        {
+          "k": "ATR 移動停損",
+          "v": "5×"
+        },
+        {
+          "k": "ATR 停利",
+          "v": "6×"
+        },
+        {
+          "k": "ATR% 門檻",
+          "v": "0.5%"
+        },
+        {
+          "k": "Supertrend 過濾",
+          "v": "關"
+        },
+        {
+          "k": "允許做空",
+          "v": "是"
+        }
+      ],
+      "fieldKeys": [
+        "ema_fast",
+        "ema_slow",
+        "rsi_len",
+        "atr_len",
+        "atr_stop_mult",
+        "atr_trail_mult",
+        "atr_tp_mult",
+        "min_atr_pct",
+        "st_len",
+        "st_mult",
+        "allow_short",
+        "use_supertrend"
+      ]
+    },
+    "bb_reversion": {
+      "selected": "bb_reversion",
+      "metricHeader": "布林 %B",
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "24.6 (極弱)",
+          "stop": "88,159.487587 (−7.71%)",
+          "lev": null,
+          "pos": null
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "BULL_CROSS",
+          "strength": "51.8 (中)",
+          "stop": "2,710.898764 (−10.78%)",
+          "lev": null,
+          "pos": null
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "BULL_CROSS",
+          "strength": "52.9 (中)",
+          "stop": "120.591924 (−14.02%)",
+          "lev": null,
+          "pos": null
+        }
+      ],
+      "paramCells": [
+        {
+          "k": "布林週期",
+          "v": "20"
+        },
+        {
+          "k": "標準差倍數",
+          "v": "2×"
+        },
+        {
+          "k": "布林 RSI 週期",
+          "v": "14"
+        },
+        {
+          "k": "RSI 超賣 / 超買",
+          "v": "30 / 70"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "3×"
+        },
+        {
+          "k": "ATR 停利",
+          "v": "6×"
+        },
+        {
+          "k": "允許做空",
+          "v": "是"
+        }
+      ],
+      "fieldKeys": [
+        "atr_len",
+        "atr_stop_mult",
+        "atr_trail_mult",
+        "atr_tp_mult",
+        "min_atr_pct",
+        "allow_short",
+        "bb_len",
+        "bb_mult",
+        "bb_rsi_len",
+        "bb_rsi_oversold",
+        "bb_rsi_overbought"
+      ]
+    },
+    "keltner": {
+      "selected": "keltner",
+      "metricHeader": "卡爾特 %B",
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "24.6 (極弱)",
+          "stop": "88,159.487587 (−7.71%)",
+          "lev": null,
+          "pos": null
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "HOLD",
+          "strength": "51.8 (中)",
+          "stop": "2,710.898764 (−10.78%)",
+          "lev": null,
+          "pos": null
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "HOLD",
+          "strength": "52.9 (中)",
+          "stop": "120.591924 (−14.02%)",
+          "lev": null,
+          "pos": null
+        }
+      ],
+      "paramCells": [
+        {
+          "k": "卡爾特 EMA 週期",
+          "v": "20"
+        },
+        {
+          "k": "卡爾特 ATR 週期",
+          "v": "10"
+        },
+        {
+          "k": "卡爾特 ATR 倍數",
+          "v": "2×"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "3×"
+        },
+        {
+          "k": "ATR 停利",
+          "v": "6×"
+        },
+        {
+          "k": "允許做空",
+          "v": "是"
+        }
+      ],
+      "fieldKeys": [
+        "atr_len",
+        "atr_stop_mult",
+        "atr_trail_mult",
+        "atr_tp_mult",
+        "min_atr_pct",
+        "allow_short",
+        "kc_ema_len",
+        "kc_atr_len",
+        "kc_mult"
+      ]
+    },
+    "dyn_risk": {
+      "selected": "dyn_risk",
+      "metricHeader": "建議槓桿",
+      "cards": [
+        {
+          "symbol": "BTCUSDT",
+          "price": "81,850.000000",
+          "signal": "HOLD",
+          "strength": "64.2 (強)",
+          "stop": "75,540.512413 (−7.71%)",
+          "lev": "0.78×",
+          "pos": "25.9%"
+        },
+        {
+          "symbol": "ETHUSDT",
+          "price": "2,447.170000",
+          "signal": "HOLD",
+          "strength": "42.9 (弱)",
+          "stop": "2,183.441236 (−10.78%)",
+          "lev": "0.56×",
+          "pos": "18.6%"
+        },
+        {
+          "symbol": "SOLUSDT",
+          "price": "105.760000",
+          "signal": "HOLD",
+          "strength": "49.5 (中)",
+          "stop": "90.928076 (−14.02%)",
+          "lev": "0.50×",
+          "pos": "16.7%"
+        }
+      ],
+      "paramCells": [
+        {
+          "k": "EMA 快 / 慢",
+          "v": "21 / 55"
+        },
+        {
+          "k": "RSI 週期",
+          "v": "14"
+        },
+        {
+          "k": "ATR 週期",
+          "v": "14"
+        },
+        {
+          "k": "目標波動度",
+          "v": "2%"
+        },
+        {
+          "k": "最大 / 最小槓桿",
+          "v": "3× / 0.5×"
+        },
+        {
+          "k": "動態風險 ATR",
+          "v": "14"
+        },
+        {
+          "k": "ATR 停損",
+          "v": "3×"
+        },
+        {
+          "k": "允許做空",
+          "v": "是"
+        }
+      ],
+      "fieldKeys": [
+        "ema_fast",
+        "ema_slow",
+        "rsi_len",
+        "atr_len",
+        "atr_stop_mult",
+        "atr_trail_mult",
+        "atr_tp_mult",
+        "min_atr_pct",
+        "allow_short",
+        "dr_target_vol",
+        "dr_max_lev",
+        "dr_min_lev",
+        "dr_atr_len"
+      ]
+    }
+  },
+  "dynrisk_leverage": {
+    "before": [
+      [
+        "BTCUSDT",
+        2.5695,
+        0.78
+      ],
+      [
+        "ETHUSDT",
+        3.5923,
+        0.56
+      ],
+      [
+        "SOLUSDT",
+        4.6747,
+        0.5
+      ]
+    ],
+    "after_target_vol_1_0": [
+      [
+        "BTCUSDT",
+        2.5695,
+        0.5
+      ],
+      [
+        "ETHUSDT",
+        3.5923,
+        0.5
+      ],
+      [
+        "SOLUSDT",
+        4.6747,
+        0.5
+      ]
+    ]
+  },
+  "overflow_desktop": {
+    "docScrollWidth": 1280,
+    "docClientWidth": 1280,
+    "innerWidth": 1280,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overflow_mobile": {
+    "docScrollWidth": 390,
+    "docClientWidth": 390,
+    "innerWidth": 390,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overlap_desktop": {
+    "count": 0,
+    "samples": []
+  },
+  "overlap_mobile": {
+    "count": 0,
+    "samples": []
+  }
+}
