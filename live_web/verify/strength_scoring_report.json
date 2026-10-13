@@ -1,0 +1,510 @@
+{
+  "generated_at_utc": "2026-10-13T04:02:06.015162+00:00",
+  "url": "http://127.0.0.1:8787/dashboard.html",
+  "total_checks": 43,
+  "passed_checks": 43,
+  "failed_checks": 0,
+  "status": "ALL PASS",
+  "checks": [
+    {
+      "check": "桌面：refreshAll 完成",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "桌面：引擎版本為 1.4.0",
+      "ok": true,
+      "detail": "version=1.4.0"
+    },
+    {
+      "check": "桌面：策略選擈器含 9 個選項",
+      "ok": true,
+      "detail": "options=9"
+    },
+    {
+      "check": "桌面：真的對幣安發出請求",
+      "ok": true,
+      "detail": "requests=30"
+    },
+    {
+      "check": "桌面：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "桌面：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "桌面：狀態正常",
+      "ok": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "check": "桌面：CTMA 預設顯示「動能評分」",
+      "ok": true,
+      "detail": "動能評分 · 趨勢/動能/波動/Supertrend"
+    },
+    {
+      "check": "桌面：說明區只顯示 ctma 公式",
+      "ok": true,
+      "detail": "['ctma']"
+    },
+    {
+      "check": "桌面：免責聲明存在（中英文）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "bb_reversion：選擈器已切換",
+      "ok": true,
+      "detail": "selected=bb_reversion"
+    },
+    {
+      "check": "bb_reversion：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "bb_reversion：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "bb_reversion：狀態正常",
+      "ok": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "check": "keltner：選擈器已切換",
+      "ok": true,
+      "detail": "selected=keltner"
+    },
+    {
+      "check": "keltner：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "keltner：掃描表已渲染",
+      "ok": true,
+      "detail": "rows=24"
+    },
+    {
+      "check": "keltner：狀態正常",
+      "ok": true,
+      "detail": "status=即時資料正常"
+    },
+    {
+      "check": "強度：布林與卡爾特對同一標的強度值不再相同",
+      "ok": true,
+      "detail": "common=3 differing=3 :: BTCUSDT: BB=61.9 (強) vs KC=9.5 (極弱); ETHUSDT: BB=53.8 (中) vs KC=34.3 (弱); SOLUSDT: BB=49.8 (中) vs KC=32.7 (弱)"
+    },
+    {
+      "check": "強度：布林使用「反轉評分」標籤",
+      "ok": true,
+      "detail": "反轉評分 · 深度/RSI 極值/通道壓縮"
+    },
+    {
+      "check": "強度：卡爾特使用「突破評分」標籤",
+      "ok": true,
+      "detail": "突破評分 · 突破幅度/中軌斜率/通道擴張"
+    },
+    {
+      "check": "說明區：布林時只顯示 bb 公式",
+      "ok": true,
+      "detail": "['bb']"
+    },
+    {
+      "check": "說明區：卡爾特時只顯示 keltner 公式",
+      "ok": true,
+      "detail": "['keltner']"
+    },
+    {
+      "check": "說明區：標題會說明目前使用哪套評分",
+      "ok": true,
+      "detail": "bb='訊號強度計分（0–100）· 目前使用：反轉評分' kc='訊號強度計分（0–100）· 目前使用：突破評分'"
+    },
+    {
+      "check": "掃描排行：切換布林後與 CTMA 不同",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "停損：切換布林後停損值改變",
+      "ok": true,
+      "detail": "['75,540.512413 (−7.71%)', '2,183.441236 (−10.78%)', '90.928076 (−14.02%)'] → ['88,159.487587 (−7.71%)', '2,710.898764 (−10.78%)', '120.591924 (−14.02%)']"
+    },
+    {
+      "check": "策略指標欄：布林顯示 %B",
+      "ok": true,
+      "detail": "強度 · 布林 %B"
+    },
+    {
+      "check": "策略指標欄：卡爾特顯示 %B",
+      "ok": true,
+      "detail": "強度 · 卡爾特 %B"
+    },
+    {
+      "check": "回歸：切回 CTMA 後仍為「動能評分」",
+      "ok": true,
+      "detail": "動能評分 · 趨勢/動能/波動/Supertrend"
+    },
+    {
+      "check": "回歸：CTMA 強度與切換前一致（未被新評分影響）",
+      "ok": true,
+      "detail": "{'BTCUSDT': '64.2 (強)', 'ETHUSDT': '42.9 (弱)', 'SOLUSDT': '49.5 (中)'} vs {'BTCUSDT': '64.2 (強)', 'ETHUSDT': '42.9 (弱)', 'SOLUSDT': '49.5 (中)'}"
+    },
+    {
+      "check": "自動刷新：時間戳前進",
+      "ok": true,
+      "detail": "最後更新 2026-10-13 04:01:50 UTC → 最後更新 2026-10-13 04:01:53 UTC"
+    },
+    {
+      "check": "自動刷新：仍持續抓取（請求數增加）",
+      "ok": true,
+      "detail": "120 → 150"
+    },
+    {
+      "check": "桌面：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "桌面：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "桌面：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0"
+    },
+    {
+      "check": "手機：策略選擈器可用（9 選項）",
+      "ok": true,
+      "detail": "options=9"
+    },
+    {
+      "check": "手機：可切換至 bb_reversion",
+      "ok": true,
+      "detail": "selected=bb_reversion"
+    },
+    {
+      "check": "手機：可切換至 keltner",
+      "ok": true,
+      "detail": "selected=keltner"
+    },
+    {
+      "check": "手機：即時資料有載入",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "手機：布林與卡爾特強度值也不同",
+      "ok": true,
+      "detail": "3/3 differing"
+    },
+    {
+      "check": "手機：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "手機：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "手機：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0"
+    }
+  ],
+  "strength_comparison": {
+    "bb_reversion": {
+      "BTCUSDT": "61.9 (強)",
+      "ETHUSDT": "53.8 (中)",
+      "SOLUSDT": "49.8 (中)"
+    },
+    "keltner": {
+      "BTCUSDT": "9.5 (極弱)",
+      "ETHUSDT": "34.3 (弱)",
+      "SOLUSDT": "32.7 (弱)"
+    },
+    "ctma_default": {
+      "BTCUSDT": "64.2 (強)",
+      "ETHUSDT": "42.9 (弱)",
+      "SOLUSDT": "49.5 (中)"
+    },
+    "differing_symbols": [
+      {
+        "symbol": "BTCUSDT",
+        "bb": "61.9 (強)",
+        "keltner": "9.5 (極弱)"
+      },
+      {
+        "symbol": "ETHUSDT",
+        "bb": "53.8 (中)",
+        "keltner": "34.3 (弱)"
+      },
+      {
+        "symbol": "SOLUSDT",
+        "bb": "49.8 (中)",
+        "keltner": "32.7 (弱)"
+      }
+    ]
+  },
+  "mobile_strength_comparison": {
+    "bb_reversion": {
+      "BTCUSDT": "61.9 (強)",
+      "ETHUSDT": "53.8 (中)",
+      "SOLUSDT": "49.8 (中)"
+    },
+    "keltner": {
+      "BTCUSDT": "9.5 (極弱)",
+      "ETHUSDT": "34.3 (弱)",
+      "SOLUSDT": "32.7 (弱)"
+    }
+  },
+  "visible_formula_block": {
+    "ctma": [
+      "ctma"
+    ],
+    "bb": [
+      "bb"
+    ],
+    "keltner": [
+      "keltner"
+    ]
+  },
+  "scan_top_ctma": [
+    [
+      "ZROUSDT",
+      "多頭",
+      "75.1",
+      "2.071000",
+      "0.22098575",
+      "65.74",
+      "10.671%",
+      "1.408043",
+      "HOLD"
+    ],
+    [
+      "STRKUSDT",
+      "多頭",
+      "69.1",
+      "0.085050",
+      "0.01262972",
+      "61.87",
+      "14.850%",
+      "0.047161",
+      "HOLD"
+    ],
+    [
+      "AVAXUSDT",
+      "多頭",
+      "69.0",
+      "10.146000",
+      "0.71300145",
+      "49.35",
+      "7.027%",
+      "8.006996",
+      "HOLD"
+    ],
+    [
+      "SUIUSDT",
+      "多頭",
+      "67.9",
+      "1.028400",
+      "0.08428673",
+      "47.83",
+      "8.196%",
+      "0.775540",
+      "HOLD"
+    ],
+    [
+      "NEARUSDT",
+      "多頭",
+      "65.6",
+      "5.093000",
+      "0.5853565",
+      "55.84",
+      "11.493%",
+      "3.336931",
+      "HOLD"
+    ],
+    [
+      "BTCUSDT",
+      "多頭",
+      "64.2",
+      "81,850.000000",
+      "2103.16252887",
+      "47.16",
+      "2.570%",
+      "75,540.512413",
+      "HOLD"
+    ]
+  ],
+  "scan_top_bb": [
+    [
+      "BTCUSDT",
+      "空頭",
+      "61.9",
+      "81,850.000000",
+      "3.44%",
+      "47.16",
+      "2.570%",
+      "88,159.487587",
+      "HOLD"
+    ],
+    [
+      "BNBUSDT",
+      "空頭",
+      "60.8",
+      "732.910000",
+      "-1.87%",
+      "42.49",
+      "3.073%",
+      "800.482973",
+      "BULL_CROSS"
+    ],
+    [
+      "ETHUSDT",
+      "空頭",
+      "53.8",
+      "2,447.170000",
+      "-2.56%",
+      "37.63",
+      "3.592%",
+      "2,710.898764",
+      "BULL_CROSS"
+    ],
+    [
+      "XRPUSDT",
+      "空頭",
+      "50.8",
+      "1.342200",
+      "-6.37%",
+      "38.06",
+      "5.122%",
+      "1.548442",
+      "BULL_CROSS"
+    ],
+    [
+      "SOLUSDT",
+      "空頭",
+      "49.8",
+      "105.760000",
+      "-7.05%",
+      "38.89",
+      "4.675%",
+      "120.591924",
+      "BULL_CROSS"
+    ],
+    [
+      "DOGEUSDT",
+      "空頭",
+      "45.0",
+      "0.082230",
+      "-2.71%",
+      "37.73",
+      "5.799%",
+      "0.096537",
+      "BULL_CROSS"
+    ]
+  ],
+  "scan_top_keltner": [
+    [
+      "STRKUSDT",
+      "多頭",
+      "75.1",
+      "0.085050",
+      "86.53%",
+      "61.87",
+      "14.850%",
+      "0.047161",
+      "HOLD"
+    ],
+    [
+      "WUSDT",
+      "多頭",
+      "64.5",
+      "0.018930",
+      "77.03%",
+      "65.55",
+      "14.578%",
+      "0.010651",
+      "HOLD"
+    ],
+    [
+      "RSRUSDT",
+      "多頭",
+      "45.4",
+      "0.002200",
+      "103.57%",
+      "74.91",
+      "9.133%",
+      "0.001597",
+      "BULL_CROSS"
+    ],
+    [
+      "ETHUSDT",
+      "空頭",
+      "34.3",
+      "2,447.170000",
+      "10.00%",
+      "37.63",
+      "3.592%",
+      "2,710.898764",
+      "HOLD"
+    ],
+    [
+      "SOLUSDT",
+      "空頭",
+      "32.7",
+      "105.760000",
+      "11.05%",
+      "38.89",
+      "4.675%",
+      "120.591924",
+      "HOLD"
+    ],
+    [
+      "UNIUSDT",
+      "空頭",
+      "32.7",
+      "6.973000",
+      "8.22%",
+      "38.93",
+      "9.747%",
+      "9.011917",
+      "HOLD"
+    ]
+  ],
+  "overflow_desktop": {
+    "docScrollWidth": 1280,
+    "docClientWidth": 1280,
+    "innerWidth": 1280,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overflow_mobile": {
+    "docScrollWidth": 390,
+    "docClientWidth": 390,
+    "innerWidth": 390,
+    "horizontalOverflowPx": 0,
+    "offenders": [],
+    "offenderCount": 0
+  },
+  "overlap_desktop": {
+    "count": 0,
+    "samples": []
+  },
+  "overlap_mobile": {
+    "count": 0,
+    "samples": []
+  }
+}

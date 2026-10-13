@@ -93,6 +93,8 @@ select{font:inherit;font-size:.83rem;background:var(--panel2);color:var(--tx);
 .pcell{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
 .pcell .pk{font-size:.7rem;color:var(--dim2);text-transform:uppercase;letter-spacing:.6px}
 .pcell .pv{font-size:.95rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.card .row b.smet{font-size:.76rem;font-weight:600;color:var(--pur)}
+.stf[hidden]{display:none}
 
 /* ---- 自訂參數編輯器 ---- */
 .custbar{
@@ -348,12 +350,34 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
 <p><b>前端引擎與 Python 逐值比對結果：</b><span id="parityText">載入中…</span></p>
 </details>
 <details>
-<summary>訊號強度計分（0–100）</summary>
+<summary id="stDocSummary">訊號強度計分（0–100）</summary>
+<div class="stf" data-kind="ctma">
+<p><b>CTMA 系列（含 WFO 網格、動態風險敞口）— 動能評分</b></p>
 <p><code>分數 = 100 × ( 0.35×趨勢 + 0.30×動能 + 0.20×波動健康度 + 0.15×Supertrend 一致性 )</code></p>
 <p>趨勢以 ATR 正規化（<code>(EMA快−EMA慢)/ATR / 1.5</code>），使不同波動度的幣種可互相比較；
 動能取 RSI 距中軸與 MACD 柱的平均，方向須與趨勢一致；波動健康度在 ATR% 落於
 <code>min_atr_pct</code>～8% 時最高分，過低視為盤整、過高視為狂野。</p>
-<p><b>這是啟發式排序分數，不是機率，也未經校準。</b>用途僅在於把「哪些標的訊號較乾淨」
+      </div>
+<div class="stf" data-kind="bb" hidden>
+<p><b>布林通道反轉 — 反轉評分（本次新設計，非既有程式碼）</b></p>
+<p><code>分數 = 100 × ( 0.45×深度 + 0.30×RSI 極值 + 0.25×通道壓縮 )</code></p>
+<p>衡量<b>「反轉訊號的明確程度」</b>，與 CTMA 的動能分項完全不同：
+<b>深度</b>取 %B 距中軸的相對深度 <code>|%B − 50| / 50</code>（越深入軌道外越強）；
+<b>RSI 極值</b>取訊號側 RSI 的極端程度（做多用超賣線以下的比例、做空用超買線以上的比例）；
+<b>通道壓縮</b>以通道寬度 <code>(上軌−下軌)/中軌</code> 標準化，<code>≤2%</code> 給滿分、<code>≥20%</code> 給 0（壓縮後突破的反轉更有力）。
+這個分項 CTMA 完全沒有。</p>
+</div>
+<div class="stf" data-kind="keltner" hidden>
+<p><b>卡爾特通道 — 突破評分（本次新設計，非既有程式碼）</b></p>
+<p><code>分數 = 100 × ( 0.45×突破幅度 + 0.30×中軌斜率一致性 + 0.25×通道擴張 )</code></p>
+<p>衡量<b>「趨勢突破的明確程度」</b>，與布林的權重結構刻意不同：
+<b>突破幅度</b>以 ATR 標準化——收盤在上軌外取 <code>(close−上軌)/(kc_mult×ATR)</code>，
+下軌外取 <code>(下軌−close)/(kc_mult×ATR)</code>，通道內則以距中軌的相對位置打折；
+<b>中軌斜率一致性</b>取中軌 2 根前後變化除以 ATR，需與趨勢方向一致；
+<b>通道擴張</b>比較當前 ATR 與前 10 根平均，擴張越多分數越高。</p>
+<p>因為布林要「窄」、卡爾特要「寬」，兩者對<b>同一標的必然給出不同強度值</b>。</p>
+</div>
+<p><b>這些都是啟發式排序分數，不是機率，也未經校準。</b>用途僅在於把「哪些標的訊號較乾淨」
 排出先後，不可當成勝率估計。</p>
 </details>
 <details>
@@ -485,9 +509,20 @@ function initStrategySelector(){
   renderStrategyInfo();
 }
 
+function renderStrengthDoc(kind){
+  const map = { ctma: '動能評分', bb: '反轉評分', keltner: '突破評分' };
+  const k = (kind === 'bb' || kind === 'keltner') ? kind : 'ctma';
+  const sum = $('stDocSummary');
+  if (sum) sum.textContent = '訊號強度計分（0–100）· 目前使用：' + map[k];
+  document.querySelectorAll('#stDocSummary ~ .stf, .stf').forEach(el => {
+    el.hidden = (el.getAttribute('data-kind') !== k);
+  });
+}
+
 function renderStrategyInfo(){
   const p = CTMA.getPreset(state.presetId);
   const pr = activeParams();
+  renderStrengthDoc(p.kind || 'ctma');
   const custBadge = isCustomized()
     ? ' <span class="badge b-warn">自訂參數</span>' : '';
   $('strategyDesc').innerHTML = '<b>' + esc(p.name) + '</b>' + custBadge + ' — ' + esc(p.desc)
@@ -722,6 +757,8 @@ function renderLive(list, serverTimeMs, intervalLabel){
       + '<div class="row"><span>訊號</span><b>' + esc(c.signal_label) + '</b></div>'
       + '<div class="row"><span>強度</span><b style="color:' + strengthColor(st.total) + '">'
       +   fmtNum(st.total, 1) + ' (' + esc(st.label) + ')</b></div>'
+      + '<div class="row"><span>強度評分</span><b class="smet">'
+      +   esc(st.method_label || '動能評分 · 趨勢/動能/波動/Supertrend') + '</b></div>'
       + '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, st.total))
       +   '%;background:' + strengthColor(st.total) + '"></i></div>'
       + '<div class="hr"></div>'
@@ -812,7 +849,8 @@ function renderScan(rankings, listMeta){
   const rows = s.all_rows.slice().sort((a,b) => b.strength - a.strength);
   const kind = (s.all_rows[0] && s.all_rows[0].strategy_kind) || 'ctma';
   const metricLabel = (s.all_rows[0] && s.all_rows[0].metric_label) || 'EMA 差距';
-  $('thStrat').textContent = metricLabel;
+  const isTrendMetric = (kind === 'ctma' || kind === 'dynrisk');
+  $('thStrat').textContent = isTrendMetric ? metricLabel : ('強度 · ' + metricLabel);
   $('scanBody').innerHTML = rows.length
     ? rows.map(r =>
       '<tr>'

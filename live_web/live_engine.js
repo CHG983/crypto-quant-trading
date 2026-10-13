@@ -26,6 +26,35 @@
 
   var VOL_WILD_CAP_PCT = 8.0;
   var WEIGHTS = { trend: 0.35, momentum: 0.30, volatility: 0.20, supertrend: 0.15 };
+
+  /* ---- 布林／卡爾特專屬強度權重（本次新設計的啟發式評分，非既有程式碼） ----
+   *
+   * 原 computeStrength 對所有策略共用同一組動能分項（趨勢／RSI／MACD／ATR），
+   * 導致布林反轉與卡爾特通道對同一標的算出「完全相同」的強度。
+   * 兩者訊號特性不同（反轉 vs 突破），故各自給一組分項與權重：
+   *
+   *   BB（反轉明確程度）  depth(軌道外深度) 0.45 · rsi(RSI 極值) 0.30 · squeeze(通道壓縮) 0.25
+   *   KC（突破明確程度）  breakout(突破幅度，ATR 標準化) 0.45 · slope(中軌斜率一致性) 0.30 · expansion(通道擴張) 0.25
+   *
+   * 權重和皆為 1.0，總分 = 100 × Σ(權重 × 分項)，仍落在 0–100 並沿用既有分級標籤。
+   */
+  var WEIGHTS_BB = { depth: 0.45, rsi: 0.30, squeeze: 0.25 };
+  var WEIGHTS_KC = { breakout: 0.45, slope: 0.30, expansion: 0.25 };
+
+  // 專屬評分用的標準化常數（皆為本次新設，非既有程式碼）
+  var BB_SQUEEZE_TIGHT_PCT = 2.0;    // 通道寬度 ≤2% 視為「極度壓縮」→ squeeze 分項給滿分
+  var BB_SQUEEZE_WIDE_PCT = 20.0;    // 通道寬度 ≥20% 視為「極寬」→ squeeze 分項給 0
+  var KC_SLOPE_LOOKBACK = 2;         // 中軌斜率回看根數
+  var KC_SLOPE_REF = 0.5;            // 斜率 / ATR 達 0.5 視為方向一致性滿分
+  var KC_EXPANSION_LOOKBACK = 10;    // 通道擴張比較的回看根數
+  var KC_EXPANSION_SPAN = 0.5;       // 現寬/前均寬 高出 1.0 達 0.5 者視為擴張滿分
+
+  /* 強度評分方法標籤：讓前端能顯示「目前這個強度是用哪一套評分算的」 */
+  function strengthMethodLabel(method) {
+    if (method === 'bb') return '反轉評分 · 深度/RSI 極值/通道壓縮';
+    if (method === 'keltner') return '突破評分 · 突破幅度/中軌斜率/通道擴張';
+    return '動能評分 · 趨勢/動能/波動/Supertrend';
+  }
   var TREND_LABELS = { 1: 'LONG', '-1': 'SHORT', 0: 'NEUTRAL' };
   var SIGNAL_LABELS = { 1: 'BULL_CROSS', '-1': 'BEAR_CROSS', 0: 'HOLD' };
 
@@ -724,8 +753,129 @@
     var total = 100 * (WEIGHTS.trend * t + WEIGHTS.momentum * mom + WEIGHTS.volatility * v + WEIGHTS.supertrend * st);
     return {
       trend: round(t, 3), momentum: round(mom, 3), volatility: round(v, 3),
-      supertrend: st, total: round(total, 1), label: strengthLabel(total)
+      supertrend: st, total: round(total, 1), label: strengthLabel(total),
+      method: 'ctma', method_label: strengthMethodLabel('ctma')
     };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 布林通道反轉：專屬強度評分（0–100）
+   * ------------------------------------------------------------------ *
+   * 本次新設計的啟發式評分（不是既有程式碼的原始邏輯），衡量「反轉訊號的明確程度」：
+   *
+   *   depth   軌道外深度：|%B − 50| / 50，夾在 [0,1]。價格越深入上／下軌之外（%B 越偏離中軌），
+   *           反轉訊號越明確。這取代 CTMA 的「EMA 間距」趨勢分項。
+   *   rsi     RSI 極值：訊號側的 RSI 越極端越強。做多用 (bb_rsi_oversold − RSI)/oversold，
+   *           做空用 (RSI − bb_rsi_overbought)/(100 − bb_rsi_overbought)，皆夾在 [0,1]。
+   *           這取代 CTMA 的「MACD 動能」分項。中性趨勢時折半。
+   *   squeeze 通道壓縮：以 (上軌−下軌)/中軌 標準化，<2% 視為壓縮（突破後反轉更強）給高分，
+   *           寬度越大分數越低。這個分項 CTMA 完全沒有。
+   * ------------------------------------------------------------------ */
+  function computeStrengthBB(row, trend, p) {
+    var out = { depth: 0, rsi: 0, squeeze: 0, total: 0, label: 'N/A', method: 'bb', method_label: strengthMethodLabel('bb') };
+    var up = row.bb_upper, lo = row.bb_lower, mid = row.bb_mid, c = row.close;
+    if (!isNum(up) || !isNum(lo) || !isNum(mid) || !isNum(c) || up <= lo || mid <= 0) return out;
+
+    // --- depth：%B 距中軌的相對深度 ---
+    var pctB = (c - lo) / (up - lo) * 100;
+    out.pct_b = round(pctB, 2);
+    var depth = clamp(Math.abs(pctB - 50) / 50, 0, 1);
+
+    // --- rsi：訊號側 RSI 極值程度 ---
+    var rv = row.bb_rsi, r = 0;
+    if (isNum(rv)) {
+      var os = isNum(p.bb_rsi_oversold) ? p.bb_rsi_oversold : 30;
+      var ob = isNum(p.bb_rsi_overbought) ? p.bb_rsi_overbought : 70;
+      if (trend > 0) r = os > 0 ? clamp((os - rv) / os, 0, 1) : 0;
+      else if (trend < 0) r = (100 - ob) > 0 ? clamp((rv - ob) / (100 - ob), 0, 1) : 0;
+    }
+    if (trend === 0) r *= 0.5;
+
+    // --- squeeze：通道寬度（% of 中軌），越窄越強 ---
+    var widthPct = (up - lo) / mid * 100;
+    out.width_pct = round(widthPct, 3);
+    var sq = 1 - clamp((widthPct - BB_SQUEEZE_TIGHT_PCT) / (BB_SQUEEZE_WIDE_PCT - BB_SQUEEZE_TIGHT_PCT), 0, 1);
+
+    var total = 100 * (WEIGHTS_BB.depth * depth + WEIGHTS_BB.rsi * r + WEIGHTS_BB.squeeze * sq);
+    out.depth = round(depth, 3); out.rsi = round(r, 3); out.squeeze = round(sq, 3);
+    out.total = round(total, 1); out.label = strengthLabel(total);
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 卡爾特通道：專屬強度評分（0–100）
+   * ------------------------------------------------------------------ *
+   * 本次新設計的啟發式評分（不是既有程式碼的原始邏輯），衡量「趨勢突破的明確程度」：
+   *
+   *   breakout  突破幅度：以 ATR 標準化。價在上軌外 → 距上軌距離 / (kc_mult × ATR)；
+   *             價在下軌外 → 距下軌距離 / (kc_mult × ATR)；價在通道內 → 以距中軌的相對位置
+   *             （|c − mid| / (kc_mult × ATR)）打折計分。夾在 [0,1]。
+   *   slope     中軌斜率方向一致性：kc_mid 現在值 vs slLook 根之前，以 ATR 標準化 ±，夾在 [0,1]，
+   *             需與趨勢方向一致。
+   *   expansion 通道擴張程度：當前寬度 (2 × kc_mult × ATR) 相對前 exLook 根的平均寬度，
+   *             比值 1 給 0，KELT_EXPANSION_SPAN 以上給 1。這與 BB 的 squeeze 方向相反
+   *             （BB 要窄、KC 要寬），確保兩者對同一標的必然給出不同分數。
+   * ------------------------------------------------------------------ */
+  function computeStrengthKeltner(row, trend, p, ind, i) {
+    var out = { breakout: 0, slope: 0, expansion: 0, total: 0, label: 'N/A', method: 'keltner', method_label: strengthMethodLabel('keltner') };
+    var up = row.kc_upper, lo = row.kc_lower, mid = row.kc_mid, c = row.close;
+    var atrV = row.atr;
+    if (!isNum(up) || !isNum(lo) || !isNum(mid) || !isNum(c) || !isNum(atrV) || atrV <= 0) return out;
+
+    var half = p.kc_mult * atrV;           // 通道半寬（= 中軌到軌道的距離）
+    if (!isNum(half) || half <= 0) return out;
+
+    // --- breakout：突破幅度（ATR 標準化）---
+    var brk;
+    if (c > up) brk = clamp((c - up) / half, 0, 1);
+    else if (c < lo) brk = clamp((lo - c) / half, 0, 1);
+    else brk = 0.5 * clamp(Math.abs(c - mid) / half, 0, 1);   // 通道內：以距中軌相對位置打折
+    if (trend === 0) brk *= 0.5;
+
+    // --- slope：中軌斜率方向一致性 ---
+    var sl = 0;
+    if (ind && ind.kc_mid && isNum(i) && i - KC_SLOPE_LOOKBACK >= 0) {
+      var midAgo = ind.kc_mid[i - KC_SLOPE_LOOKBACK];
+      if (isNum(midAgo)) {
+        var slopeAtr = (mid - midAgo) / atrV;
+        if (trend > 0) sl = clamp(slopeAtr / KC_SLOPE_REF, 0, 1);
+        else if (trend < 0) sl = clamp(-slopeAtr / KC_SLOPE_REF, 0, 1);
+      }
+    }
+    if (trend === 0) sl *= 0.5;
+
+    // --- expansion：通道擴張程度（現寬 vs 前 N 根平均寬，以 ATR 為代理）---
+    var ex = 0;
+    if (ind && ind.kc_atr && isNum(i) && i - KC_EXPANSION_LOOKBACK >= 0) {
+      var sum = 0, cnt = 0;
+      for (var back = 1; back <= KC_EXPANSION_LOOKBACK; back++) {
+        var a = ind.kc_atr[i - back];
+        if (isNum(a) && a > 0) { sum += a; cnt++; }
+      }
+      if (cnt > 0) {
+        var avgAgo = sum / cnt;
+        var ratio = atrV / avgAgo;                        // >1 表示通道正在擴張
+        ex = clamp((ratio - 1) / KC_EXPANSION_SPAN, 0, 1);
+        out.width_ratio = round(ratio, 3);
+      }
+    }
+
+    var total = 100 * (WEIGHTS_KC.breakout * brk + WEIGHTS_KC.slope * sl + WEIGHTS_KC.expansion * ex);
+    out.breakout = round(brk, 3); out.slope = round(sl, 3); out.expansion = round(ex, 3);
+    out.total = round(total, 1); out.label = strengthLabel(total);
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 依策略種類分派強度評分
+   *   ctma / wfo / dynrisk → 原 computeStrength（共用動能分項，未改動）
+   *   bb                   → computeStrengthBB（反轉明確程度）
+   *   keltner              → computeStrengthKeltner（突破明確程度）
+   * ------------------------------------------------------------------ */
+  function computeStrengthFor(kind, row, trend, p, ind, i) {
+    if (kind === 'bb') return computeStrengthBB(row, trend, p);
+    if (kind === 'keltner') return computeStrengthKeltner(row, trend, p, ind, i);
+    return computeStrength(row, trend, p);
   }
 
   /* ------------------------------------------------------------------ *
@@ -771,7 +921,7 @@
       trend = (isNum(ef) && isNum(es)) ? (ef > es ? 1 : (ef < es ? -1 : 0)) : 0;
     }
 
-    var strength = computeStrength(row, trend, p);
+    var strength = computeStrengthFor(kind, row, trend, p, sig.ind, i);
     var bullAgo = barsSince(sig.bull, i), bearAgo = barsSince(sig.bear, i);
 
     var lastCross = null;
@@ -1014,6 +1164,9 @@
     metricFor: metricFor,
     analyzeFrame: analyzeFrame,
     analyzeBars: analyzeBars, computeStrength: computeStrength,
+    computeStrengthFor: computeStrengthFor,
+    computeStrengthBB: computeStrengthBB, computeStrengthKeltner: computeStrengthKeltner,
+    strengthMethodLabel: strengthMethodLabel,
     // 掃描
     rowOf: rowOf, buildRankings: buildRankings,
     topSymbolsByVolume: topSymbolsByVolume, isStablecoin: isStablecoin,
@@ -1027,6 +1180,7 @@
     defaultParams: defaultParams, strengthLabel: strengthLabel, humanDelay: humanDelay,
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
-    VERSION: '1.3.0'
+    WEIGHTS_BB: WEIGHTS_BB, WEIGHTS_KC: WEIGHTS_KC,
+    VERSION: '1.4.0'
   };
 });

@@ -1,0 +1,80 @@
+{
+  "generated_utc": "2026-10-13T04:00:14.805Z",
+  "engine_version": "1.4.0",
+  "csv": "verify/BTCUSDT_1d_klines.csv",
+  "symbol": "BTCUSDT",
+  "bars": 400,
+  "per_preset": [
+    {
+      "id": "ctma_default",
+      "kind": "ctma",
+      "total": 67.5,
+      "label": "強",
+      "method": "ctma",
+      "metric": "2064.79733878",
+      "leverage": null,
+      "stop": 77578.72798366,
+      "detail": "trend=1 mom=0.115 vol=0.705 st=1"
+    },
+    {
+      "id": "bb_reversion",
+      "kind": "bb",
+      "total": 29.7,
+      "label": "極弱",
+      "method": "bb",
+      "metric": "39.38%",
+      "leverage": null,
+      "stop": 89967.51201634,
+      "detail": "depth=0.212 rsi=0 squeeze=0.806"
+    },
+    {
+      "id": "keltner",
+      "kind": "keltner",
+      "total": 3.3,
+      "label": "極弱",
+      "method": "keltner",
+      "metric": "55.97%",
+      "leverage": null,
+      "stop": 77578.72798366,
+      "detail": "breakout=0.058 slope=0.022 expansion=0"
+    },
+    {
+      "id": "wfo_9_34",
+      "kind": "ctma",
+      "total": 52.5,
+      "label": "中",
+      "method": "ctma",
+      "metric": "2064.79733878",
+      "leverage": null,
+      "stop": 80675.92399183,
+      "detail": "trend=0.572 mom=0.115 vol=0.705 st=1"
+    },
+    {
+      "id": "ctma_long_only",
+      "kind": "ctma",
+      "total": 67.5,
+      "label": "強",
+      "method": "ctma",
+      "metric": "2064.79733878",
+      "leverage": null,
+      "stop": 77578.72798366,
+      "detail": "trend=1 mom=0.115 vol=0.705 st=1"
+    },
+    {
+      "id": "dynrisk_voltarget",
+      "kind": "ctma",
+      "total": 67.5,
+      "label": "強",
+      "method": "ctma",
+      "metric": "2064.79733878",
+      "leverage": null,
+      "stop": 77578.72798366,
+      "detail": "trend=1 mom=0.115 vol=0.705 st=1"
+    }
+  ],
+  "assertions": {
+    "pass": 8,
+    "fail": 0,
+    "overall": "ALL PASS"
+  }
+}
