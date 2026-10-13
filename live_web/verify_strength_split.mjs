@@ -4,7 +4,8 @@
  * 真的走不同評分、對同一標的給出不同分數，且其他策略未被影響。
  *
  * 用真實幣安日線（verify/BTCUSDT_1d_klines.csv）跑 analyzeBars，
- * 依序套用 bb_reversion / keltner / ctma_default / wfo_9_34 / ctma_long_only / dynrisk_voltarget，
+ * 依序套用 bb_reversion / keltner / ctma_default / wfo_9_34 / ctma_long_only，
+ * （原 dynrisk_voltarget / dyn_risk 已移除，改為獨立「建議槓桿比率」區塊）
  * 印出每個策略在同一根 K 棒的 strength.total / label / method 與分項。
  *
  * 同時與 Python 基準（verify/BTCUSDT_1d_baseline.json）比對 CTMA 的 strength，
@@ -46,7 +47,7 @@ const baseline = JSON.parse(fs.readFileSync(BASE, 'utf8'));
 
 const PRESETS = [
   'ctma_default', 'bb_reversion', 'keltner',
-  'wfo_9_34', 'ctma_long_only', 'dyn_risk',
+  'wfo_9_34', 'ctma_long_only',
 ];
 
 let pass = 0, fail = 0;

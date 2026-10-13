@@ -1,0 +1,552 @@
+{
+  "generated_at_utc": "2026-10-13T04:59:56.414319+00:00",
+  "url": "http://127.0.0.1:8787/dashboard.html",
+  "total_checks": 57,
+  "passed_checks": 57,
+  "failed_checks": 0,
+  "status": "ALL PASS",
+  "checks": [
+    {
+      "check": "桌面：掃描表成功取得資料（代理抖動已重試）",
+      "ok": true,
+      "detail": "rows=25 status=即時資料正常"
+    },
+    {
+      "check": "桌面：完成一次刷新且狀態非載入中",
+      "ok": true,
+      "detail": "即時資料正常"
+    },
+    {
+      "check": "桌面：引擎版本為 1.5.0",
+      "ok": true,
+      "detail": "version=1.5.0"
+    },
+    {
+      "check": "桌面：真的對幣安發出請求",
+      "ok": true,
+      "detail": "requests=30"
+    },
+    {
+      "check": "桌面：無 pageerror",
+      "ok": true,
+      "detail": "errors=[]"
+    },
+    {
+      "check": "策略選擇器：恰有 8 個選項",
+      "ok": true,
+      "detail": "options=8"
+    },
+    {
+      "check": "策略選擇器：不含「動態風險敞口」選項",
+      "ok": true,
+      "detail": "values=['ctma_default', 'ctma_supertrend', 'ctma_long_only', 'wfo_9_34', 'wfo_13_55', 'wfo_21_89', 'bb_reversion', 'keltner']"
+    },
+    {
+      "check": "策略選擇器：dyn_risk 已完全移除（無選項、無舊元素 #liveLeverage）",
+      "ok": true,
+      "detail": "dyn_risk 僅存在於「已移除」的說明文字與來源註解中，已非策略選項"
+    },
+    {
+      "check": "策略選擇器：策略由 9 降為 8",
+      "ok": true,
+      "detail": "values=['ctma_default', 'ctma_supertrend', 'ctma_long_only', 'wfo_9_34', 'wfo_13_55', 'wfo_21_89', 'bb_reversion', 'keltner']"
+    },
+    {
+      "check": "桌面：即時卡片有資料",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "桌面：掃描表有資料",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "建議槓桿：區塊存在（摘要 + 4 參數編輯器 + 標的清單）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "建議槓桿：區塊標題為「建議槓桿比率」（獨立區塊，非策略）",
+      "ok": true,
+      "detail": "⚖ 建議槓桿比率0.78–0.50×目標波動度 2% · 槓桿範圍 0.5–3× · ATR 週期 14（波動越高、槓桿越低）SOLUSDT"
+    },
+    {
+      "check": "建議槓桿：參數輸入為 4 項（dr_target_vol / dr_max_lev / dr_min_lev / dr_atr_len）",
+      "ok": true,
+      "detail": "['dr_target_vol', 'dr_max_lev', 'dr_min_lev', 'dr_atr_len']"
+    },
+    {
+      "check": "建議槓桿：套用 / 重設按鈕存在",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "建議槓桿：預設值與 dr_* 預設一致（2.0 / 3.0 / 0.5 / 14）",
+      "ok": true,
+      "detail": "['2', '3', '0.5', '14']"
+    },
+    {
+      "check": "掃描表：新增「建議槓桿」欄位",
+      "ok": true,
+      "detail": "headers=['ATR%', '訊號', '快照時間 (UTC)']"
+    },
+    {
+      "check": "建議槓桿：清單列出 ≥3 檔標的",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "建議槓桿：每列都有 ATR% 與建議槓桿",
+      "ok": true,
+      "detail": "parsed=25/25"
+    },
+    {
+      "check": "即時卡片：在 CTMA 策略下也顯示建議槓桿（不依賴策略）",
+      "ok": true,
+      "detail": "[('BTCUSDT', '0.78×'), ('ETHUSDT', '0.56×'), ('SOLUSDT', '0.50× 已達下限')]"
+    },
+    {
+      "check": "槓桿與波動度呈反向（ATR% 由低到高 → 槓桿不遞增）",
+      "ok": true,
+      "detail": "UUSDT ATR%0.04→3.00x · BTCUSDT ATR%2.57→0.78x · BNBUSDT ATR%3.07→0.65x · ETHUSDT ATR%3.59→0.56x · SOLUSDT ATR%4.67→0.50x · XRPUSDT ATR%5.12→0.50x"
+    },
+    {
+      "check": "槓桿落在 [最小 0.5×, 最大 3.0×] 之間",
+      "ok": true,
+      "detail": "n=25 min=0.50 max=3.00"
+    },
+    {
+      "check": "至少 3 檔標的有 ATR%/槓桿對照",
+      "ok": true,
+      "detail": "STRKUSDT: ATR%14.85 → 0.50× (部位 16.7%) · WUSDT: ATR%14.58 → 0.50× (部位 16.7%) · PUMPUSDT: ATR%13.29 → 0.50× (部位 16.7%)"
+    },
+    {
+      "check": "獨立性：切換 bb_reversion 後區塊仍可見且有 25 檔標的",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "獨立性：bb_reversion 下建議槓桿與 CTMA 相同（不隨策略改變）",
+      "ok": true,
+      "detail": "ctma=[0.5, 0.5, 0.5, 0.5] vs bb_reversion=[0.5, 0.5, 0.5, 0.5]"
+    },
+    {
+      "check": "獨立性：bb_reversion 下即時卡片仍顯示建議槓桿",
+      "ok": true,
+      "detail": "[('BTCUSDT', '0.78×'), ('ETHUSDT', '0.56×'), ('SOLUSDT', '0.50× 已達下限')]"
+    },
+    {
+      "check": "獨立性：切換 keltner 後區塊仍可見且有 25 檔標的",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "獨立性：keltner 下建議槓桿與 CTMA 相同（不隨策略改變）",
+      "ok": true,
+      "detail": "ctma=[0.5, 0.5, 0.5, 0.5] vs keltner=[0.5, 0.5, 0.5, 0.5]"
+    },
+    {
+      "check": "獨立性：keltner 下即時卡片仍顯示建議槓桿",
+      "ok": true,
+      "detail": "[('BTCUSDT', '0.78×'), ('ETHUSDT', '0.56×'), ('SOLUSDT', '0.50× 已達下限')]"
+    },
+    {
+      "check": "獨立性：切換 wfo_9_34 後區塊仍可見且有 25 檔標的",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "獨立性：wfo_9_34 下建議槓桿與 CTMA 相同（不隨策略改變）",
+      "ok": true,
+      "detail": "ctma=[0.5, 0.5, 0.5, 0.5] vs wfo_9_34=[0.5, 0.5, 0.5, 0.5]"
+    },
+    {
+      "check": "獨立性：wfo_9_34 下即時卡片仍顯示建議槓桿",
+      "ok": true,
+      "detail": "[('BTCUSDT', '0.78×'), ('ETHUSDT', '0.56×'), ('SOLUSDT', '0.50× 已達下限')]"
+    },
+    {
+      "check": "調整目標波動度 2.0%→1.0% 後建議槓桿改變",
+      "ok": true,
+      "detail": "[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.56, 0.65, 0.78, 3.0] → [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0]"
+    },
+    {
+      "check": "目標波動度調低後槓桿下降（或已觸及下限）",
+      "ok": true,
+      "detail": "[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.56, 0.65, 0.78, 3.0] → [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0]"
+    },
+    {
+      "check": "調整後狀態標示為「自訂參數」",
+      "ok": true,
+      "detail": "目前為 自訂參數（已套用）· 生效值 目標波動 1% · ATR 14 · 槓桿 0.5–3×"
+    },
+    {
+      "check": "自動刷新：時間戳前進",
+      "ok": true,
+      "detail": "最後更新 2026-10-13 04:59:35 UTC → 最後更新 2026-10-13 04:59:39 UTC"
+    },
+    {
+      "check": "自動刷新：仍持續抓取（請求數增加）",
+      "ok": true,
+      "detail": "180 → 210"
+    },
+    {
+      "check": "自動刷新：自訂值仍沿用（dr_target_vol 仍為 1.0）",
+      "ok": true,
+      "detail": "{'dr_target_vol': '1.0', 'dr_max_lev': '3', 'dr_min_lev': '0.5', 'dr_atr_len': '14'}"
+    },
+    {
+      "check": "自動刷新：槓桿仍為自訂後的結果",
+      "ok": true,
+      "detail": "[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0]"
+    },
+    {
+      "check": "不合法（最大槓桿 0.2 < 最小槓桿 0.5）被擋下並提示",
+      "ok": true,
+      "detail": "errors=['最小槓桿（0.5）必須小於等於最大槓桿（0.2）'] msg=參數不合法，未套用（1 項）"
+    },
+    {
+      "check": "不合法時不套用（生效槓桿維持不變）",
+      "ok": true,
+      "detail": "[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0]"
+    },
+    {
+      "check": "不合法（目標波動度 -1 超出範圍）被擋下並提示",
+      "ok": true,
+      "detail": "errors=['目標波動度 (ATR%) 必須介於 0.1 與 20 之間（目前 -1）', '最小槓桿（0.5）必須小於等於最大槓桿（0.2）']"
+    },
+    {
+      "check": "重設為預設：參數回到 2.0 / 3.0 / 0.5 / 14",
+      "ok": true,
+      "detail": "{'dr_target_vol': '2', 'dr_max_lev': '3', 'dr_min_lev': '0.5', 'dr_atr_len': '14'}"
+    },
+    {
+      "check": "重設為預設：狀態回到「原始預設」",
+      "ok": true,
+      "detail": "目前為 原始預設（未自訂）· 生效值 目標波動 2% · ATR 14 · 槓桿 0.5–3×"
+    },
+    {
+      "check": "重設為預設：槓桿回到預設計算結果",
+      "ok": true,
+      "detail": "[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.56, 0.65, 0.78, 3.0] vs [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.56, 0.65, 0.78, 3.0]"
+    },
+    {
+      "check": "桌面：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "桌面：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "桌面：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0 []"
+    },
+    {
+      "check": "桌面：免責聲明仍在（中英文）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "手機：掃描表成功取得資料",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "手機：策略選擇器 8 選項且無「動態風險敞口」",
+      "ok": true,
+      "detail": "options=8"
+    },
+    {
+      "check": "手機：建議槓桿區塊可見且有資料",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "手機：即時卡片顯示建議槓桿",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "check": "手機：切換 keltner 後建議槓桿區塊仍運作",
+      "ok": true,
+      "detail": "rows=25"
+    },
+    {
+      "check": "手機：無橫向溢出",
+      "ok": true,
+      "detail": "overflow=0px offenders=0"
+    },
+    {
+      "check": "手機：無破圖",
+      "ok": true,
+      "detail": "broken=0/0"
+    },
+    {
+      "check": "手機：無文字重疊",
+      "ok": true,
+      "detail": "overlaps=0 []"
+    }
+  ],
+  "leverage_table": [
+    {
+      "symbol": "STRKUSDT",
+      "atr_pct": 14.85,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "WUSDT",
+      "atr_pct": 14.58,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "PUMPUSDT",
+      "atr_pct": 13.29,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "NEARUSDT",
+      "atr_pct": 11.49,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "ENAUSDT",
+      "atr_pct": 11.25,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "CTKUSDT",
+      "atr_pct": 10.82,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "WLDUSDT",
+      "atr_pct": 10.75,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "ZROUSDT",
+      "atr_pct": 10.67,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "ZECUSDT",
+      "atr_pct": 9.96,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "UNIUSDT",
+      "atr_pct": 9.75,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "RSRUSDT",
+      "atr_pct": 9.13,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "ONDOUSDT",
+      "atr_pct": 8.7,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "SUIUSDT",
+      "atr_pct": 8.2,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "PEPEUSDT",
+      "atr_pct": 7.89,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "TAOUSDT",
+      "atr_pct": 7.75,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "ADAUSDT",
+      "atr_pct": 7.4,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "atr_pct": 7.03,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "LINKUSDT",
+      "atr_pct": 5.99,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "atr_pct": 5.8,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "XRPUSDT",
+      "atr_pct": 5.12,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "SOLUSDT",
+      "atr_pct": 4.67,
+      "leverage": 0.5,
+      "position_pct": 16.7
+    },
+    {
+      "symbol": "ETHUSDT",
+      "atr_pct": 3.59,
+      "leverage": 0.56,
+      "position_pct": 18.6
+    },
+    {
+      "symbol": "BNBUSDT",
+      "atr_pct": 3.07,
+      "leverage": 0.65,
+      "position_pct": 21.7
+    },
+    {
+      "symbol": "BTCUSDT",
+      "atr_pct": 2.57,
+      "leverage": 0.78,
+      "position_pct": 25.9
+    },
+    {
+      "symbol": "UUSDT",
+      "atr_pct": 0.04,
+      "leverage": 3.0,
+      "position_pct": 100.0
+    }
+  ],
+  "option_values": [
+    "ctma_default",
+    "ctma_supertrend",
+    "ctma_long_only",
+    "wfo_9_34",
+    "wfo_13_55",
+    "wfo_21_89",
+    "bb_reversion",
+    "keltner"
+  ],
+  "target_vol_change": {
+    "dr_target_vol_2_0": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.56,
+      0.65,
+      0.78,
+      3.0
+    ],
+    "dr_target_vol_1_0": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      3.0
+    ],
+    "reset_to_default": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.56,
+      0.65,
+      0.78,
+      3.0
+    ]
+  },
+  "layout": {
+    "desktop": {
+      "overflow": 0,
+      "broken": 0,
+      "overlaps": 0
+    },
+    "mobile": {
+      "overflow": 0,
+      "broken": 0,
+      "overlaps": 0
+    }
+  }
+}

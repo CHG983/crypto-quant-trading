@@ -254,7 +254,7 @@
       bb_rsi_len: 14, bb_rsi_oversold: 30.0, bb_rsi_overbought: 70.0,
       // --- 卡爾特通道（Keltner Channels）---
       kc_ema_len: 20, kc_atr_len: 10, kc_mult: 2.0,
-      // --- 動態風險敞口（動態槓桿比例）---
+      // --- 建議槓桿比率（獨立區塊，不依賴策略選擇）---
       dr_target_vol: 2.0, dr_max_lev: 3.0, dr_min_lev: 0.5, dr_atr_len: 14
     };
     if (over) for (var k in over) if (Object.prototype.hasOwnProperty.call(over, k)) p[k] = over[k];
@@ -275,6 +275,10 @@
    *
    * 這些不是憑空發明的策略：前三個是 strategy.py 的參數開關，後三個是
    * walkforward.py / optimize.py 實際跑過的網格點。
+   *
+   * 註：原「動態風險敞口（動態槓桿比例）」已於本次自策略清單移除，改為儀表板上
+   * 獨立的「建議槓桿比率」區塊（見 computeLeverageRow / dynamicLeverage），
+   * 不依賴策略選擇，任何策略下都對每檔標的計算。策略數因此由 9 回到 8。
    * ------------------------------------------------------------------ */
 
   var STRATEGY_PRESETS = [
@@ -349,15 +353,6 @@
       desc: '中軌 = EMA(close, 20)，上下軌 = 中軌 ± 2.0×ATR(10)。收盤突破上軌做多、跌破下軌做空；趨勢方向以收盤相對中軌位置判定。停損停利沿用 ATR 倍數。',
       source: '標準卡爾特通道定義（Keltner 1960 / Raschke 修正版）· EMA ± N×ATR；本專案未內建此策略，為本次新增，公式與參數於頁面明列',
       params: { kind: 'keltner', kc_ema_len: 20, kc_atr_len: 10, kc_mult: 2.0 }
-    },
-    {
-      id: 'dyn_risk',
-      kind: 'dynrisk',
-      name: '動態風險敞口（動態槓桿比例）',
-      short: '動態風險敞口',
-      desc: '方向沿用 CTMA（EMA 21/55 交叉 + RSI/MACD 動能 + ATR% 過濾）；再依波動度動態調整建議槓桿：槓桿 = clamp(目標波動度 ÷ 實際波動度(ATR%), 最小槓桿, 最大槓桿)。波動越高、槓桿越低；部位比例 = 槓桿 ÷ 最大槓桿。',
-      source: '波動度目標法（volatility targeting）· 方向沿用 crypto_quant/strategy.py；槓桿上限沿用 backtest.py BacktestConfig.max_leverage=3.0；本策略為本次新增，公式與參數於頁面明列',
-      params: { kind: 'dynrisk', dr_target_vol: 2.0, dr_max_lev: 3.0, dr_min_lev: 0.5, dr_atr_len: 14 }
     }
   ];
 
@@ -385,8 +380,7 @@
   var KIND_GROUPS = {
     ctma: ['trend', 'momentum', 'risk', 'supertrend', 'direction'],
     bb: ['bollinger', 'risk', 'direction'],
-    keltner: ['keltner', 'risk', 'direction'],
-    dynrisk: ['trend', 'momentum', 'risk', 'direction', 'dynrisk']
+    keltner: ['keltner', 'risk', 'direction']
   };
 
   /** 依預設 id 篩選出該策略相關的參數規格（供參數編輯器使用）。 */
@@ -425,12 +419,26 @@
     { key: 'kc_ema_len',        label: '卡爾特 EMA 週期',  type: 'int',   min: 2,   max: 200,  step: 1,   group: 'keltner' },
     { key: 'kc_atr_len',        label: '卡爾特 ATR 週期',  type: 'int',   min: 2,   max: 100,  step: 1,   group: 'keltner' },
     { key: 'kc_mult',           label: '卡爾特 ATR 倍數',  type: 'float', min: 0.1, max: 10,   step: 0.1, group: 'keltner' },
-    // --- 動態風險敞口 ---
-    { key: 'dr_target_vol',     label: '目標波動度 (ATR%)', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
-    { key: 'dr_max_lev',        label: '最大槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
-    { key: 'dr_min_lev',        label: '最小槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
-    { key: 'dr_atr_len',        label: '動態風險 ATR 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'dynrisk' }
+    // --- 建議槓桿比率（獨立區塊，不屬於任何策略；供該區塊的參數控制項使用） ---
+    { key: 'dr_target_vol',     label: '目標波動度 (ATR%)', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'leverage' },
+    { key: 'dr_max_lev',        label: '最大槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'leverage' },
+    { key: 'dr_min_lev',        label: '最小槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'leverage' },
+    { key: 'dr_atr_len',        label: '建議槓桿 ATR 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'leverage' }
   ];
+
+  /* ------------------------------------------------------------------ *
+   * 建議槓桿比率區塊的參數群組
+   * ------------------------------------------------------------------
+   * 該區塊獨立於策略選擇：不屬於任何策略的參數群組，因此不會出現在策略的
+   * 參數編輯器中；但 dr_* 仍在 defaultParams() 內，故 validateParams 依然
+   * 會驗證它們（沿用既有的範圍與合理性檢查）。
+   * ------------------------------------------------------------------ */
+  var LEVERAGE_GROUPS = ['leverage'];
+
+  /** 依群組名稱集合篩選參數規格（供策略編輯器與建議槓桿編輯器共用）。 */
+  function specsForGroups(groups) {
+    return PARAM_SPECS.filter(function (s) { return groups.indexOf(s.group) >= 0; });
+  }
 
   /**
    * 驗證使用者自訂參數。
@@ -533,7 +541,7 @@
     out.kc_mid = kcMid; out.kc_atr = kcAtr;
     out.kc_upper = kcMid.map(function (v, i) { return isNum(v) && isNum(kcAtr[i]) ? v + p.kc_mult * kcAtr[i] : NaN; });
     out.kc_lower = kcMid.map(function (v, i) { return isNum(v) && isNum(kcAtr[i]) ? v - p.kc_mult * kcAtr[i] : NaN; });
-    // --- 動態風險敞口用的 ATR ---
+    // --- 建議槓桿比率用的 ATR（獨立區塊，不依賴策略）---
     out.dr_atr = atr(high, low, close, p.dr_atr_len);
     out.dr_atr_pct = out.dr_atr.map(function (v, i) { return v / close[i] * 100; });
     out.close = close; out.high = high; out.low = low;
@@ -650,29 +658,15 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 新增策略：動態風險敞口（動態槓桿比例）
-   * ------------------------------------------------------------------ *
-   * 方向沿用 CTMA（EMA 交叉 + RSI/MACD 動能 + ATR% 過濾）；
-   * 槓桿依波動度動態調整（波動度目標法）：
-   *   實際波動度 = ATR(dr_atr_len) / close × 100  （即 ATR%）
-   *   建議槓桿 = clamp(目標波動度 ÷ 實際波動度, dr_min_lev, dr_max_lev)
-   *   部位比例 = 建議槓桿 ÷ dr_max_lev
-   * 波動越高 → 槓桿越低。
-   * ------------------------------------------------------------------ */
-  function generateSignalsDynRisk(bars, p) {
-    return generateSignals(bars, p);
-  }
-
-  /** 依策略種類分派至對應的訊號產生器。 */
+   * 依策略種類分派至對應的訊號產生器。 */
   function generateSignalsFor(bars, p) {
     var kind = p.kind || 'ctma';
     if (kind === 'bb') return generateSignalsBB(bars, p);
     if (kind === 'keltner') return generateSignalsKeltner(bars, p);
-    if (kind === 'dynrisk') return generateSignalsDynRisk(bars, p);
     return generateSignals(bars, p);
   }
 
-  /** 依波動度計算建議槓桿（動態風險敞口策略）。 */
+  /** 依波動度計算建議槓桿（供「建議槓桿比率」獨立區塊使用）。 */
   function dynamicLeverage(atrPct, p) {
     if (!isNum(atrPct) || atrPct <= 0) return null;
     var raw = p.dr_target_vol / atrPct;
@@ -688,10 +682,40 @@
   }
 
   /**
+   * 建議槓桿比率（獨立於策略選擇；任何策略下都對每檔標的計算）
+   * ------------------------------------------------------------------
+   * 公式（沿用原「動態風險敞口」策略的波動度目標法，本次移到獨立區塊）：
+   *   實際波動度 = ATR(dr_atr_len) / close × 100   （即 ATR%）
+   *   建議槓桿   = clamp(目標波動度 ÷ 實際波動度, dr_min_lev, dr_max_lev)
+   *   部位比例   = 建議槓桿 ÷ dr_max_lev
+   * 波動越高 → 槓桿越低（方向關係）。
+   *
+   * 參數預設值來源：
+   *   目標波動度 2.0% / 最小槓桿 0.5× / ATR 週期 14 → 沿用原 dyn_risk 預設
+   *   槓桿上限 3.0× → crypto_quant/backtest.py BacktestConfig.max_leverage
+   *   方向模型（僅供對照，本區塊不使用方向）→ crypto_quant/strategy.py
+   * ------------------------------------------------------------------
+   */
+  function computeLeverageRow(row, p) {
+    var lv = dynamicLeverage(row.dr_atr_pct, p);
+    if (!lv) return null;
+    return {
+      leverage: lv.leverage,
+      raw_leverage: lv.raw_leverage,
+      position_pct: lv.position_pct,
+      realized_vol_pct: lv.realized_vol_pct,
+      target_vol_pct: lv.target_vol_pct,
+      capped: lv.capped,
+      atr_abs: isNum(row.dr_atr) ? round(row.dr_atr, 8) : null,
+      atr_pct: isNum(row.dr_atr_pct) ? round(row.dr_atr_pct, 4) : null,
+      lever_atr_len: p.dr_atr_len
+    };
+  }
+
+  /**
    * 策略專屬指標（供卡片與掃描表的「策略指標」欄使用）：
    *   bb       → 布林 %B = (close − 下軌) ÷ (上軌 − 下軌) × 100
    *   keltner  → 卡爾特 %B = 同上，改用卡爾特上下軌
-   *   dynrisk  → 建議槓桿
    *   ctma     → ATR（絕對值）
    * 回傳 { key, label, value, text }
    */
@@ -707,11 +731,6 @@
       var kb = (isNum(klo) && isNum(kup) && isNum(kc) && kup > klo) ? (kc - klo) / (kup - klo) * 100 : null;
       return { key: 'kc_pctb', label: '卡爾特 %B', value: isNum(kb) ? round(kb, 2) : null,
                text: isNum(kb) ? round(kb, 2).toFixed(2) + '%' : '—' };
-    }
-    if (kind === 'dynrisk') {
-      var lv = dynamicLeverage(row.dr_atr_pct, p);
-      return { key: 'leverage', label: '建議槓桿', value: lv ? lv.leverage : null,
-               text: lv ? lv.leverage.toFixed(2) + '×' : '—' };
     }
     return { key: 'atr', label: 'ATR（絕對）', value: isNum(row.atr) ? round(row.atr, 8) : null,
              text: isNum(row.atr) ? String(round(row.atr, 8)) : '—' };
@@ -868,7 +887,7 @@
 
   /* ------------------------------------------------------------------ *
    * 依策略種類分派強度評分
-   *   ctma / wfo / dynrisk → 原 computeStrength（共用動能分項，未改動）
+   *   ctma / wfo → 原 computeStrength（共用動能分項，未改動）
    *   bb                   → computeStrengthBB（反轉明確程度）
    *   keltner              → computeStrengthKeltner（突破明確程度）
    * ------------------------------------------------------------------ */
@@ -910,7 +929,7 @@
     var ef = row.ema_fast, es = row.ema_slow, close = row.close;
     var kind = p.kind || 'ctma';
     // 趨勢方向依策略種類判定（頁面明列）：
-    //   ctma / dynrisk：EMA 快線 vs 慢線
+    //   ctma：EMA 快線 vs 慢線
     //   bb / keltner：收盤相對中軌位置（通道方向）
     var trend;
     if (kind === 'bb') {
@@ -962,8 +981,8 @@
       kc_mid: isNum(row.kc_mid) ? round(row.kc_mid, 8) : null,
       kc_upper: isNum(row.kc_upper) ? round(row.kc_upper, 8) : null,
       kc_lower: isNum(row.kc_lower) ? round(row.kc_lower, 8) : null,
+      dr_atr: isNum(row.dr_atr) ? round(row.dr_atr, 8) : null,
       dr_atr_pct: isNum(row.dr_atr_pct) ? round(row.dr_atr_pct, 4) : null,
-      leverage: (kind === 'dynrisk') ? dynamicLeverage(row.dr_atr_pct, p) : null,
       strategy_kind: kind,
       strategy_metric: metricFor(kind, row, p, trend),
       signal: sig.signal[i],
@@ -1106,7 +1125,7 @@
     return rows.slice(0, n);
   }
 
-  function rowOf(r) {
+  function rowOf(r, lev) {
     var c = r.confirmed || r.provisional;
     var lv = r.levels || {};
     return {
@@ -1118,7 +1137,9 @@
       stop: lv.stop === undefined ? null : lv.stop,
       take_profit: lv.take_profit === undefined ? null : lv.take_profit,
       rr_ratio: lv.rr_ratio === undefined ? null : lv.rr_ratio,
-      leverage: c.leverage || null,
+      leverage: lev || null,
+      dr_atr: c.dr_atr === undefined ? null : c.dr_atr,
+      dr_atr_pct: c.dr_atr_pct === undefined ? null : c.dr_atr_pct,
       metric_label: c.strategy_metric ? c.strategy_metric.label : null,
       metric_text: c.strategy_metric ? c.strategy_metric.text : null,
       strategy_kind: c.strategy_kind || null,
@@ -1128,9 +1149,14 @@
     };
   }
 
-  function buildRankings(results, topN) {
+  function buildRankings(results, topN, levParams) {
     topN = topN || 8;
-    var rows = results.map(rowOf);
+    // levParams 為建議槓桿區塊的參數；提供時對每一列計算建議槓桿（與策略無關）
+    var rows = results.map(function (r) {
+      if (!levParams) return rowOf(r, null);
+      var c = r.confirmed || r.provisional;
+      return rowOf(r, computeLeverageRow(c, levParams));
+    });
     var longs = rows.filter(function (x) { return x.trend_int === 1; })
       .sort(function (a, b) { return b.strength - a.strength; });
     var shorts = rows.filter(function (x) { return x.trend_int === -1; })
@@ -1160,7 +1186,8 @@
     // 訊號
     generateSignals: generateSignals, generateSignalsFor: generateSignalsFor,
     generateSignalsBB: generateSignalsBB, generateSignalsKeltner: generateSignalsKeltner,
-    generateSignalsDynRisk: generateSignalsDynRisk, dynamicLeverage: dynamicLeverage,
+    dynamicLeverage: dynamicLeverage, computeLeverageRow: computeLeverageRow,
+    specsForGroups: specsForGroups, LEVERAGE_GROUPS: LEVERAGE_GROUPS,
     metricFor: metricFor,
     analyzeFrame: analyzeFrame,
     analyzeBars: analyzeBars, computeStrength: computeStrength,
@@ -1181,6 +1208,6 @@
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
     WEIGHTS_BB: WEIGHTS_BB, WEIGHTS_KC: WEIGHTS_KC,
-    VERSION: '1.4.0'
+    VERSION: '1.5.0'
   };
 });

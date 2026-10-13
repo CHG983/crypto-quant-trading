@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-10-13T04:00:14.805Z",
-  "engine_version": "1.4.0",
+  "generated_utc": "2026-10-13T05:05:09.116Z",
+  "engine_version": "1.5.0",
   "csv": "verify/BTCUSDT_1d_klines.csv",
   "symbol": "BTCUSDT",
   "bars": 400,
@@ -51,17 +51,6 @@
     },
     {
       "id": "ctma_long_only",
-      "kind": "ctma",
-      "total": 67.5,
-      "label": "強",
-      "method": "ctma",
-      "metric": "2064.79733878",
-      "leverage": null,
-      "stop": 77578.72798366,
-      "detail": "trend=1 mom=0.115 vol=0.705 st=1"
-    },
-    {
-      "id": "dynrisk_voltarget",
       "kind": "ctma",
       "total": 67.5,
       "label": "強",

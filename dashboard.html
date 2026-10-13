@@ -222,8 +222,9 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
   <p>即時訊號 · 市場掃描 · 自動化監控 — <b>改由瀏覽器直接呼叫幣安公開 API</b>，
      策略邏輯（EMA 快慢線 + RSI/MACD 動能 + ATR 風控）在<strong>前端即時重算</strong>，
      並可<b>切換多種策略</b>（CTMA 預設 / Supertrend 過濾 / 只做多 / WFO 網格參數組
-     / 布林通道反轉 / 卡爾特通道 / 動態風險敞口），
+     / 布林通道反轉 / 卡爾特通道），
      並可<b>自訂 EMA 週期與 ATR 倍數</b>（含即時驗證與重設），
+     另有獨立的<b>建議槓桿比率</b>區塊（波動度目標法，不依賴策略選擇），
      不再使用內嵌的靜態快照。</p>
   <div class="meta">
     <span class="chip">資料來源 <b>Binance 公開 API</b></span>
@@ -291,17 +292,51 @@ footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);
     <div class="skel"></div><div class="skel" style="width:80%"></div>
     <div class="skel" style="width:60%"></div></div>
 </div>
-<div id="liveLeverage"></div>
-
 <h2>2 · 市場掃描排行（瀏覽器直連）</h2>
 <p class="muted" id="scanMeta">載入中…</p>
 <div class="kpis" id="scanKpis"></div>
 <div class="tablewrap"><table>
   <thead><tr>
     <th>標的</th><th>趨勢</th><th>強度</th><th>價格</th>
-    <th id="thStrat">EMA 差距</th><th>RSI</th><th>ATR%</th><th>建議停損</th><th>訊號</th>
+    <th id="thStrat">EMA 差距</th><th>RSI</th><th>ATR%</th><th>建議停損</th><th title="獨立於策略選擇的建議槓桿比率">建議槓桿</th><th>訊號</th>
   </tr></thead>
-  <tbody id="scanBody"><tr><td colspan="9" class="muted">載入中…</td></tr></tbody>
+  <tbody id="scanBody"><tr><td colspan="10" class="muted">載入中…</td></tr></tbody>
+</table></div>
+
+<!-- ===== 建議槓桿比率：獨立功能，不依賴策略選擇 ===== -->
+<h2>⚖ 建議槓桿比率（獨立功能 · 任何策略下都可見）</h2>
+<p class="muted">本區塊<b>不隨策略選擇改變</b>：切換任何策略，建議槓桿都以同一套波動度目標法重算。
+原本的策略選項「動態風險敞口」已移除，功能改由此區塊提供，策略數由 9 回到 8。</p>
+<div class="note info">
+  <b>公式：</b>實際波動度 = <code>ATR(dr_atr_len) / close × 100</code>（即 ATR%）；
+  建議槓桿 = <code>clamp(目標波動度 ÷ 實際波動度, 最小槓桿, 最大槓桿)</code>；
+  部位比例 = <code>建議槓桿 ÷ 最大槓桿</code>。<b>波動越高 → 槓桿越低。</b>
+</div>
+<div class="note">
+  <b>參數來源：</b>目標波動度 2.0%、最小槓桿 0.5×、ATR 週期 14 沿用原「動態風險敞口」策略的預設值；
+  <b>槓桿上限 3.0× 沿用 <code>crypto_quant/backtest.py</code> 的 <code>BacktestConfig.max_leverage</code></b>；
+  方向模型（僅供對照，本區塊不使用方向）沿用 <code>crypto_quant/strategy.py</code>。
+</div>
+<div id="leverSummary"></div>
+<div class="custbar">
+  <div class="chead">
+    <span class="cttl">⚖ 建議槓桿參數</span>
+    <span class="cstate" id="leverState">載入中…</span>
+  </div>
+  <div class="cgrid" id="leverGrid"></div>
+  <ul class="cerr" id="leverErrors" style="display:none"></ul>
+  <div class="cbtns">
+    <button type="button" class="primary" id="applyLever">套用</button>
+    <button type="button" id="resetLever">重設為預設</button>
+    <span class="cmsg" id="leverMsg"></span>
+  </div>
+</div>
+<h3>各標的建議槓桿與部位比例（依實際波動度 ATR% 由高至低）</h3>
+<div class="tablewrap"><table>
+  <thead><tr>
+    <th>標的</th><th>實際波動度 (ATR%)</th><th>建議槓桿</th><th>部位比例</th><th>是否觸及界限</th>
+  </tr></thead>
+  <tbody id="leverBody"><tr><td colspan="5" class="muted">載入中…</td></tr></tbody>
 </table></div>
 
 <h2>3 · 自動化監控狀態與訊號時間軸</h2>
@@ -352,7 +387,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
 <details>
 <summary id="stDocSummary">訊號強度計分（0–100）</summary>
 <div class="stf" data-kind="ctma">
-<p><b>CTMA 系列（含 WFO 網格、動態風險敞口）— 動能評分</b></p>
+<p><b>CTMA 系列（含 WFO 網格）— 動能評分</b></p>
 <p><code>分數 = 100 × ( 0.35×趨勢 + 0.30×動能 + 0.20×波動健康度 + 0.15×Supertrend 一致性 )</code></p>
 <p>趨勢以 ATR 正規化（<code>(EMA快−EMA慢)/ATR / 1.5</code>），使不同波動度的幣種可互相比較；
 動能取 RSI 距中軸與 MACD 柱的平均，方向須與趨勢一致；波動健康度在 ATR% 落於
@@ -404,7 +439,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
   <p style="margin-bottom:0">All content on this page (including real-time signals, ranking scans, monitored events, and parameters) is intended solely for research and educational purposes and does not constitute investment advice, an offer, or a recommendation. Signals are calculated based on historical prices and cannot predict future trends; past performance is not indicative of future results. Backtesting and signal systems are subject to inherent limitations—such as overfitting, survivorship bias, errors in estimating transaction costs, and liquidity assumptions—meaning actual trading results may differ significantly. Real-time data may be subject to delays, interruptions, or inaccuracies due to network, endpoint, or exchange issues and should not serve as the sole basis for trading decisions. Cryptocurrency markets are highly volatile and carry the risk of a total loss of principal. Users are responsible for making their own trading decisions and assuming all associated risks.</p>
 </div>
 
-<!-- built_by=build_dashboard_v6.py  built_at=2026-10-13T04:00:22Z  engine_sha256=62da74e1104e535cbadd416f90563a6b12864e2be44ac7c2d6be5e47dd30f0df -->
+<!-- built_by=build_dashboard_v6.py  built_at=2026-10-13T04:58:25Z  engine_sha256=4b8be52067f99dcce4f87e5d1602bf4fddbbd8d6348da477975c04ef3a2a7548 -->
 <footer>
   資料來源：Binance 公開 API（<code>data-api.binance.vision</code>，免金鑰），由瀏覽器直接抓取。
   策略引擎 <code>live_engine.js</code> 內嵌於本頁（建置時比對 SHA-256 確保與受測版本逐字元相同）。
@@ -671,7 +706,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
       bb_rsi_len: 14, bb_rsi_oversold: 30.0, bb_rsi_overbought: 70.0,
       // --- 卡爾特通道（Keltner Channels）---
       kc_ema_len: 20, kc_atr_len: 10, kc_mult: 2.0,
-      // --- 動態風險敞口（動態槓桿比例）---
+      // --- 建議槓桿比率（獨立區塊，不依賴策略選擇）---
       dr_target_vol: 2.0, dr_max_lev: 3.0, dr_min_lev: 0.5, dr_atr_len: 14
     };
     if (over) for (var k in over) if (Object.prototype.hasOwnProperty.call(over, k)) p[k] = over[k];
@@ -692,6 +727,10 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
    *
    * 這些不是憑空發明的策略：前三個是 strategy.py 的參數開關，後三個是
    * walkforward.py / optimize.py 實際跑過的網格點。
+   *
+   * 註：原「動態風險敞口（動態槓桿比例）」已於本次自策略清單移除，改為儀表板上
+   * 獨立的「建議槓桿比率」區塊（見 computeLeverageRow / dynamicLeverage），
+   * 不依賴策略選擇，任何策略下都對每檔標的計算。策略數因此由 9 回到 8。
    * ------------------------------------------------------------------ */
 
   var STRATEGY_PRESETS = [
@@ -766,15 +805,6 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
       desc: '中軌 = EMA(close, 20)，上下軌 = 中軌 ± 2.0×ATR(10)。收盤突破上軌做多、跌破下軌做空；趨勢方向以收盤相對中軌位置判定。停損停利沿用 ATR 倍數。',
       source: '標準卡爾特通道定義（Keltner 1960 / Raschke 修正版）· EMA ± N×ATR；本專案未內建此策略，為本次新增，公式與參數於頁面明列',
       params: { kind: 'keltner', kc_ema_len: 20, kc_atr_len: 10, kc_mult: 2.0 }
-    },
-    {
-      id: 'dyn_risk',
-      kind: 'dynrisk',
-      name: '動態風險敞口（動態槓桿比例）',
-      short: '動態風險敞口',
-      desc: '方向沿用 CTMA（EMA 21/55 交叉 + RSI/MACD 動能 + ATR% 過濾）；再依波動度動態調整建議槓桿：槓桿 = clamp(目標波動度 ÷ 實際波動度(ATR%), 最小槓桿, 最大槓桿)。波動越高、槓桿越低；部位比例 = 槓桿 ÷ 最大槓桿。',
-      source: '波動度目標法（volatility targeting）· 方向沿用 crypto_quant/strategy.py；槓桿上限沿用 backtest.py BacktestConfig.max_leverage=3.0；本策略為本次新增，公式與參數於頁面明列',
-      params: { kind: 'dynrisk', dr_target_vol: 2.0, dr_max_lev: 3.0, dr_min_lev: 0.5, dr_atr_len: 14 }
     }
   ];
 
@@ -802,8 +832,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
   var KIND_GROUPS = {
     ctma: ['trend', 'momentum', 'risk', 'supertrend', 'direction'],
     bb: ['bollinger', 'risk', 'direction'],
-    keltner: ['keltner', 'risk', 'direction'],
-    dynrisk: ['trend', 'momentum', 'risk', 'direction', 'dynrisk']
+    keltner: ['keltner', 'risk', 'direction']
   };
 
   /** 依預設 id 篩選出該策略相關的參數規格（供參數編輯器使用）。 */
@@ -842,12 +871,26 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     { key: 'kc_ema_len',        label: '卡爾特 EMA 週期',  type: 'int',   min: 2,   max: 200,  step: 1,   group: 'keltner' },
     { key: 'kc_atr_len',        label: '卡爾特 ATR 週期',  type: 'int',   min: 2,   max: 100,  step: 1,   group: 'keltner' },
     { key: 'kc_mult',           label: '卡爾特 ATR 倍數',  type: 'float', min: 0.1, max: 10,   step: 0.1, group: 'keltner' },
-    // --- 動態風險敞口 ---
-    { key: 'dr_target_vol',     label: '目標波動度 (ATR%)', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
-    { key: 'dr_max_lev',        label: '最大槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
-    { key: 'dr_min_lev',        label: '最小槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'dynrisk' },
-    { key: 'dr_atr_len',        label: '動態風險 ATR 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'dynrisk' }
+    // --- 建議槓桿比率（獨立區塊，不屬於任何策略；供該區塊的參數控制項使用） ---
+    { key: 'dr_target_vol',     label: '目標波動度 (ATR%)', type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'leverage' },
+    { key: 'dr_max_lev',        label: '最大槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'leverage' },
+    { key: 'dr_min_lev',        label: '最小槓桿',        type: 'float', min: 0.1, max: 20,   step: 0.1, group: 'leverage' },
+    { key: 'dr_atr_len',        label: '建議槓桿 ATR 週期', type: 'int',   min: 2,   max: 100,  step: 1,   group: 'leverage' }
   ];
+
+  /* ------------------------------------------------------------------ *
+   * 建議槓桿比率區塊的參數群組
+   * ------------------------------------------------------------------
+   * 該區塊獨立於策略選擇：不屬於任何策略的參數群組，因此不會出現在策略的
+   * 參數編輯器中；但 dr_* 仍在 defaultParams() 內，故 validateParams 依然
+   * 會驗證它們（沿用既有的範圍與合理性檢查）。
+   * ------------------------------------------------------------------ */
+  var LEVERAGE_GROUPS = ['leverage'];
+
+  /** 依群組名稱集合篩選參數規格（供策略編輯器與建議槓桿編輯器共用）。 */
+  function specsForGroups(groups) {
+    return PARAM_SPECS.filter(function (s) { return groups.indexOf(s.group) >= 0; });
+  }
 
   /**
    * 驗證使用者自訂參數。
@@ -950,7 +993,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     out.kc_mid = kcMid; out.kc_atr = kcAtr;
     out.kc_upper = kcMid.map(function (v, i) { return isNum(v) && isNum(kcAtr[i]) ? v + p.kc_mult * kcAtr[i] : NaN; });
     out.kc_lower = kcMid.map(function (v, i) { return isNum(v) && isNum(kcAtr[i]) ? v - p.kc_mult * kcAtr[i] : NaN; });
-    // --- 動態風險敞口用的 ATR ---
+    // --- 建議槓桿比率用的 ATR（獨立區塊，不依賴策略）---
     out.dr_atr = atr(high, low, close, p.dr_atr_len);
     out.dr_atr_pct = out.dr_atr.map(function (v, i) { return v / close[i] * 100; });
     out.close = close; out.high = high; out.low = low;
@@ -1067,29 +1110,15 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
   }
 
   /* ------------------------------------------------------------------ *
-   * 新增策略：動態風險敞口（動態槓桿比例）
-   * ------------------------------------------------------------------ *
-   * 方向沿用 CTMA（EMA 交叉 + RSI/MACD 動能 + ATR% 過濾）；
-   * 槓桿依波動度動態調整（波動度目標法）：
-   *   實際波動度 = ATR(dr_atr_len) / close × 100  （即 ATR%）
-   *   建議槓桿 = clamp(目標波動度 ÷ 實際波動度, dr_min_lev, dr_max_lev)
-   *   部位比例 = 建議槓桿 ÷ dr_max_lev
-   * 波動越高 → 槓桿越低。
-   * ------------------------------------------------------------------ */
-  function generateSignalsDynRisk(bars, p) {
-    return generateSignals(bars, p);
-  }
-
-  /** 依策略種類分派至對應的訊號產生器。 */
+   * 依策略種類分派至對應的訊號產生器。 */
   function generateSignalsFor(bars, p) {
     var kind = p.kind || 'ctma';
     if (kind === 'bb') return generateSignalsBB(bars, p);
     if (kind === 'keltner') return generateSignalsKeltner(bars, p);
-    if (kind === 'dynrisk') return generateSignalsDynRisk(bars, p);
     return generateSignals(bars, p);
   }
 
-  /** 依波動度計算建議槓桿（動態風險敞口策略）。 */
+  /** 依波動度計算建議槓桿（供「建議槓桿比率」獨立區塊使用）。 */
   function dynamicLeverage(atrPct, p) {
     if (!isNum(atrPct) || atrPct <= 0) return null;
     var raw = p.dr_target_vol / atrPct;
@@ -1105,10 +1134,40 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
   }
 
   /**
+   * 建議槓桿比率（獨立於策略選擇；任何策略下都對每檔標的計算）
+   * ------------------------------------------------------------------
+   * 公式（沿用原「動態風險敞口」策略的波動度目標法，本次移到獨立區塊）：
+   *   實際波動度 = ATR(dr_atr_len) / close × 100   （即 ATR%）
+   *   建議槓桿   = clamp(目標波動度 ÷ 實際波動度, dr_min_lev, dr_max_lev)
+   *   部位比例   = 建議槓桿 ÷ dr_max_lev
+   * 波動越高 → 槓桿越低（方向關係）。
+   *
+   * 參數預設值來源：
+   *   目標波動度 2.0% / 最小槓桿 0.5× / ATR 週期 14 → 沿用原 dyn_risk 預設
+   *   槓桿上限 3.0× → crypto_quant/backtest.py BacktestConfig.max_leverage
+   *   方向模型（僅供對照，本區塊不使用方向）→ crypto_quant/strategy.py
+   * ------------------------------------------------------------------
+   */
+  function computeLeverageRow(row, p) {
+    var lv = dynamicLeverage(row.dr_atr_pct, p);
+    if (!lv) return null;
+    return {
+      leverage: lv.leverage,
+      raw_leverage: lv.raw_leverage,
+      position_pct: lv.position_pct,
+      realized_vol_pct: lv.realized_vol_pct,
+      target_vol_pct: lv.target_vol_pct,
+      capped: lv.capped,
+      atr_abs: isNum(row.dr_atr) ? round(row.dr_atr, 8) : null,
+      atr_pct: isNum(row.dr_atr_pct) ? round(row.dr_atr_pct, 4) : null,
+      lever_atr_len: p.dr_atr_len
+    };
+  }
+
+  /**
    * 策略專屬指標（供卡片與掃描表的「策略指標」欄使用）：
    *   bb       → 布林 %B = (close − 下軌) ÷ (上軌 − 下軌) × 100
    *   keltner  → 卡爾特 %B = 同上，改用卡爾特上下軌
-   *   dynrisk  → 建議槓桿
    *   ctma     → ATR（絕對值）
    * 回傳 { key, label, value, text }
    */
@@ -1124,11 +1183,6 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
       var kb = (isNum(klo) && isNum(kup) && isNum(kc) && kup > klo) ? (kc - klo) / (kup - klo) * 100 : null;
       return { key: 'kc_pctb', label: '卡爾特 %B', value: isNum(kb) ? round(kb, 2) : null,
                text: isNum(kb) ? round(kb, 2).toFixed(2) + '%' : '—' };
-    }
-    if (kind === 'dynrisk') {
-      var lv = dynamicLeverage(row.dr_atr_pct, p);
-      return { key: 'leverage', label: '建議槓桿', value: lv ? lv.leverage : null,
-               text: lv ? lv.leverage.toFixed(2) + '×' : '—' };
     }
     return { key: 'atr', label: 'ATR（絕對）', value: isNum(row.atr) ? round(row.atr, 8) : null,
              text: isNum(row.atr) ? String(round(row.atr, 8)) : '—' };
@@ -1285,7 +1339,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
 
   /* ------------------------------------------------------------------ *
    * 依策略種類分派強度評分
-   *   ctma / wfo / dynrisk → 原 computeStrength（共用動能分項，未改動）
+   *   ctma / wfo → 原 computeStrength（共用動能分項，未改動）
    *   bb                   → computeStrengthBB（反轉明確程度）
    *   keltner              → computeStrengthKeltner（突破明確程度）
    * ------------------------------------------------------------------ */
@@ -1327,7 +1381,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     var ef = row.ema_fast, es = row.ema_slow, close = row.close;
     var kind = p.kind || 'ctma';
     // 趨勢方向依策略種類判定（頁面明列）：
-    //   ctma / dynrisk：EMA 快線 vs 慢線
+    //   ctma：EMA 快線 vs 慢線
     //   bb / keltner：收盤相對中軌位置（通道方向）
     var trend;
     if (kind === 'bb') {
@@ -1379,8 +1433,8 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
       kc_mid: isNum(row.kc_mid) ? round(row.kc_mid, 8) : null,
       kc_upper: isNum(row.kc_upper) ? round(row.kc_upper, 8) : null,
       kc_lower: isNum(row.kc_lower) ? round(row.kc_lower, 8) : null,
+      dr_atr: isNum(row.dr_atr) ? round(row.dr_atr, 8) : null,
       dr_atr_pct: isNum(row.dr_atr_pct) ? round(row.dr_atr_pct, 4) : null,
-      leverage: (kind === 'dynrisk') ? dynamicLeverage(row.dr_atr_pct, p) : null,
       strategy_kind: kind,
       strategy_metric: metricFor(kind, row, p, trend),
       signal: sig.signal[i],
@@ -1523,7 +1577,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     return rows.slice(0, n);
   }
 
-  function rowOf(r) {
+  function rowOf(r, lev) {
     var c = r.confirmed || r.provisional;
     var lv = r.levels || {};
     return {
@@ -1535,7 +1589,9 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
       stop: lv.stop === undefined ? null : lv.stop,
       take_profit: lv.take_profit === undefined ? null : lv.take_profit,
       rr_ratio: lv.rr_ratio === undefined ? null : lv.rr_ratio,
-      leverage: c.leverage || null,
+      leverage: lev || null,
+      dr_atr: c.dr_atr === undefined ? null : c.dr_atr,
+      dr_atr_pct: c.dr_atr_pct === undefined ? null : c.dr_atr_pct,
       metric_label: c.strategy_metric ? c.strategy_metric.label : null,
       metric_text: c.strategy_metric ? c.strategy_metric.text : null,
       strategy_kind: c.strategy_kind || null,
@@ -1545,9 +1601,14 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     };
   }
 
-  function buildRankings(results, topN) {
+  function buildRankings(results, topN, levParams) {
     topN = topN || 8;
-    var rows = results.map(rowOf);
+    // levParams 為建議槓桿區塊的參數；提供時對每一列計算建議槓桿（與策略無關）
+    var rows = results.map(function (r) {
+      if (!levParams) return rowOf(r, null);
+      var c = r.confirmed || r.provisional;
+      return rowOf(r, computeLeverageRow(c, levParams));
+    });
     var longs = rows.filter(function (x) { return x.trend_int === 1; })
       .sort(function (a, b) { return b.strength - a.strength; });
     var shorts = rows.filter(function (x) { return x.trend_int === -1; })
@@ -1577,7 +1638,8 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     // 訊號
     generateSignals: generateSignals, generateSignalsFor: generateSignalsFor,
     generateSignalsBB: generateSignalsBB, generateSignalsKeltner: generateSignalsKeltner,
-    generateSignalsDynRisk: generateSignalsDynRisk, dynamicLeverage: dynamicLeverage,
+    dynamicLeverage: dynamicLeverage, computeLeverageRow: computeLeverageRow,
+    specsForGroups: specsForGroups, LEVERAGE_GROUPS: LEVERAGE_GROUPS,
     metricFor: metricFor,
     analyzeFrame: analyzeFrame,
     analyzeBars: analyzeBars, computeStrength: computeStrength,
@@ -1598,7 +1660,7 @@ ATR% 門檻、Supertrend 週期與倍數，以及「允許做空」與「Supertr
     WEIGHTS: WEIGHTS, STABLE_BASES: STABLE_BASES, MIN_SCAN_ATR_PCT: MIN_SCAN_ATR_PCT,
     VOL_WILD_CAP_PCT: VOL_WILD_CAP_PCT,
     WEIGHTS_BB: WEIGHTS_BB, WEIGHTS_KC: WEIGHTS_KC,
-    VERSION: '1.4.0'
+    VERSION: '1.5.0'
   };
 });
 
@@ -1623,8 +1685,14 @@ const state = {
   proxyMode: false,
   presetId: CTMA.DEFAULT_PRESET_ID,
   // 使用者自訂參數覆寫（僅存「與預設不同」的鍵）；null 表示未自訂
-  custom: null
+  custom: null,
+  // 建議槓桿區塊的自訂參數（獨立於策略選擇）；null 表示未自訂
+  lever: null
 };
+
+/* ---- 建議槓桿區塊的預設參數與生效參數（與策略選擇無關） ---- */
+function leverDefaults(){ return CTMA.paramsForPreset(state.presetId); }
+function leverParams(){ return CTMA.paramsForPreset(state.presetId, state.lever); }
 
 /* ---- 目前生效的參數 ----
  * 每次計算都重新取，確保切換策略／套用自訂後立即生效，且自動刷新沿用同一組。
@@ -1735,17 +1803,6 @@ function renderStrategyInfo(){
       ['ATR 停利', pr.atr_tp_mult + '×'],
       ['允許做空', pr.allow_short ? '是' : '否']
     ];
-  } else if (kind === 'dynrisk') {
-    cells = [
-      ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
-      ['RSI 週期', pr.rsi_len],
-      ['ATR 週期', pr.atr_len],
-      ['目標波動度', pr.dr_target_vol + '%'],
-      ['最大 / 最小槓桿', pr.dr_max_lev + '× / ' + pr.dr_min_lev + '×'],
-      ['動態風險 ATR', pr.dr_atr_len],
-      ['ATR 停損', pr.atr_stop_mult + '×'],
-      ['允許做空', pr.allow_short ? '是' : '否']
-    ];
   } else {
     cells = [
       ['EMA 快 / 慢', pr.ema_fast + ' / ' + pr.ema_slow],
@@ -1804,7 +1861,6 @@ function updateCustomState(){
   let eff;
   if (kind === 'bb') eff = '布林 ' + pr.bb_len + ' / ' + pr.bb_mult + '×σ · RSI ' + pr.bb_rsi_oversold + '/' + pr.bb_rsi_overbought;
   else if (kind === 'keltner') eff = '卡爾特 EMA ' + pr.kc_ema_len + ' · ATR ' + pr.kc_atr_len + ' × ' + pr.kc_mult;
-  else if (kind === 'dynrisk') eff = 'EMA ' + pr.ema_fast + '/' + pr.ema_slow + ' · 目標波動 ' + pr.dr_target_vol + '% · 槓桿 ' + pr.dr_min_lev + '–' + pr.dr_max_lev + '×';
   else eff = 'EMA ' + pr.ema_fast + '/' + pr.ema_slow + ' · ATR 停損 ' + pr.atr_stop_mult + '×';
   $('custState').innerHTML = isCustomized()
     ? '目前為 <b>自訂參數</b>（已套用）· 生效值 ' + esc(eff)
@@ -1857,6 +1913,115 @@ function resetCustomParams(){
   setCustomMsg('ok', '已重設為「' + CTMA.getPreset(state.presetId).short + '」的原始預設，重新計算中…');
   renderStrategyInfo();
   renderCustomEditor();
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
+}
+
+/* ---- 建議槓桿比率的參數編輯器（獨立於策略選擇） ---- */
+function renderLeverEditor(){
+  const grid = $('leverGrid');
+  if (!grid) return;
+  const pr = leverParams();
+  const def = leverDefaults();
+  grid.innerHTML = CTMA.specsForGroups(CTMA.LEVERAGE_GROUPS).map(s =>
+    '<div class="cfield" data-field="' + esc(s.key) + '">'
+    + '<label class="cl" for="lv_' + esc(s.key) + '">' + esc(s.label) + '</label>'
+    + '<input type="number" id="lv_' + esc(s.key) + '" data-key="' + esc(s.key) + '"'
+    + ' value="' + esc(pr[s.key]) + '" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '">'
+    + '<span class="cdef">預設 ' + esc(def[s.key]) + ' · 範圍 ' + s.min + '–' + s.max + '</span>'
+    + '</div>').join('');
+  renderLeverState();
+}
+
+function readLeverValues(){
+  const out = {};
+  CTMA.specsForGroups(CTMA.LEVERAGE_GROUPS).forEach(s => {
+    const el = document.querySelector('#leverGrid input[data-key="' + s.key + '"]');
+    if (!el) return;
+    const raw = String(el.value).trim();
+    out[s.key] = raw === '' ? NaN : Number(raw);
+  });
+  return out;
+}
+
+function isLeverCustomized(){
+  if (!state.lever) return false;
+  const d = leverDefaults();
+  for (const k in state.lever){
+    if (Object.prototype.hasOwnProperty.call(state.lever, k) && state.lever[k] !== d[k]) return true;
+  }
+  return false;
+}
+
+function renderLeverState(){
+  const el = $('leverState');
+  if (!el) return;
+  const pr = leverParams();
+  const eff = '目標波動 ' + pr.dr_target_vol + '% · ATR ' + pr.dr_atr_len + ' · 槓桿 ' + pr.dr_min_lev + '–' + pr.dr_max_lev + '×';
+  el.innerHTML = isLeverCustomized()
+    ? '目前為 <b>自訂參數</b>（已套用）· 生效值 ' + esc(eff)
+    : '目前為 <b>原始預設</b>（未自訂）· 生效值 ' + esc(eff);
+}
+
+function showLeverErrors(errors){
+  const ul = $('leverErrors');
+  if (!ul) return;
+  document.querySelectorAll('#leverGrid .cfield').forEach(f => f.classList.remove('bad'));
+  if (!errors || !errors.length){ ul.style.display = 'none'; ul.innerHTML = ''; return; }
+  ul.style.display = '';
+  ul.innerHTML = errors.map(e => '<li>' + esc(e.msg) + '</li>').join('');
+  errors.forEach(e => {
+    const f = document.querySelector('#leverGrid [data-field="' + e.key + '"]');
+    if (f) f.classList.add('bad');
+  });
+}
+
+function setLeverMsg(kind, text){
+  const m = $('leverMsg');
+  if (!m) return;
+  m.className = 'cmsg' + (kind ? ' ' + kind : '');
+  m.textContent = text || '';
+}
+
+/* 建議槓桿專屬的合理性檢查（範圍以外的交叉檢查） */
+function leverSanity(v){
+  const e = [];
+  if (Number(v.dr_max_lev) < Number(v.dr_min_lev)){
+    e.push({ key: 'dr_max_lev', msg: '最大槓桿（' + v.dr_max_lev + '）必須不小於最小槓桿（' + v.dr_min_lev + '）' });
+  }
+  return e;
+}
+
+function applyLeverParams(){
+  const vals = readLeverValues();
+  const res = CTMA.validateParams(vals, leverDefaults());
+  const extra = res.ok ? leverSanity(vals) : [];
+  const errors = res.ok ? extra : res.errors;
+  if (errors.length){
+    showLeverErrors(errors);
+    setLeverMsg('err', '參數不合法，未套用（' + errors.length + ' 項）');
+    return false;
+  }
+  showLeverErrors(null);
+  const def = leverDefaults();
+  const diff = {};
+  let n = 0;
+  for (const k in vals){ if (vals[k] !== def[k]){ diff[k] = vals[k]; n++; } }
+  state.lever = n ? diff : null;
+  setLeverMsg('ok', n ? ('已套用 ' + n + ' 項建議槓桿參數，重新計算中…') : '與預設相同，已回到預設');
+  renderLeverState();
+  state.nextAt = Date.now() + state.intervalMs;
+  refreshAll();
+  return true;
+}
+
+function resetLeverParams(){
+  const d = leverDefaults();
+  state.lever = null;
+  showLeverErrors(null);
+  setLeverMsg('ok', '已重設為原始預設（目標波動 ' + d.dr_target_vol + '% · 槓桿 '
+    + d.dr_min_lev + '–' + d.dr_max_lev + '× · ATR ' + d.dr_atr_len + '），重新計算中…');
+  renderLeverEditor();
   state.nextAt = Date.now() + state.intervalMs;
   refreshAll();
 }
@@ -1931,6 +2096,8 @@ function renderLive(list, serverTimeMs, intervalLabel){
     const c = x.analysis.confirmed || x.analysis.provisional;
     const lv = x.analysis.levels;
     const st = c.strength;
+    // 建議槓桿：獨立於策略選擇，任何策略下都對每檔標的計算（由 CTMA.computeLeverageRow 依生效的建議槓桿參數得出）
+    const cv = CTMA.computeLeverageRow(c, leverParams());
     const badge = x.analysis.bar_is_in_progress
       ? '<span class="badge b-warn">K 棒未收盤</span>' : '<span class="badge b-neut">已收盤</span>';
     const rp = x.analysis.repaint ? ' <span class="badge b-short">與確認版不一致</span>' : '';
@@ -1964,10 +2131,12 @@ function renderLive(list, serverTimeMs, intervalLabel){
           ? '<div class="row"><span>卡爾特上 / 中 / 下軌</span><b>' + fmtNum(c.kc_upper, 4) + ' / ' + fmtNum(c.kc_mid, 4) + ' / ' + fmtNum(c.kc_lower, 4) + '</b></div>'
             + '<div class="row"><span>卡爾特 %B</span><b>' + (c.strategy_metric ? esc(c.strategy_metric.text) : '—') + '</b></div>'
           : '')
-      + (c.strategy_kind === 'dynrisk' && c.leverage
-          ? '<div class="row"><span>建議槓桿</span><b>' + fmtNum(c.leverage.leverage, 2) + '×</b></div>'
-            + '<div class="row"><span>部位比例</span><b>' + fmtPct(c.leverage.position_pct, 1) + '</b></div>'
-            + '<div class="row"><span>實際波動度</span><b>' + fmtPct(c.leverage.realized_vol_pct, 2) + '</b></div>'
+      + (cv
+          ? '<div class="hr"></div>'
+            + '<div class="row"><span>建議槓桿</span><b style="color:var(--pur)">' + fmtNum(cv.leverage, 2) + '×'
+            + (cv.capped ? ' <span class="badge b-warn">' + (cv.capped === 'max' ? '已達上限' : '已達下限') + '</span>' : '') + '</b></div>'
+            + '<div class="row"><span>部位比例</span><b>' + fmtPct(cv.position_pct, 1) + '</b></div>'
+            + '<div class="row"><span>實際波動度</span><b>' + fmtPct(cv.realized_vol_pct, 2) + '</b></div>'
           : '')
       + (lv ? '<div class="hr"></div>'
           + '<div class="row"><span>建議停損</span><b>' + fmtNum(lv.stop, 6)
@@ -1989,29 +2158,53 @@ function renderLive(list, serverTimeMs, intervalLabel){
       + '</div>';
   }).join('');
 
-  // 動態風險敞口：額外顯示建議槓桿／部位比例面板
-  const levEl = $('liveLeverage');
-  const kind0 = list.length ? list[0].analysis.params_kind : null;
-  if (kind0 === 'dynrisk' && list.length){
-    const pr = activeParams();
-    const chips = list.map(x => {
-      const c = x.analysis.confirmed || x.analysis.provisional;
-      const lv = c.leverage;
-      if (!lv) return '';
-      const cap = lv.capped ? ' <span class="levchip cap">' + (lv.capped === 'max' ? '已達上限' : '已達下限') + '</span>' : '';
-      return '<span class="ls"><b>' + esc(x.symbol) + '</b> ' + lv.leverage.toFixed(2) + '× · 部位 '
-        + lv.position_pct.toFixed(1) + '% · 實際波動 ' + lv.realized_vol_pct.toFixed(2) + '%' + cap + '</span>';
-    }).join('');
-    const first = (list[0].analysis.confirmed || list[0].analysis.provisional).leverage;
-    levEl.innerHTML = '<div class="lev">'
-      + '<span class="lt">⚖ 動態風險敞口</span>'
-      + '<span class="lv">' + (first ? first.leverage.toFixed(2) + '×' : '—') + '</span>'
-      + '<span class="ls">目標波動度 <b>' + pr.dr_target_vol + '%</b> · 槓桿範圍 <b>'
-      + pr.dr_min_lev + '–' + pr.dr_max_lev + '×</b>（波動越高、槓桿越低）</span>'
-      + chips + '</div>';
-  } else {
-    levEl.innerHTML = '';
-  }
+  renderLeverageSummary(list);
+}
+
+/* ---- 建議槓桿比率（獨立功能）：即時卡片上的摘要面板 ---- */
+function renderLeverageSummary(list){
+  const el = $('leverSummary');
+  if (!el) return;
+  const pr = leverParams();
+  const rows = list.map(x => {
+    const c = x.analysis.confirmed || x.analysis.provisional;
+    return {sym: x.symbol, lv: CTMA.computeLeverageRow(c, leverParams())};
+  }).filter(r => r.lv);
+  if (!rows.length){ el.innerHTML = ''; return; }
+  const sorted = rows.slice().sort((a,b) => b.lv.realized_vol_pct - a.lv.realized_vol_pct);
+  const chips = sorted.map(r => {
+    const cap = r.lv.capped ? ' <span class="levchip cap">' + (r.lv.capped === 'max' ? '已達上限' : '已達下限') + '</span>' : '';
+    return '<span class="ls"><b>' + esc(r.sym) + '</b> ' + r.lv.leverage.toFixed(2) + '× · 部位 '
+      + r.lv.position_pct.toFixed(1) + '% · 實際波動 ' + r.lv.realized_vol_pct.toFixed(2) + '%' + cap + '</span>';
+  }).join('');
+  const hi = sorted[0], lo = sorted[sorted.length - 1];
+  el.innerHTML = '<div class="lev">'
+    + '<span class="lt">⚖ 建議槓桿比率</span>'
+    + '<span class="lv">' + lo.lv.leverage.toFixed(2) + '–' + hi.lv.leverage.toFixed(2) + '×</span>'
+    + '<span class="ls">目標波動度 <b>' + esc(pr.dr_target_vol) + '%</b> · 槓桿範圍 <b>'
+    + esc(pr.dr_min_lev) + '–' + esc(pr.dr_max_lev) + '×</b> · ATR 週期 <b>' + esc(pr.dr_atr_len)
+    + '</b>（波動越高、槓桿越低）</span>'
+    + chips + '</div>';
+}
+
+/* ---- 建議槓桿比率（獨立功能）：排行表 ---- */
+function renderLeverageTable(rankings){
+  const body = $('leverBody');
+  if (!body) return;
+  const rows = (rankings && rankings.all_rows ? rankings.all_rows : [])
+    .filter(r => r.leverage)
+    .sort((a,b) => b.leverage.realized_vol_pct - a.leverage.realized_vol_pct);
+  body.innerHTML = rows.length
+    ? rows.map(r => '<tr>'
+        + '<td class="sym">' + esc(r.symbol) + '</td>'
+        + '<td class="num">' + fmtPct(r.leverage.realized_vol_pct, 2) + '</td>'
+        + '<td class="num" style="color:var(--pur)">' + fmtNum(r.leverage.leverage, 2) + '×</td>'
+        + '<td class="num">' + fmtPct(r.leverage.position_pct, 1) + '</td>'
+        + '<td>' + (r.leverage.capped === 'max' ? '<span class="badge b-warn">已達上限</span>'
+                  : r.leverage.capped === 'min' ? '<span class="badge b-warn">已達下限</span>'
+                  : '<span class="badge b-neut">區間內</span>') + '</td>'
+        + '</tr>').join('')
+    : '<tr><td colspan="5" class="muted">無資料（可能全部被過濾或抓取失敗）</td></tr>';
 }
 
 function renderScan(rankings, listMeta){
@@ -2036,7 +2229,7 @@ function renderScan(rankings, listMeta){
   const rows = s.all_rows.slice().sort((a,b) => b.strength - a.strength);
   const kind = (s.all_rows[0] && s.all_rows[0].strategy_kind) || 'ctma';
   const metricLabel = (s.all_rows[0] && s.all_rows[0].metric_label) || 'EMA 差距';
-  const isTrendMetric = (kind === 'ctma' || kind === 'dynrisk');
+  const isTrendMetric = (kind === 'ctma');
   $('thStrat').textContent = isTrendMetric ? metricLabel : ('強度 · ' + metricLabel);
   $('scanBody').innerHTML = rows.length
     ? rows.map(r =>
@@ -2049,9 +2242,10 @@ function renderScan(rankings, listMeta){
       + '<td class="num">' + fmtNum(r.rsi, 2) + '</td>'
       + '<td class="num">' + fmtPct(r.atr_pct, 3) + '</td>'
       + '<td class="num">' + (r.stop === null ? '—' : fmtNum(r.stop, 6)) + '</td>'
+      + '<td class="num" style="color:var(--pur)">' + (r.leverage ? fmtNum(r.leverage.leverage, 2) + '×' : '—') + '</td>'
       + '<td>' + esc(r.signal) + (r.near_trigger ? ' <span class="badge b-warn">近</span>' : '') + '</td>'
       + '</tr>').join('')
-    : '<tr><td colspan="9" class="muted">無資料（可能全部被過濾或抓取失敗）</td></tr>';
+    : '<tr><td colspan="10" class="muted">無資料（可能全部被過濾或抓取失敗）</td></tr>';
 }
 
 function renderHistory(){
@@ -2152,7 +2346,7 @@ async function refreshAll(){
         if (r && r.ok) ok.push(r.value);
         else scanErrors.push(top[i].symbol + '：' + ((r && r.error) || '未知錯誤'));
       });
-      rankings = CTMA.buildRankings(ok, 8);
+      rankings = CTMA.buildRankings(ok, 8, leverParams());
     } catch(e){
       scanErrors.push('ticker/24hr：' + ((e && e.message) || e));
     }
@@ -2161,12 +2355,14 @@ async function refreshAll(){
 
     if (liveResults.length) renderLive(liveResults, serverTimeMs, '1d');
     if (rankings) renderScan(rankings, null);
+    if (rankings) renderLeverageTable(rankings);
     renderStrategyInfo();
 
     // 暴露結構化結果供自動化驗證讀取（不影響畫面）
     window.__CTMA_DASH__.lastLive = liveResults.map(x => {
       const c = x.analysis.confirmed || x.analysis.provisional;
       const pv = x.analysis.provisional;
+      const lvx = CTMA.computeLeverageRow(c, leverParams());
       return {
         symbol: x.symbol,
         row_source: x.analysis.confirmed ? 'confirmed' : 'provisional',
@@ -2176,8 +2372,10 @@ async function refreshAll(){
         stop_mult: x.analysis.levels ? x.analysis.levels.stop_mult : null,
         risk_pct: x.analysis.levels ? x.analysis.levels.risk_pct : null,
         trend: c.trend, strength: c.strength.total,
-        leverage: c.leverage ? c.leverage.leverage : null,
-        leverage_position_pct: c.leverage ? c.leverage.position_pct : null,
+        leverage: lvx ? lvx.leverage : null,
+        leverage_position_pct: lvx ? lvx.position_pct : null,
+        leverage_atr_pct: lvx ? lvx.realized_vol_pct : null,
+        leverage_capped: lvx ? lvx.capped : null,
         metric_label: c.strategy_metric ? c.strategy_metric.label : null,
         metric_text: c.strategy_metric ? c.strategy_metric.text : null,
         strategy_kind: c.strategy_kind || null,
@@ -2265,13 +2463,23 @@ $('strategySel').addEventListener('change', (e) => {
   // 切換策略時保留自訂值（以新策略的預設為底再疊加），並重繪編輯器
   renderStrategyInfo();
   renderCustomEditor();
+  // 建議槓桿區塊不受策略選擇影響，但以新策略預設為底重繪（自訂值仍保留）
+  renderLeverEditor();
   setCustomMsg('', '');
+  setLeverMsg('', '');
   // 切換策略後立即以新策略重算；自動刷新計時器不動，之後每輪都套用新策略
   state.nextAt = Date.now() + state.intervalMs;
   refreshAll();
 });
 $('applyParams').addEventListener('click', () => { applyCustomParams(); });
 $('resetParams').addEventListener('click', () => { resetCustomParams(); });
+$('applyLever').addEventListener('click', () => { applyLeverParams(); });
+$('resetLever').addEventListener('click', () => { resetLeverParams(); });
+$('leverGrid').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT'){
+    e.preventDefault(); applyLeverParams();
+  }
+});
 // 輸入框按 Enter 即套用
 $('custGrid').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT'){
@@ -2282,6 +2490,7 @@ $('custGrid').addEventListener('keydown', (e) => {
 /* ---- 啟動 ---- */
 initStrategySelector();
 renderCustomEditor();
+renderLeverEditor();
 renderHistory();
 restartTimers();
 refreshAll();
@@ -2293,10 +2502,27 @@ window.__CTMA_DASH__ = {
   engineVersion: CTMA.VERSION,
   presets: CTMA.STRATEGY_PRESETS,
   paramSpecs: CTMA.PARAM_SPECS,
-  setPreset: (id) => { state.presetId = id; $('strategySel').value = id; renderStrategyInfo(); renderCustomEditor(); },
+  setPreset: (id) => { state.presetId = id; $('strategySel').value = id; renderStrategyInfo(); renderCustomEditor(); renderLeverEditor(); },
   activeParams: activeParams,
   presetDefaults: presetDefaults,
   isCustomized: isCustomized,
+  // --- 建議槓桿比率（獨立功能）的驗證鈴接口 ---
+  leverParams: leverParams,
+  leverDefaults: leverDefaults,
+  leverGroups: CTMA.LEVERAGE_GROUPS,
+  specsForLever: () => CTMA.specsForGroups(CTMA.LEVERAGE_GROUPS),
+  setLeverField: (key, value) => {
+    const el = document.querySelector('#leverGrid input[data-key="' + key + '"]');
+    if (!el) return false;
+    el.value = value;
+    return true;
+  },
+  applyLever: () => applyLeverParams(),
+  resetLever: () => resetLeverParams(),
+  leverErrors: () => Array.from(document.querySelectorAll('#leverErrors li')).map(li => li.textContent),
+  leverMsg: () => $('leverMsg').textContent,
+  leverStateText: () => $('leverState').textContent,
+  isLeverCustomized: isLeverCustomized,
   specsForPreset: (id) => CTMA.specsForPreset(id || state.presetId),
   strategyKind: () => CTMA.getPreset(state.presetId).kind || 'ctma',
   metricFor: CTMA.metricFor,
@@ -2317,8 +2543,21 @@ window.__CTMA_DASH__ = {
     scanRows: document.querySelectorAll('#scanBody tr').length,
     strategyKind: CTMA.getPreset(state.presetId).kind || 'ctma',
     metricHeader: ($('thStrat') || {}).textContent || '',
-    leveragePanel: ($('liveLeverage') || {}).textContent || '',
+    leverSummary: ($('leverSummary') || {}).textContent || '',
+    leverRows: document.querySelectorAll('#leverBody tr').length,
+    leverState: ($('leverState') || {}).textContent || '',
     firstCardText: (document.querySelector('#liveCards .card') || {}).textContent || ''
+  }),
+  // 建議槓桿區塊的完整結構化輸出（供自動化驗證讀取）
+  leverTable: () => Array.from(document.querySelectorAll('#leverBody tr')).map(tr => {
+    const td = tr.querySelectorAll('td');
+    return {
+      symbol: td[0] ? td[0].textContent : null,
+      atr_pct_text: td[1] ? td[1].textContent : null,
+      leverage_text: td[2] ? td[2].textContent : null,
+      position_text: td[3] ? td[3].textContent : null,
+      capped_text: td[4] ? td[4].textContent : null
+    };
   })
 };
 </script>
